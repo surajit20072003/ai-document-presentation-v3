@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RecapDirectorOutput",
+  "description": "Schema for Pass 1b: Recap Director output - Memory (5 flashcards) + Recap (5 video scenes)",
+  "type": "object",
+  "properties": {
+    "sections": {
+      "type": "array",
+      "description": "Must contain exactly 2 sections: memory and recap",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "properties": {
+          "section_id": {
+            "type": "string",
+            "description": "Unique section identifier"
+          },
+          "section_type": {
+            "type": "string",
+            "enum": ["memory", "recap"],
+            "description": "Section type - only memory and recap allowed"
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title"
+          },
+          "renderer": {
+            "type": "string",
+            "enum": ["remotion", "video"],
+            "description": "memory=remotion, recap=video (WAN)"
+          },
+          "renderer_reasoning": {
+            "type": "string",
+            "description": "Brief explanation for renderer choice"
+          },
+          "layout": {
+            "type": "object",
+            "properties": {
+              "avatar_position": {
+                "type": "string",
+                "enum": ["left", "right", "center", "hidden"],
+                "description": "Avatar position (must be hidden for recap)"
+              },
+              "avatar_width_percent": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            }
+          },
+          "narration": {
+            "type": "object",
+            "properties": {
+              "full_text": {
+                "type": "string",
+                "description": "Complete narration text (recap: 300-500 words)"
+              },
+              "segments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "segment_id": { "type": "string" },
+                    "text": { "type": "string" },
+                    "duration_estimate": { "type": "number" },
+                    "display_directives": {
+                      "type": "object",
+                      "properties": {
+                        "text_layer": {
+                          "type": "string",
+                          "enum": ["show", "hide", "highlight"]
+                        },
+                        "visual_layer": {
+                          "type": "string",
+                          "enum": ["show", "hide", "replace"]
+                        },
+                        "avatar_layer": {
+                          "type": "string",
+                          "enum": ["show", "hide", "gesture_only"],
+                          "description": "Must be 'hide' for recap section"
+                        }
+                      },
+                      "required": ["text_layer", "visual_layer", "avatar_layer"]
+                    }
+                  },
+                  "required": ["segment_id", "text", "display_directives"]
+                }
+              }
+            },
+            "required": ["full_text", "segments"]
+          },
+          "flashcards": {
+            "type": "array",
+            "description": "Memory section: exactly 5 flashcards with R-A-S mnemonic style",
+            "minItems": 5,
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "properties": {
+                "card_id": {
+                  "type": "string",
+                  "description": "Unique card identifier"
+                },
+                "mnemonic_letter": {
+                  "type": "string",
+                  "description": "The mnemonic letter (e.g., R, A, S)"
+                },
+                "concept": {
+                  "type": "string",
+                  "description": "The concept name"
+                },
+                "definition": {
+                  "type": "string",
+                  "description": "Brief definition or description"
+                }
+              },
+              "required": ["mnemonic_letter", "concept", "definition"]
+            }
+          },
+          "video_prompts": {
+            "type": "array",
+            "description": "Recap section: exactly 5 cinematic video prompts (300+ words each)",
+            "minItems": 5,
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "properties": {
+                "beat_id": {
+                  "type": "string",
+                  "description": "Unique beat identifier"
+                },
+                "prompt": {
+                  "type": "string",
+                  "description": "Cinematic visual description, must be 300+ words. NO infographics.",
+                  "minLength": 300
+                },
+                "duration_estimate": {
+                  "type": "number",
+                  "description": "Estimated duration in seconds"
+                },
+                "concept_title": {
+                  "type": "string",
+                  "description": "The concept being visualized"
+                }
+              },
+              "required": ["beat_id", "prompt", "duration_estimate"]
+            }
+          }
+        },
+        "required": ["section_id", "section_type", "renderer", "narration"]
+      }
+    }
+  },
+  "required": ["sections"]
+}

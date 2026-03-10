@@ -1,0 +1,2398 @@
+{
+  "spec_version": "v1.5",
+  "title": "Introduction to Trigonometry",
+  "subject": "General Science",
+  "grade": "12",
+  "avatar_global": {
+    "style": "teacher",
+    "default_position": "right",
+    "default_width_percent": 52,
+    "gesture_enabled": true
+  },
+  "metadata": {
+    "generated_by": "v1.5-v2-unified",
+    "llm_calls": 1,
+    "llm_time_seconds": 164.46,
+    "dry_run": false
+  },
+  "decision_log": {
+    "total_video_prompts": 5,
+    "total_manim_specs": 8,
+    "renderer_choices": [
+      {
+        "section_id": "section_3",
+        "section_title": "Trigonometric Ratios",
+        "renderer": "manim",
+        "reason": "Manim was chosen to visually animate the construction of the SOH-CAH-TOA ratios on a triangle, which is more pedagogically effective for a foundational mathematical concept than a static image or text."
+      },
+      {
+        "section_id": "section_4",
+        "section_title": "Reciprocal Ratios",
+        "renderer": "manim",
+        "reason": "Manim was selected to animate the 'flipping' of fractions to visually demonstrate the reciprocal relationships between sin/csc, cos/sec, and tan/cot, making the concept intuitive."
+      },
+      {
+        "section_id": "section_5",
+        "section_title": "Example 1: Finding Ratios",
+        "renderer": "manim",
+        "reason": "This example requires calculating a missing side using Pythagoras and then finding ratios. Manim is ideal for animating the step-by-step calculation and substitution process."
+      },
+      {
+        "section_id": "section_6",
+        "section_title": "Example 2: Proving Angle Equality",
+        "renderer": "manim",
+        "reason": "This is a proof-based example involving algebraic manipulation of ratios. Manim was used to animate the rearrangement of terms and logical flow, which is difficult to convey with static visuals."
+      },
+      {
+        "section_id": "section_7",
+        "section_title": "Example 3: Trigonometric Identities",
+        "renderer": "manim",
+        "reason": "This example verifies the core identity sin\u00b2\u03b8 + cos\u00b2\u03b8 = 1. Manim was chosen to animate the substitution, squaring of fractions, and addition, visually confirming the result equals 1."
+      },
+      {
+        "section_id": "section_8",
+        "section_title": "Example 4: Verifying an Identity",
+        "renderer": "manim",
+        "reason": "This example involves a multi-step verification. Manim was used to animate the substitutions and algebraic simplifications, showing how the expression logically reduces to 1."
+      },
+      {
+        "section_id": "section_9",
+        "section_title": "Example 5: Solving for Sides and Ratios",
+        "renderer": "manim",
+        "reason": "This example involves solving an algebraic equation derived from Pythagoras. Manim is perfect for animating the expansion, cancellation, and solving steps to find the unknown side length."
+      },
+      {
+        "section_id": "section_11",
+        "section_title": "Chapter Recap",
+        "renderer": "video",
+        "reason": "The recap section is designed as a narrative story to summarize the chapter's application. The 'video' renderer with cinematic prompts is required to create an engaging, story-driven visual summary."
+      }
+    ],
+    "content_analysis": "The source document is an introductory chapter on trigonometry for 10th-grade students. Key topics identified are: the definition of the six trigonometric ratios (sin, cos, tan, csc, sec, cot) based on a right-angled triangle, the concept of reciprocal ratios, and the application of these ratios and the Pythagoras theorem to solve problems. The document is structured around definitions followed by five worked-out examples, each with a corresponding diagram. The content is heavily mathematical and procedural, making it suitable for animated explanations using Manim for the examples and core concepts. A quiz section was not included as no Q&A was present in the source."
+  },
+  "sections": [
+    {
+      "section_id": 1,
+      "section_type": "intro",
+      "title": "Welcome to Trigonometry!",
+      "renderer": "none",
+      "decision_reason": "This is an introductory avatar-only segment with no visuals, so no renderer is needed.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "center",
+        "width_percent": 60
+      },
+      "narration": {
+        "full_text": "Namaste students! Welcome to our class on mathematics. Today, we are going to dive into a fascinating and very useful branch of mathematics called Trigonometry. You might have heard the name and wondered what it's all about. It's simpler than it sounds! It's all about triangles, specifically the relationship between their angles and side lengths. By the end of this lesson, you'll be able to look at a right-angled triangle and understand these relationships like an expert. So, let's get started!",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "Namaste students! Welcome to our class on mathematics. Today, we are going to dive into a fascinating and very useful branch of mathematics called Trigonometry.",
+            "duration_seconds": 12.69,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 10.0,
+            "audio_file": "1_1.mp3",
+            "audio_path": "audio/1_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "You might have heard the name and wondered what it's all about. It's simpler than it sounds! It's all about triangles, specifically the relationship between their angles and side lengths. By the end of this lesson, you'll be able to look at a right-angled triangle and understand these relationships like an expert. So, let's get started!",
+            "duration_seconds": 28.43,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 22.4,
+            "audio_file": "1_2.mp3",
+            "audio_path": "audio/1_2.mp3"
+          }
+        ],
+        "total_duration_seconds": 41.12
+      },
+      "visual_beats": [],
+      "display_directives": [
+        {
+          "text_layer": "hide",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        }
+      ],
+      "audio_path": "section_1.mp3"
+    },
+    {
+      "section_id": 2,
+      "section_type": "summary",
+      "title": "What We Will Learn Today",
+      "renderer": "none",
+      "decision_reason": "This is a simple bullet list of learning objectives. No complex rendering is required.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "In this chapter, we will cover the fundamentals of trigonometry. First, we will define what trigonometric ratios are and identify the sides of a right-angled triangle. Next, we will learn about the six key trigonometric ratios: sine, cosine, tangent, and their reciprocals. Finally, we will apply this knowledge to solve some example problems, calculating the ratios when some side lengths are known. Let's begin our journey into the world of angles and sides!",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "In this chapter, we will cover the fundamentals of trigonometry. First, we will define what trigonometric ratios are and identify the sides of a right-angled triangle.",
+            "duration_seconds": 13.2,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "bullet_points",
+              "display_format": "bullets",
+              "items": [
+                "### Learning Objectives:",
+                "*   Understand the relationship between sides and angles in a right-angled triangle."
+              ],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 10.4,
+            "audio_file": "2_1.mp3",
+            "audio_path": "audio/2_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "Next, we will learn about the six key trigonometric ratios: sine, cosine, tangent, and their reciprocals.",
+            "duration_seconds": 8.12,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "bullet_points",
+              "display_format": "bullets",
+              "items": [
+                "### Learning Objectives:",
+                "*   Understand the relationship between sides and angles in a right-angled triangle.",
+                "*   Define the six trigonometric ratios: sine, cosine, tangent, cosecant, secant, and cotangent."
+              ],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 6.4,
+            "audio_file": "2_2.mp3",
+            "audio_path": "audio/2_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "Finally, we will apply this knowledge to solve some example problems, calculating the ratios when some side lengths are known. Let's begin our journey into the world of angles and sides!",
+            "duration_seconds": 15.74,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "bullet_points",
+              "display_format": "bullets",
+              "items": [
+                "### Learning Objectives:",
+                "*   Understand the relationship between sides and angles in a right-angled triangle.",
+                "*   Define the six trigonometric ratios: sine, cosine, tangent, cosecant, secant, and cotangent.",
+                "*   Solve problems by calculating trigonometric ratios."
+              ],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 12.4,
+            "audio_file": "2_3.mp3",
+            "audio_path": "audio/2_3.mp3"
+          }
+        ],
+        "total_duration_seconds": 37.06
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "bullet_list",
+          "description": "### Learning Objectives:\n*   Understand the relationship between sides and angles in a right-angled triangle.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "bullet_list",
+          "description": "### Learning Objectives:\n*   Understand the relationship between sides and angles in a right-angled triangle.\n*   Define the six trigonometric ratios: sine, cosine, tangent, cosecant, secant, and cotangent.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "bullet_list",
+          "description": "### Learning Objectives:\n*   Understand the relationship between sides and angles in a right-angled triangle.\n*   Define the six trigonometric ratios: sine, cosine, tangent, cosecant, secant, and cotangent.\n*   Solve problems by calculating trigonometric ratios.",
+          "source_block_ids": []
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        }
+      ],
+      "audio_path": "section_2.mp3"
+    },
+    {
+      "section_id": 3,
+      "section_type": "content",
+      "title": "Trigonometric Ratios",
+      "renderer": "manim",
+      "decision_reason": "Manim is chosen to visually construct the trigonometric ratios on a triangle, which is more effective than a static image for explaining mathematical formulas.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "Trigonometry, at its core, is the study of the relationships between the sides and angles of a triangle. To understand these relationships, we always start with a special kind of triangle: the right-angled triangle. In a right-angled triangle, we name the sides in relation to a specific angle, let's call it angle A. The side opposite to angle A is the 'Opposite' side. The side next to angle A is the 'Adjacent' side. And the longest side, opposite the right angle, is always the 'Hypotenuse'. These three sides form the basis for all our trigonometric ratios. There are six main trigonometric ratios: Sine, Cosine, Tangent, Cosecant, Secant, and Cotangent. Let's see how they are defined. Sine of angle A, or sin A, is the ratio of the Opposite side to the Hypotenuse. Cosine of angle A, or cos A, is the ratio of the Adjacent side to the Hypotenuse. Finally, Tangent of angle A, or tan A, is the ratio of the Opposite side to the Adjacent side. A good way to remember this is the phrase SOH-CAH-TOA.",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "Trigonometry, at its core, is the study of the relationships between the sides and angles of a triangle. To understand these relationships, we always start with a special kind of triangle: the right-angled triangle.",
+            "duration_seconds": 17.26,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Trigonometry is the study of relationships between the sides and angles of a triangle."
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 13.6,
+            "audio_file": "3_1.mp3",
+            "audio_path": "audio/3_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "In a right-angled triangle, we name the sides in relation to a specific angle, let's call it angle A. The side opposite to angle A is the 'Opposite' side. The side next to angle A is the 'Adjacent' side. And the longest side, opposite the right angle, is always the 'Hypotenuse'.",
+            "duration_seconds": 25.89,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "diagram",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "A right-angled triangle with sides labeled Opposite, Adjacent, and Hypotenuse relative to angle A.",
+              "image_id": "8c378a184b5ae4d1605cb74d7b7a7e3f_img.jpg",
+              "image_path": "images/8c378a184b5ae4d1605cb74d7b7a7e3f_img.png"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 20.4,
+            "audio_file": "3_2.mp3",
+            "audio_path": "audio/3_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "These three sides form the basis for all our trigonometric ratios. There are six main trigonometric ratios: Sine, Cosine, Tangent, Cosecant, Secant, and Cotangent. Let's see how they are defined.",
+            "duration_seconds": 15.23,
+            "gesture_hint": "transition",
+            "visual_content": {
+              "content_type": "bullet_points",
+              "display_format": "bullets",
+              "items": [
+                "The Six Trigonometric Ratios:",
+                "* SinA",
+                "* CosA",
+                "* TanA",
+                "* CosecA",
+                "* SecA",
+                "* CotA"
+              ],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 12.0,
+            "audio_file": "3_3.mp3",
+            "audio_path": "audio/3_3.mp3"
+          },
+          {
+            "segment_id": 4,
+            "text": "Sine of angle A, or sin A, is the ratio of the Opposite side to the Hypotenuse. Cosine of angle A, or cos A, is the ratio of the Adjacent side to the Hypotenuse. Finally, Tangent of angle A, or tan A, is the ratio of the Opposite side to the Adjacent side. A good way to remember this is the phrase SOH-CAH-TOA.",
+            "duration_seconds": 31.98,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 25.2,
+            "audio_file": "3_4.mp3",
+            "audio_path": "audio/3_4.mp3"
+          }
+        ],
+        "total_duration_seconds": 90.36
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "text",
+          "description": "Trigonometry is the study of relationships between the sides and angles of a triangle.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "diagram",
+          "description": "A right-angled triangle with sides labeled Opposite, Adjacent, and Hypotenuse relative to angle A.",
+          "source_block_ids": [],
+          "image_id": "8c378a184b5ae4d1605cb74d7b7a7e3f_img.jpg",
+          "image_path": "images/8c378a184b5ae4d1605cb74d7b7a7e3f_img.png"
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "bullet_list",
+          "description": "The Six Trigonometric Ratios:\n* SinA\n* CosA\n* TanA\n* CosecA\n* SecA\n* CotA",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_4",
+          "segment_id": "seg_4",
+          "visual_beat_type": "equation",
+          "description": "Defining the primary trigonometric ratios.",
+          "source_block_ids": []
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        }
+      ],
+      "audio_path": "section_3.mp3",
+      "render_spec": {
+        "manim_scene_spec": {
+          "manim_code": "# Segment 1 (0.0-17.3s) - Introduction to Trigonometry\ntitle = Text(\"Trigonometry\", font_size=48).to_edge(UP)\nsubtitle = Text(\"The study of triangles\", font_size=36).next_to(title, DOWN)\n\ntriangle = Polygon(\n    [-2, -1, 0], [2, -1, 0], [-2, 2, 0],\n    color=WHITE, fill_opacity=0.2\n)\ntriangle.move_to(ORIGIN)\n\nself.play(Write(title), run_time=2)\nself.play(FadeIn(subtitle), run_time=2)\nself.wait(1.3)\nself.play(Create(triangle), run_time=3)\nself.wait(9)\n\n# Segment 2 (17.3-43.2s) - Labeling the right triangle\nright_angle = Square(side_length=0.4, color=WHITE)\nright_angle.next_to(triangle.get_vertices()[1], UL, buff=0)\n\nangle_A = Arc(\n    radius=0.5,\n    start_angle=PI,\n    angle=PI/3,\n    color=YELLOW\n).move_to(triangle.get_vertices()[0]).shift(RIGHT*0.1 + UP*0.1)\n\nangle_label = MathTex(\"A\", color=YELLOW).next_to(angle_A, UL, buff=0.1)\n\nopp_line = Line(triangle.get_vertices()[1], triangle.get_vertices()[2], color=RED)\nadj_line = Line(triangle.get_vertices()[0], triangle.get_vertices()[1], color=GREEN)\nhyp_line = Line(triangle.get_vertices()[0], triangle.get_vertices()[2], color=BLUE)\n\nopp_label = Text(\"Opposite\", color=RED, font_size=24).next_to(opp_line, RIGHT)\nadj_label = Text(\"Adjacent\", color=GREEN, font_size=24).next_to(adj_line, DOWN)\nhyp_label = Text(\"Hypotenuse\", color=BLUE, font_size=24).next_to(hyp_line, LEFT)\n\nself.play(\n    Create(right_angle),\n    Create(angle_A),\n    Write(angle_label),\n    run_time=3\n)\nself.play(\n    Create(opp_line),\n    Create(adj_line),\n    Create(hyp_line),\n    run_time=3\n)\nself.play(\n    Write(opp_label),\n    Write(adj_label),\n    Write(hyp_label),\n    run_time=4\n)\nself.wait(15.9)\n\n# Segment 3 (43.2-58.4s) - Introducing trig ratios\nratios = VGroup(\n    MathTex(r\"\\sin A\"),\n    MathTex(r\"\\cos A\"),\n    MathTex(r\"\\tan A\"),\n    MathTex(r\"\\csc A\"),\n    MathTex(r\"\\sec A\"),\n    MathTex(r\"\\cot A\")\n).arrange(DOWN, buff=0.5).to_edge(RIGHT)\n\nself.play(\n    FadeOut(title),\n    FadeOut(subtitle),\n    triangle.animate.scale(0.7).to_edge(LEFT),\n    run_time=2\n)\nself.play(\n    *[Write(ratio) for ratio in ratios],\n    run_time=5\n)\nself.wait(8.2)\n\n# Segment 4 (58.4-90.4s) - Primary ratios with SOH-CAH-TOA\nsin_def = MathTex(r\"\\sin A = \\frac{\\text{Opposite}}{\\text{Hypotenuse}}\", color=YELLOW)\ncos_def = MathTex(r\"\\cos A = \\frac{\\text{Adjacent}}{\\text{Hypotenuse}}\", color=YELLOW)\ntan_def = MathTex(r\"\\tan A = \\frac{\\text{Opposite}}{\\text{Adjacent}}\", color=YELLOW)\n\nsoh_cah_toa = Text(\"SOH-CAH-TOA\", color=YELLOW, font_size=36)\n\nformulas = VGroup(sin_def, cos_def, tan_def).arrange(DOWN, buff=0.5)\nformulas.next_to(ratios, LEFT, buff=1)\nsoh_cah_toa.next_to(formulas, DOWN, buff=1)\n\nself.play(Write(sin_def), run_time=3)\nself.play(Write(cos_def), run_time=3)\nself.play(Write(tan_def), run_time=3)\nself.play(Write(soh_cah_toa), run_time=3)\nself.wait(20)",
+          "code_type": "construct_body"
+        }
+      },
+      "explanation_plan": {
+        "visual_beats": [
+          {
+            "beat_id": "beat_1",
+            "segment_id": "seg_1",
+            "visual_beat_type": "text",
+            "description": "Trigonometry is the study of relationships between the sides and angles of a triangle.",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_2",
+            "segment_id": "seg_2",
+            "visual_beat_type": "diagram",
+            "description": "A right-angled triangle with sides labeled Opposite, Adjacent, and Hypotenuse relative to angle A.",
+            "source_block_ids": [],
+            "image_id": "8c378a184b5ae4d1605cb74d7b7a7e3f_img.jpg",
+            "image_path": "images/8c378a184b5ae4d1605cb74d7b7a7e3f_img.png"
+          },
+          {
+            "beat_id": "beat_3",
+            "segment_id": "seg_3",
+            "visual_beat_type": "bullet_list",
+            "description": "The Six Trigonometric Ratios:\n* SinA\n* CosA\n* TanA\n* CosecA\n* SecA\n* CotA",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_4",
+            "segment_id": "seg_4",
+            "visual_beat_type": "equation",
+            "description": "Defining the primary trigonometric ratios.",
+            "source_block_ids": []
+          }
+        ],
+        "v15_manim_code": "# Segment 1 (0.0-17.3s) - Introduction to Trigonometry\ntitle = Text(\"Trigonometry\", font_size=48).to_edge(UP)\nsubtitle = Text(\"The study of triangles\", font_size=36).next_to(title, DOWN)\n\ntriangle = Polygon(\n    [-2, -1, 0], [2, -1, 0], [-2, 2, 0],\n    color=WHITE, fill_opacity=0.2\n)\ntriangle.move_to(ORIGIN)\n\nself.play(Write(title), run_time=2)\nself.play(FadeIn(subtitle), run_time=2)\nself.wait(1.3)\nself.play(Create(triangle), run_time=3)\nself.wait(9)\n\n# Segment 2 (17.3-43.2s) - Labeling the right triangle\nright_angle = Square(side_length=0.4, color=WHITE)\nright_angle.next_to(triangle.get_vertices()[1], UL, buff=0)\n\nangle_A = Arc(\n    radius=0.5,\n    start_angle=PI,\n    angle=PI/3,\n    color=YELLOW\n).move_to(triangle.get_vertices()[0]).shift(RIGHT*0.1 + UP*0.1)\n\nangle_label = MathTex(\"A\", color=YELLOW).next_to(angle_A, UL, buff=0.1)\n\nopp_line = Line(triangle.get_vertices()[1], triangle.get_vertices()[2], color=RED)\nadj_line = Line(triangle.get_vertices()[0], triangle.get_vertices()[1], color=GREEN)\nhyp_line = Line(triangle.get_vertices()[0], triangle.get_vertices()[2], color=BLUE)\n\nopp_label = Text(\"Opposite\", color=RED, font_size=24).next_to(opp_line, RIGHT)\nadj_label = Text(\"Adjacent\", color=GREEN, font_size=24).next_to(adj_line, DOWN)\nhyp_label = Text(\"Hypotenuse\", color=BLUE, font_size=24).next_to(hyp_line, LEFT)\n\nself.play(\n    Create(right_angle),\n    Create(angle_A),\n    Write(angle_label),\n    run_time=3\n)\nself.play(\n    Create(opp_line),\n    Create(adj_line),\n    Create(hyp_line),\n    run_time=3\n)\nself.play(\n    Write(opp_label),\n    Write(adj_label),\n    Write(hyp_label),\n    run_time=4\n)\nself.wait(15.9)\n\n# Segment 3 (43.2-58.4s) - Introducing trig ratios\nratios = VGroup(\n    MathTex(r\"\\sin A\"),\n    MathTex(r\"\\cos A\"),\n    MathTex(r\"\\tan A\"),\n    MathTex(r\"\\csc A\"),\n    MathTex(r\"\\sec A\"),\n    MathTex(r\"\\cot A\")\n).arrange(DOWN, buff=0.5).to_edge(RIGHT)\n\nself.play(\n    FadeOut(title),\n    FadeOut(subtitle),\n    triangle.animate.scale(0.7).to_edge(LEFT),\n    run_time=2\n)\nself.play(\n    *[Write(ratio) for ratio in ratios],\n    run_time=5\n)\nself.wait(8.2)\n\n# Segment 4 (58.4-90.4s) - Primary ratios with SOH-CAH-TOA\nsin_def = MathTex(r\"\\sin A = \\frac{\\text{Opposite}}{\\text{Hypotenuse}}\", color=YELLOW)\ncos_def = MathTex(r\"\\cos A = \\frac{\\text{Adjacent}}{\\text{Hypotenuse}}\", color=YELLOW)\ntan_def = MathTex(r\"\\tan A = \\frac{\\text{Opposite}}{\\text{Adjacent}}\", color=YELLOW)\n\nsoh_cah_toa = Text(\"SOH-CAH-TOA\", color=YELLOW, font_size=36)\n\nformulas = VGroup(sin_def, cos_def, tan_def).arrange(DOWN, buff=0.5)\nformulas.next_to(ratios, LEFT, buff=1)\nsoh_cah_toa.next_to(formulas, DOWN, buff=1)\n\nself.play(Write(sin_def), run_time=3)\nself.play(Write(cos_def), run_time=3)\nself.play(Write(tan_def), run_time=3)\nself.play(Write(soh_cah_toa), run_time=3)\nself.wait(20)"
+      }
+    },
+    {
+      "section_id": 4,
+      "section_type": "content",
+      "title": "Reciprocal Ratios",
+      "renderer": "manim",
+      "decision_reason": "Manim is used to create a dynamic animation showing the 'flipping' or reciprocal nature of the trigonometric pairs, which is a more intuitive way to teach this concept than static text.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "The other three trigonometric ratios\u2014Cosecant, Secant, and Cotangent\u2014are simply the reciprocals of the first three. This means they are 'flipped' versions of the Sine, Cosine, and Tangent ratios. Cosecant A, or csc A, is the reciprocal of sin A. So, if sin A is Opposite over Hypotenuse, then csc A is Hypotenuse over Opposite. It's the same as 1 divided by sin A. Similarly, Secant A, or sec A, is the reciprocal of cos A. This makes it Hypotenuse over Adjacent. And finally, Cotangent A, or cot A, is the reciprocal of tan A, which is Adjacent over Opposite. Understanding these reciprocal pairs is crucial for solving many trigonometric problems.",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "The other three trigonometric ratios\u2014Cosecant, Secant, and Cotangent\u2014are simply the reciprocals of the first three. This means they are 'flipped' versions of the Sine, Cosine, and Tangent ratios.",
+            "duration_seconds": 14.22,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Cosecant, Secant, and Cotangent are the reciprocals of Sine, Cosine, and Tangent."
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 11.2,
+            "audio_file": "4_1.mp3",
+            "audio_path": "audio/4_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "Cosecant A, or csc A, is the reciprocal of sin A. So, if sin A is Opposite over Hypotenuse, then csc A is Hypotenuse over Opposite. It's the same as 1 divided by sin A.",
+            "duration_seconds": 17.77,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 14.0,
+            "audio_file": "4_2.mp3",
+            "audio_path": "audio/4_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "Similarly, Secant A, or sec A, is the reciprocal of cos A. This makes it Hypotenuse over Adjacent. And finally, Cotangent A, or cot A, is the reciprocal of tan A, which is Adjacent over Opposite. Understanding these reciprocal pairs is crucial for solving many trigonometric problems.",
+            "duration_seconds": 23.86,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 18.8,
+            "audio_file": "4_3.mp3",
+            "audio_path": "audio/4_3.mp3"
+          }
+        ],
+        "total_duration_seconds": 55.85
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "text",
+          "description": "Cosecant, Secant, and Cotangent are the reciprocals of Sine, Cosine, and Tangent.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "equation",
+          "description": "Cosecant (csc) is the reciprocal of Sine (sin).",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "equation",
+          "description": "Secant (sec) is the reciprocal of Cosine (cos). Cotangent (cot) is the reciprocal of Tangent (tan).",
+          "source_block_ids": []
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        }
+      ],
+      "audio_path": "section_4.mp3",
+      "render_spec": {
+        "manim_scene_spec": {
+          "manim_code": "# Segment 1 (0-14.2s) - Reciprocal relationships introduction\ntitle = Text(\"Reciprocal Trigonometric Ratios\", font_size=40).to_edge(UP)\n\n# Create initial ratio pairs\nsin_text = MathTex(r\"\\sin A\").move_to(LEFT * 4 + UP * 1.5)\ncos_text = MathTex(r\"\\cos A\").move_to(LEFT * 4)\ntan_text = MathTex(r\"\\tan A\").move_to(LEFT * 4 + DOWN * 1.5)\n\ncsc_text = MathTex(r\"\\csc A\").move_to(RIGHT * 4 + UP * 1.5)\nsec_text = MathTex(r\"\\sec A\").move_to(RIGHT * 4)\ncot_text = MathTex(r\"\\cot A\").move_to(RIGHT * 4 + DOWN * 1.5)\n\n# Create arrows showing reciprocal relationships\narrow1 = Arrow(sin_text.get_right(), csc_text.get_left(), color=YELLOW)\narrow2 = Arrow(cos_text.get_right(), sec_text.get_left(), color=BLUE)\narrow3 = Arrow(tan_text.get_right(), cot_text.get_left(), color=GREEN)\n\nself.play(Write(title), run_time=2)\nself.play(\n    Write(sin_text), Write(cos_text), Write(tan_text),\n    Write(csc_text), Write(sec_text), Write(cot_text),\n    run_time=3\n)\nself.play(Create(arrow1), Create(arrow2), Create(arrow3), run_time=3)\nself.wait(6.2)  # Complete 14.2s segment\n\n# Segment 2 (14.2-32.0s) - Cosecant explanation\nsin_formula = MathTex(r\"\\sin A = \\frac{\\text{Opposite}}{\\text{Hypotenuse}}\")\nsin_formula.move_to(UP * 1.5)\ncsc_formula = MathTex(r\"\\csc A = \\frac{\\text{Hypotenuse}}{\\text{Opposite}} = \\frac{1}{\\sin A}\")\ncsc_formula.move_to(DOWN * 1.5)\n\nself.play(\n    FadeOut(title), FadeOut(cos_text), FadeOut(sec_text),\n    FadeOut(tan_text), FadeOut(cot_text),\n    FadeOut(arrow2), FadeOut(arrow3),\n    run_time=2\n)\nself.play(\n    ReplacementTransform(sin_text, sin_formula),\n    ReplacementTransform(csc_text, csc_formula),\n    arrow1.animate.put_start_and_end_on(sin_formula.get_bottom(), csc_formula.get_top()),\n    run_time=3\n)\nself.wait(12.8)  # Complete 17.8s segment\n\n# Segment 3 (32.0-55.9s) - Secant and Cotangent explanation\ncos_formula = MathTex(r\"\\cos A = \\frac{\\text{Adjacent}}{\\text{Hypotenuse}}\")\nsec_formula = MathTex(r\"\\sec A = \\frac{\\text{Hypotenuse}}{\\text{Adjacent}} = \\frac{1}{\\cos A}\")\ntan_formula = MathTex(r\"\\tan A = \\frac{\\text{Opposite}}{\\text{Adjacent}}\")\ncot_formula = MathTex(r\"\\cot A = \\frac{\\text{Adjacent}}{\\text{Opposite}} = \\frac{1}{\\tan A}\")\n\nformulas_group = VGroup(cos_formula, sec_formula, tan_formula, cot_formula)\nformulas_group.arrange(DOWN, buff=0.5)\n\nself.play(\n    FadeOut(sin_formula), FadeOut(csc_formula), FadeOut(arrow1),\n    run_time=2\n)\nself.play(Write(formulas_group), run_time=4)\n\n# Add highlighting animations\nhighlight_box1 = SurroundingRectangle(cos_formula, color=BLUE)\nhighlight_box2 = SurroundingRectangle(sec_formula, color=BLUE)\nhighlight_box3 = SurroundingRectangle(tan_formula, color=GREEN)\nhighlight_box4 = SurroundingRectangle(cot_formula, color=GREEN)\n\nself.play(Create(highlight_box1), Create(highlight_box2), run_time=2)\nself.play(FadeOut(highlight_box1), FadeOut(highlight_box2), run_time=1)\nself.play(Create(highlight_box3), Create(highlight_box4), run_time=2)\nself.play(FadeOut(highlight_box3), FadeOut(highlight_box4), run_time=1)\nself.wait(11.9)  # Complete 23.9s segment",
+          "code_type": "construct_body"
+        }
+      },
+      "explanation_plan": {
+        "visual_beats": [
+          {
+            "beat_id": "beat_1",
+            "segment_id": "seg_1",
+            "visual_beat_type": "text",
+            "description": "Cosecant, Secant, and Cotangent are the reciprocals of Sine, Cosine, and Tangent.",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_2",
+            "segment_id": "seg_2",
+            "visual_beat_type": "equation",
+            "description": "Cosecant (csc) is the reciprocal of Sine (sin).",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_3",
+            "segment_id": "seg_3",
+            "visual_beat_type": "equation",
+            "description": "Secant (sec) is the reciprocal of Cosine (cos). Cotangent (cot) is the reciprocal of Tangent (tan).",
+            "source_block_ids": []
+          }
+        ],
+        "v15_manim_code": "# Segment 1 (0-14.2s) - Reciprocal relationships introduction\ntitle = Text(\"Reciprocal Trigonometric Ratios\", font_size=40).to_edge(UP)\n\n# Create initial ratio pairs\nsin_text = MathTex(r\"\\sin A\").move_to(LEFT * 4 + UP * 1.5)\ncos_text = MathTex(r\"\\cos A\").move_to(LEFT * 4)\ntan_text = MathTex(r\"\\tan A\").move_to(LEFT * 4 + DOWN * 1.5)\n\ncsc_text = MathTex(r\"\\csc A\").move_to(RIGHT * 4 + UP * 1.5)\nsec_text = MathTex(r\"\\sec A\").move_to(RIGHT * 4)\ncot_text = MathTex(r\"\\cot A\").move_to(RIGHT * 4 + DOWN * 1.5)\n\n# Create arrows showing reciprocal relationships\narrow1 = Arrow(sin_text.get_right(), csc_text.get_left(), color=YELLOW)\narrow2 = Arrow(cos_text.get_right(), sec_text.get_left(), color=BLUE)\narrow3 = Arrow(tan_text.get_right(), cot_text.get_left(), color=GREEN)\n\nself.play(Write(title), run_time=2)\nself.play(\n    Write(sin_text), Write(cos_text), Write(tan_text),\n    Write(csc_text), Write(sec_text), Write(cot_text),\n    run_time=3\n)\nself.play(Create(arrow1), Create(arrow2), Create(arrow3), run_time=3)\nself.wait(6.2)  # Complete 14.2s segment\n\n# Segment 2 (14.2-32.0s) - Cosecant explanation\nsin_formula = MathTex(r\"\\sin A = \\frac{\\text{Opposite}}{\\text{Hypotenuse}}\")\nsin_formula.move_to(UP * 1.5)\ncsc_formula = MathTex(r\"\\csc A = \\frac{\\text{Hypotenuse}}{\\text{Opposite}} = \\frac{1}{\\sin A}\")\ncsc_formula.move_to(DOWN * 1.5)\n\nself.play(\n    FadeOut(title), FadeOut(cos_text), FadeOut(sec_text),\n    FadeOut(tan_text), FadeOut(cot_text),\n    FadeOut(arrow2), FadeOut(arrow3),\n    run_time=2\n)\nself.play(\n    ReplacementTransform(sin_text, sin_formula),\n    ReplacementTransform(csc_text, csc_formula),\n    arrow1.animate.put_start_and_end_on(sin_formula.get_bottom(), csc_formula.get_top()),\n    run_time=3\n)\nself.wait(12.8)  # Complete 17.8s segment\n\n# Segment 3 (32.0-55.9s) - Secant and Cotangent explanation\ncos_formula = MathTex(r\"\\cos A = \\frac{\\text{Adjacent}}{\\text{Hypotenuse}}\")\nsec_formula = MathTex(r\"\\sec A = \\frac{\\text{Hypotenuse}}{\\text{Adjacent}} = \\frac{1}{\\cos A}\")\ntan_formula = MathTex(r\"\\tan A = \\frac{\\text{Opposite}}{\\text{Adjacent}}\")\ncot_formula = MathTex(r\"\\cot A = \\frac{\\text{Adjacent}}{\\text{Opposite}} = \\frac{1}{\\tan A}\")\n\nformulas_group = VGroup(cos_formula, sec_formula, tan_formula, cot_formula)\nformulas_group.arrange(DOWN, buff=0.5)\n\nself.play(\n    FadeOut(sin_formula), FadeOut(csc_formula), FadeOut(arrow1),\n    run_time=2\n)\nself.play(Write(formulas_group), run_time=4)\n\n# Add highlighting animations\nhighlight_box1 = SurroundingRectangle(cos_formula, color=BLUE)\nhighlight_box2 = SurroundingRectangle(sec_formula, color=BLUE)\nhighlight_box3 = SurroundingRectangle(tan_formula, color=GREEN)\nhighlight_box4 = SurroundingRectangle(cot_formula, color=GREEN)\n\nself.play(Create(highlight_box1), Create(highlight_box2), run_time=2)\nself.play(FadeOut(highlight_box1), FadeOut(highlight_box2), run_time=1)\nself.play(Create(highlight_box3), Create(highlight_box4), run_time=2)\nself.play(FadeOut(highlight_box3), FadeOut(highlight_box4), run_time=1)\nself.wait(11.9)  # Complete 23.9s segment"
+      }
+    },
+    {
+      "section_id": 5,
+      "section_type": "example",
+      "title": "Example 1: Finding Ratios",
+      "renderer": "manim",
+      "decision_reason": "Manim is ideal for this example to animate the step-by-step calculation using the Pythagoras theorem and then show the substitution of values to find all six trigonometric ratios.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "Let's work through our first example. Suppose we are given that tan A equals 4 divided by 3, and we need to find all the other trigonometric ratios for angle A. We know that tan A is the ratio of the Opposite side to the Adjacent side. So, we can imagine a right-angled triangle where the side opposite to angle A is 4 units and the side adjacent to it is 3 units. To find the other ratios, like sine and cosine, we need the length of the hypotenuse. We can find this using the Pythagoras theorem, which states that the square of the hypotenuse is the sum of the squares of the other two sides. So, the hypotenuse squared is 3 squared plus 4 squared, which is 9 plus 16, giving us 25. The square root of 25 is 5. So, our hypotenuse is 5 units long. Now that we have all three sides\u2014Opposite is 4, Adjacent is 3, and Hypotenuse is 5\u2014we can easily write down all the ratios. Sin A is 4/5, cos A is 3/5, and the reciprocals are csc A = 5/4, sec A = 5/3, and cot A = 3/4.",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "Let's work through our first example. Suppose we are given that tan A equals 4 divided by 3, and we need to find all the other trigonometric ratios for angle A.",
+            "duration_seconds": 15.74,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Example 1: Given tan A = 4/3, find the other trigonometric ratios of the angle A."
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 12.4,
+            "audio_file": "5_1.mp3",
+            "audio_path": "audio/5_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "We know that tan A is the ratio of the Opposite side to the Adjacent side. So, we can imagine a right-angled triangle where the side opposite to angle A is 4 units and the side adjacent to it is 3 units.",
+            "duration_seconds": 21.32,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "image",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Diagram of a right-angled triangle ABC, with sides AB=3, BC=4.",
+              "image_id": "df9ce5affceb4ff1e9e8fd8e3ff0c1bd_img.jpg",
+              "image_path": "images/df9ce5affceb4ff1e9e8fd8e3ff0c1bd_img.png"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 16.8,
+            "audio_file": "5_2.mp3",
+            "audio_path": "audio/5_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "To find the other ratios, like sine and cosine, we need the length of the hypotenuse. We can find this using the Pythagoras theorem, which states that the square of the hypotenuse is the sum of the squares of the other two sides.",
+            "duration_seconds": 21.83,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "AC^2 = AB^2 + BC^2"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 17.2,
+            "audio_file": "5_3.mp3",
+            "audio_path": "audio/5_3.mp3"
+          },
+          {
+            "segment_id": 4,
+            "text": "So, the hypotenuse squared is 3 squared plus 4 squared, which is 9 plus 16, giving us 25. The square root of 25 is 5. So, our hypotenuse is 5 units long.",
+            "duration_seconds": 16.25,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 12.8,
+            "audio_file": "5_4.mp3",
+            "audio_path": "audio/5_4.mp3"
+          },
+          {
+            "segment_id": 5,
+            "text": "Now that we have all three sides\u2014Opposite is 4, Adjacent is 3, and Hypotenuse is 5\u2014we can easily write down all the ratios. Sin A is 4/5, cos A is 3/5, and the reciprocals are csc A = 5/4, sec A = 5/3, and cot A = 3/4.",
+            "duration_seconds": 24.37,
+            "gesture_hint": "conclude",
+            "visual_content": {
+              "content_type": "bullet_points",
+              "display_format": "bullets",
+              "items": [
+                "*   sin A = 4/5",
+                "*   cos A = 3/5",
+                "*   csc A = 5/4",
+                "*   sec A = 5/3",
+                "*   cot A = 3/4"
+              ],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 19.2,
+            "audio_file": "5_5.mp3",
+            "audio_path": "audio/5_5.mp3"
+          }
+        ],
+        "total_duration_seconds": 99.51
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "text",
+          "description": "Example 1: Given tan A = 4/3, find the other trigonometric ratios of the angle A.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "image",
+          "description": "Diagram of a right-angled triangle ABC, with sides AB=3, BC=4.",
+          "source_block_ids": [],
+          "image_id": "df9ce5affceb4ff1e9e8fd8e3ff0c1bd_img.jpg",
+          "image_path": "images/df9ce5affceb4ff1e9e8fd8e3ff0c1bd_img.png"
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "equation",
+          "description": "Using Pythagoras theorem: AC\u00b2 = AB\u00b2 + BC\u00b2",
+          "source_block_ids": [],
+          "latex_content": "AC^2 = AB^2 + BC^2"
+        },
+        {
+          "beat_id": "beat_4",
+          "segment_id": "seg_4",
+          "visual_beat_type": "equation",
+          "description": "Calculating the hypotenuse.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_5",
+          "segment_id": "seg_5",
+          "visual_beat_type": "bullet_list",
+          "description": "*   sin A = 4/5\n*   cos A = 3/5\n*   csc A = 5/4\n*   sec A = 5/3\n*   cot A = 3/4",
+          "source_block_ids": []
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        }
+      ],
+      "audio_path": "section_5.mp3",
+      "render_spec": {
+        "manim_scene_spec": {
+          "manim_code": "# Segment 1 (0-15.7s) - Introduction\ntitle = Text(\"Example 1:\", font_size=40).to_edge(UP)\ngiven = MathTex(r\"\\text{Given: }\", r\"\\tan A = \\frac{4}{3}\").next_to(title, DOWN)\ntask = Text(\"Find other trigonometric ratios\", font_size=32).next_to(given, DOWN)\n\nself.play(Write(title), run_time=2)\nself.play(Write(given), run_time=2)\nself.play(Write(task), run_time=2)\nself.wait(9.7)\n\n# Segment 2 (15.7-37.1s) - Drawing triangle\n# Create triangle points\nA = np.array([-2, -2, 0])\nB = np.array([1, -2, 0])\nC = np.array([1, 2, 0])\n\ntriangle = Polygon(A, B, C, color=WHITE)\nlabels = VGroup(\n    MathTex(\"A\").next_to(A, DOWN),\n    MathTex(\"B\").next_to(B, DOWN),\n    MathTex(\"C\").next_to(C, UP)\n)\n\n# Side labels\nside_ab = MathTex(\"3\").next_to((A+B)/2, DOWN)\nside_bc = MathTex(\"4\").next_to((B+C)/2, RIGHT)\n\n# Right angle symbol\ncorner = Square(side_length=0.3).next_to(B, UL, buff=0)\ncorner.rotate(angle=np.arctan2(4, 3), about_point=B)\n\nself.play(\n    Create(triangle),\n    Write(labels),\n    run_time=3\n)\nself.play(\n    Create(corner),\n    Write(side_ab),\n    Write(side_bc),\n    run_time=3\n)\nself.wait(15.3)\n\n# Segment 3 (37.1-58.9s) - Pythagoras theorem\npythag = MathTex(\n    r\"AC^2\", r\"=\", r\"AB^2\", r\"+\", r\"BC^2\"\n).next_to(triangle, RIGHT, buff=1)\n\nself.play(Write(pythag), run_time=3)\nself.wait(18.8)\n\n# Segment 4 (58.9-75.1s) - Calculate hypotenuse\ncalc1 = MathTex(r\"AC^2 = 3^2 + 4^2\").next_to(pythag, DOWN)\ncalc2 = MathTex(r\"AC^2 = 9 + 16 = 25\").next_to(calc1, DOWN)\ncalc3 = MathTex(r\"AC = 5\").next_to(calc2, DOWN)\n\nhyp_label = MathTex(\"5\").next_to((A+C)/2, LEFT)\n\nself.play(Write(calc1), run_time=2)\nself.play(Write(calc2), run_time=2)\nself.play(Write(calc3), Write(hyp_label), run_time=2)\nself.wait(10.2)\n\n# Segment 5 (75.1-99.5s) - Show all ratios\nratios = VGroup(\n    MathTex(r\"\\sin A = \\frac{4}{5}\"),\n    MathTex(r\"\\cos A = \\frac{3}{5}\"),\n    MathTex(r\"\\csc A = \\frac{5}{4}\"),\n    MathTex(r\"\\sec A = \\frac{5}{3}\"),\n    MathTex(r\"\\cot A = \\frac{3}{4}\")\n).arrange(DOWN, aligned_edge=LEFT).to_edge(RIGHT)\n\nself.play(\n    FadeOut(pythag, calc1, calc2, calc3),\n    run_time=2\n)\nself.play(\n    Write(ratios[0]),\n    Write(ratios[1]),\n    run_time=3\n)\nself.play(\n    Write(ratios[2]),\n    Write(ratios[3]),\n    Write(ratios[4]),\n    run_time=3\n)\nself.wait(16.4)",
+          "code_type": "construct_body"
+        }
+      },
+      "explanation_plan": {
+        "visual_beats": [
+          {
+            "beat_id": "beat_1",
+            "segment_id": "seg_1",
+            "visual_beat_type": "text",
+            "description": "Example 1: Given tan A = 4/3, find the other trigonometric ratios of the angle A.",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_2",
+            "segment_id": "seg_2",
+            "visual_beat_type": "image",
+            "description": "Diagram of a right-angled triangle ABC, with sides AB=3, BC=4.",
+            "source_block_ids": [],
+            "image_id": "df9ce5affceb4ff1e9e8fd8e3ff0c1bd_img.jpg",
+            "image_path": "images/df9ce5affceb4ff1e9e8fd8e3ff0c1bd_img.png"
+          },
+          {
+            "beat_id": "beat_3",
+            "segment_id": "seg_3",
+            "visual_beat_type": "equation",
+            "description": "Using Pythagoras theorem: AC\u00b2 = AB\u00b2 + BC\u00b2",
+            "source_block_ids": [],
+            "latex_content": "AC^2 = AB^2 + BC^2"
+          },
+          {
+            "beat_id": "beat_4",
+            "segment_id": "seg_4",
+            "visual_beat_type": "equation",
+            "description": "Calculating the hypotenuse.",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_5",
+            "segment_id": "seg_5",
+            "visual_beat_type": "bullet_list",
+            "description": "*   sin A = 4/5\n*   cos A = 3/5\n*   csc A = 5/4\n*   sec A = 5/3\n*   cot A = 3/4",
+            "source_block_ids": []
+          }
+        ],
+        "v15_manim_code": "# Segment 1 (0-15.7s) - Introduction\ntitle = Text(\"Example 1:\", font_size=40).to_edge(UP)\ngiven = MathTex(r\"\\text{Given: }\", r\"\\tan A = \\frac{4}{3}\").next_to(title, DOWN)\ntask = Text(\"Find other trigonometric ratios\", font_size=32).next_to(given, DOWN)\n\nself.play(Write(title), run_time=2)\nself.play(Write(given), run_time=2)\nself.play(Write(task), run_time=2)\nself.wait(9.7)\n\n# Segment 2 (15.7-37.1s) - Drawing triangle\n# Create triangle points\nA = np.array([-2, -2, 0])\nB = np.array([1, -2, 0])\nC = np.array([1, 2, 0])\n\ntriangle = Polygon(A, B, C, color=WHITE)\nlabels = VGroup(\n    MathTex(\"A\").next_to(A, DOWN),\n    MathTex(\"B\").next_to(B, DOWN),\n    MathTex(\"C\").next_to(C, UP)\n)\n\n# Side labels\nside_ab = MathTex(\"3\").next_to((A+B)/2, DOWN)\nside_bc = MathTex(\"4\").next_to((B+C)/2, RIGHT)\n\n# Right angle symbol\ncorner = Square(side_length=0.3).next_to(B, UL, buff=0)\ncorner.rotate(angle=np.arctan2(4, 3), about_point=B)\n\nself.play(\n    Create(triangle),\n    Write(labels),\n    run_time=3\n)\nself.play(\n    Create(corner),\n    Write(side_ab),\n    Write(side_bc),\n    run_time=3\n)\nself.wait(15.3)\n\n# Segment 3 (37.1-58.9s) - Pythagoras theorem\npythag = MathTex(\n    r\"AC^2\", r\"=\", r\"AB^2\", r\"+\", r\"BC^2\"\n).next_to(triangle, RIGHT, buff=1)\n\nself.play(Write(pythag), run_time=3)\nself.wait(18.8)\n\n# Segment 4 (58.9-75.1s) - Calculate hypotenuse\ncalc1 = MathTex(r\"AC^2 = 3^2 + 4^2\").next_to(pythag, DOWN)\ncalc2 = MathTex(r\"AC^2 = 9 + 16 = 25\").next_to(calc1, DOWN)\ncalc3 = MathTex(r\"AC = 5\").next_to(calc2, DOWN)\n\nhyp_label = MathTex(\"5\").next_to((A+C)/2, LEFT)\n\nself.play(Write(calc1), run_time=2)\nself.play(Write(calc2), run_time=2)\nself.play(Write(calc3), Write(hyp_label), run_time=2)\nself.wait(10.2)\n\n# Segment 5 (75.1-99.5s) - Show all ratios\nratios = VGroup(\n    MathTex(r\"\\sin A = \\frac{4}{5}\"),\n    MathTex(r\"\\cos A = \\frac{3}{5}\"),\n    MathTex(r\"\\csc A = \\frac{5}{4}\"),\n    MathTex(r\"\\sec A = \\frac{5}{3}\"),\n    MathTex(r\"\\cot A = \\frac{3}{4}\")\n).arrange(DOWN, aligned_edge=LEFT).to_edge(RIGHT)\n\nself.play(\n    FadeOut(pythag, calc1, calc2, calc3),\n    run_time=2\n)\nself.play(\n    Write(ratios[0]),\n    Write(ratios[1]),\n    run_time=3\n)\nself.play(\n    Write(ratios[2]),\n    Write(ratios[3]),\n    Write(ratios[4]),\n    run_time=3\n)\nself.wait(16.4)"
+      }
+    },
+    {
+      "section_id": 6,
+      "section_type": "example",
+      "title": "Example 2: Proving Angle Equality",
+      "renderer": "manim",
+      "decision_reason": "This example involves a proof with algebraic manipulation and geometric reasoning. Manim is the best choice to animate the rearrangement of ratios, the introduction of the constant 'k', and the logical flow towards proving triangle similarity.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "Here's a slightly different type of problem, a proof. If we have two acute angles, B and Q, in two different right-angled triangles, and we are told that sin B equals sin Q, we need to prove that angle B must be equal to angle Q. From sin B = sin Q, we can write the ratios of their sides: AC/AB = PR/PQ. By rearranging this, we can say that the ratio of the opposite sides, AC/PR, is equal to the ratio of the hypotenuses, AB/PQ. Let's call this common ratio 'k'. Now, using the Pythagoras theorem, we can express the third side of each triangle, BC and QR, in terms of the other two. When we substitute our 'k' relationship into the expression for BC, we find that BC equals k times the square root of (PQ squared minus PR squared). The expression for QR is simply the square root of (PQ squared minus PR squared). When we take the ratio of BC to QR, the square root terms cancel out, and we are left with just 'k'. This means all three corresponding sides of the triangles are in the same proportion. Therefore, triangle ABC is similar to triangle PQR. And because the triangles are similar, their corresponding angles must be equal. Hence, angle B equals angle Q.",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "Here's a slightly different type of problem, a proof. If we have two acute angles, B and Q, in two different right-angled triangles, and we are told that sin B equals sin Q, we need to prove that angle B must be equal to angle Q.",
+            "duration_seconds": 23.35,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "diagram",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Example 2: Given acute angles B and Q with sin B = sin Q, prove that \u2220B = \u2220Q.",
+              "image_id": "6897c6cc242ac1382625f2128dcbe322_img.jpg",
+              "image_path": "images/6897c6cc242ac1382625f2128dcbe322_img.png"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 18.4,
+            "audio_file": "6_1.mp3",
+            "audio_path": "audio/6_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "From sin B = sin Q, we can write the ratios of their sides: AC/AB = PR/PQ. By rearranging this, we can say that the ratio of the opposite sides, AC/PR, is equal to the ratio of the hypotenuses, AB/PQ. Let's call this common ratio 'k'.",
+            "duration_seconds": 23.35,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 18.4,
+            "audio_file": "6_2.mp3",
+            "audio_path": "audio/6_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "Now, using the Pythagoras theorem, we can express the third side of each triangle, BC and QR, in terms of the other two. When we substitute our 'k' relationship into the expression for BC, we find that BC equals k times the square root of (PQ squared minus PR squared).",
+            "duration_seconds": 25.38,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "BC = \\sqrt{AB^2 - AC^2} = \\sqrt{k^2 PQ^2 - k^2 PR^2} = k \\sqrt{PQ^2 - PR^2}"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 20.0,
+            "audio_file": "6_3.mp3",
+            "audio_path": "audio/6_3.mp3"
+          },
+          {
+            "segment_id": 4,
+            "text": "The expression for QR is simply the square root of (PQ squared minus PR squared). When we take the ratio of BC to QR, the square root terms cancel out, and we are left with just 'k'.",
+            "duration_seconds": 18.78,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 14.8,
+            "audio_file": "6_4.mp3",
+            "audio_path": "audio/6_4.mp3"
+          },
+          {
+            "segment_id": 5,
+            "text": "This means all three corresponding sides of the triangles are in the same proportion. Therefore, triangle ABC is similar to triangle PQR. And because the triangles are similar, their corresponding angles must be equal. Hence, angle B equals angle Q.",
+            "duration_seconds": 20.31,
+            "gesture_hint": "conclude",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "\\frac{AC}{PR} = \\frac{AB}{PQ} = \\frac{BC}{QR} \\Rightarrow \\triangle ABC \\sim \\triangle PQR \\Rightarrow \\angle B = \\angle Q"
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 16.0,
+            "audio_file": "6_5.mp3",
+            "audio_path": "audio/6_5.mp3"
+          }
+        ],
+        "total_duration_seconds": 111.17
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "diagram",
+          "description": "Example 2: Given acute angles B and Q with sin B = sin Q, prove that \u2220B = \u2220Q.",
+          "source_block_ids": [],
+          "image_id": "6897c6cc242ac1382625f2128dcbe322_img.jpg",
+          "image_path": "images/6897c6cc242ac1382625f2128dcbe322_img.png"
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "equation",
+          "description": "Setting up the proportionality constant k.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "equation",
+          "description": "Expressing BC using Pythagoras theorem and substituting k.",
+          "source_block_ids": [],
+          "latex_content": "BC = \\sqrt{AB^2 - AC^2} = \\sqrt{k^2 PQ^2 - k^2 PR^2} = k \\sqrt{PQ^2 - PR^2}"
+        },
+        {
+          "beat_id": "beat_4",
+          "segment_id": "seg_4",
+          "visual_beat_type": "equation",
+          "description": "Finding the ratio of BC to QR.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_5",
+          "segment_id": "seg_5",
+          "visual_beat_type": "equation",
+          "description": "From (1) and (2), we get AC/PR = AB/PQ = BC/QR. Therefore, \u0394ABC ~ \u0394PQR, which implies \u2220B = \u2220Q.",
+          "source_block_ids": [],
+          "latex_content": "\\frac{AC}{PR} = \\frac{AB}{PQ} = \\frac{BC}{QR} \\Rightarrow \\triangle ABC \\sim \\triangle PQR \\Rightarrow \\angle B = \\angle Q"
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        }
+      ],
+      "audio_path": "section_6.mp3",
+      "render_spec": {
+        "manim_scene_spec": {
+          "manim_code": "# Segment 1 (0-23.4s) - Introduction of the problem\ntitle = Text(\"Example 2: Proving Angle Equality\").to_edge(UP)\ngiven = MathTex(r\"\\text{Given: }\\sin B = \\sin Q\").next_to(title, DOWN)\n\n# Create first triangle ABC\ntriangle_abc = Polygon(\n    [-3, -1, 0], [-3, 1, 0], [-1, -1, 0],\n    color=BLUE, fill_opacity=0.2\n)\nabc_labels = VGroup(\n    MathTex(\"A\").next_to(triangle_abc.get_vertices()[1], UP),\n    MathTex(\"B\").next_to(triangle_abc.get_vertices()[0], LEFT),\n    MathTex(\"C\").next_to(triangle_abc.get_vertices()[2], RIGHT)\n)\n\n# Create second triangle PQR\ntriangle_pqr = Polygon(\n    [2, -1, 0], [2, 1, 0], [4, -1, 0],\n    color=RED, fill_opacity=0.2\n)\npqr_labels = VGroup(\n    MathTex(\"P\").next_to(triangle_pqr.get_vertices()[1], UP),\n    MathTex(\"Q\").next_to(triangle_pqr.get_vertices()[0], LEFT),\n    MathTex(\"R\").next_to(triangle_pqr.get_vertices()[2], RIGHT)\n)\n\nself.play(Write(title), run_time=2)\nself.play(Write(given), run_time=2)\nself.play(\n    Create(triangle_abc),\n    Create(triangle_pqr),\n    run_time=3\n)\nself.play(\n    Write(abc_labels),\n    Write(pqr_labels),\n    run_time=3\n)\nself.wait(13.4)  # Complete 23.4s segment\n\n# Segment 2 (23.4-46.7s) - Setting up proportionality\nratio_eq = MathTex(\n    r\"\\frac{AC}{AB} = \\frac{PR}{PQ}\"\n).next_to(given, DOWN)\nk_def = MathTex(\n    r\"\\frac{AC}{PR} = \\frac{AB}{PQ} = k\"\n).next_to(ratio_eq, DOWN)\n\nself.play(Write(ratio_eq), run_time=3)\nself.play(Write(k_def), run_time=3)\nself.wait(17.4)  # Complete 23.4s segment\n\n# Segment 3 (46.7-72.1s) - Pythagoras theorem application\npyth_abc = MathTex(\n    r\"BC^2 = AB^2 - AC^2\"\n).next_to(k_def, DOWN)\nbc_expr = MathTex(\n    r\"BC = k\\sqrt{PQ^2 - PR^2}\"\n).next_to(pyth_abc, DOWN)\n\nself.play(Write(pyth_abc), run_time=3)\nself.play(Write(bc_expr), run_time=3)\nself.wait(19.4)  # Complete 25.4s segment\n\n# Segment 4 (72.1-90.9s) - Finding ratio BC/QR\nqr_expr = MathTex(\n    r\"QR = \\sqrt{PQ^2 - PR^2}\"\n).next_to(bc_expr, DOWN)\nratio_bc_qr = MathTex(\n    r\"\\frac{BC}{QR} = k\"\n).next_to(qr_expr, DOWN)\n\nself.play(Write(qr_expr), run_time=3)\nself.play(Write(ratio_bc_qr), run_time=3)\nself.wait(12.8)  # Complete 18.8s segment\n\n# Segment 5 (90.9-111.2s) - Conclusion\nconclusion1 = MathTex(\n    r\"\\frac{AC}{PR} = \\frac{AB}{PQ} = \\frac{BC}{QR} = k\"\n).next_to(ratio_bc_qr, DOWN)\nconclusion2 = MathTex(\n    r\"\\therefore \\triangle ABC \\sim \\triangle PQR\"\n).next_to(conclusion1, DOWN)\nconclusion3 = MathTex(\n    r\"\\therefore \\angle B = \\angle Q\"\n).next_to(conclusion2, DOWN)\n\nself.play(Write(conclusion1), run_time=3)\nself.play(Write(conclusion2), run_time=3)\nself.play(Write(conclusion3), run_time=3)\nself.wait(11.3)  # Complete 20.3s segment",
+          "code_type": "construct_body"
+        }
+      },
+      "explanation_plan": {
+        "visual_beats": [
+          {
+            "beat_id": "beat_1",
+            "segment_id": "seg_1",
+            "visual_beat_type": "diagram",
+            "description": "Example 2: Given acute angles B and Q with sin B = sin Q, prove that \u2220B = \u2220Q.",
+            "source_block_ids": [],
+            "image_id": "6897c6cc242ac1382625f2128dcbe322_img.jpg",
+            "image_path": "images/6897c6cc242ac1382625f2128dcbe322_img.png"
+          },
+          {
+            "beat_id": "beat_2",
+            "segment_id": "seg_2",
+            "visual_beat_type": "equation",
+            "description": "Setting up the proportionality constant k.",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_3",
+            "segment_id": "seg_3",
+            "visual_beat_type": "equation",
+            "description": "Expressing BC using Pythagoras theorem and substituting k.",
+            "source_block_ids": [],
+            "latex_content": "BC = \\sqrt{AB^2 - AC^2} = \\sqrt{k^2 PQ^2 - k^2 PR^2} = k \\sqrt{PQ^2 - PR^2}"
+          },
+          {
+            "beat_id": "beat_4",
+            "segment_id": "seg_4",
+            "visual_beat_type": "equation",
+            "description": "Finding the ratio of BC to QR.",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_5",
+            "segment_id": "seg_5",
+            "visual_beat_type": "equation",
+            "description": "From (1) and (2), we get AC/PR = AB/PQ = BC/QR. Therefore, \u0394ABC ~ \u0394PQR, which implies \u2220B = \u2220Q.",
+            "source_block_ids": [],
+            "latex_content": "\\frac{AC}{PR} = \\frac{AB}{PQ} = \\frac{BC}{QR} \\Rightarrow \\triangle ABC \\sim \\triangle PQR \\Rightarrow \\angle B = \\angle Q"
+          }
+        ],
+        "v15_manim_code": "# Segment 1 (0-23.4s) - Introduction of the problem\ntitle = Text(\"Example 2: Proving Angle Equality\").to_edge(UP)\ngiven = MathTex(r\"\\text{Given: }\\sin B = \\sin Q\").next_to(title, DOWN)\n\n# Create first triangle ABC\ntriangle_abc = Polygon(\n    [-3, -1, 0], [-3, 1, 0], [-1, -1, 0],\n    color=BLUE, fill_opacity=0.2\n)\nabc_labels = VGroup(\n    MathTex(\"A\").next_to(triangle_abc.get_vertices()[1], UP),\n    MathTex(\"B\").next_to(triangle_abc.get_vertices()[0], LEFT),\n    MathTex(\"C\").next_to(triangle_abc.get_vertices()[2], RIGHT)\n)\n\n# Create second triangle PQR\ntriangle_pqr = Polygon(\n    [2, -1, 0], [2, 1, 0], [4, -1, 0],\n    color=RED, fill_opacity=0.2\n)\npqr_labels = VGroup(\n    MathTex(\"P\").next_to(triangle_pqr.get_vertices()[1], UP),\n    MathTex(\"Q\").next_to(triangle_pqr.get_vertices()[0], LEFT),\n    MathTex(\"R\").next_to(triangle_pqr.get_vertices()[2], RIGHT)\n)\n\nself.play(Write(title), run_time=2)\nself.play(Write(given), run_time=2)\nself.play(\n    Create(triangle_abc),\n    Create(triangle_pqr),\n    run_time=3\n)\nself.play(\n    Write(abc_labels),\n    Write(pqr_labels),\n    run_time=3\n)\nself.wait(13.4)  # Complete 23.4s segment\n\n# Segment 2 (23.4-46.7s) - Setting up proportionality\nratio_eq = MathTex(\n    r\"\\frac{AC}{AB} = \\frac{PR}{PQ}\"\n).next_to(given, DOWN)\nk_def = MathTex(\n    r\"\\frac{AC}{PR} = \\frac{AB}{PQ} = k\"\n).next_to(ratio_eq, DOWN)\n\nself.play(Write(ratio_eq), run_time=3)\nself.play(Write(k_def), run_time=3)\nself.wait(17.4)  # Complete 23.4s segment\n\n# Segment 3 (46.7-72.1s) - Pythagoras theorem application\npyth_abc = MathTex(\n    r\"BC^2 = AB^2 - AC^2\"\n).next_to(k_def, DOWN)\nbc_expr = MathTex(\n    r\"BC = k\\sqrt{PQ^2 - PR^2}\"\n).next_to(pyth_abc, DOWN)\n\nself.play(Write(pyth_abc), run_time=3)\nself.play(Write(bc_expr), run_time=3)\nself.wait(19.4)  # Complete 25.4s segment\n\n# Segment 4 (72.1-90.9s) - Finding ratio BC/QR\nqr_expr = MathTex(\n    r\"QR = \\sqrt{PQ^2 - PR^2}\"\n).next_to(bc_expr, DOWN)\nratio_bc_qr = MathTex(\n    r\"\\frac{BC}{QR} = k\"\n).next_to(qr_expr, DOWN)\n\nself.play(Write(qr_expr), run_time=3)\nself.play(Write(ratio_bc_qr), run_time=3)\nself.wait(12.8)  # Complete 18.8s segment\n\n# Segment 5 (90.9-111.2s) - Conclusion\nconclusion1 = MathTex(\n    r\"\\frac{AC}{PR} = \\frac{AB}{PQ} = \\frac{BC}{QR} = k\"\n).next_to(ratio_bc_qr, DOWN)\nconclusion2 = MathTex(\n    r\"\\therefore \\triangle ABC \\sim \\triangle PQR\"\n).next_to(conclusion1, DOWN)\nconclusion3 = MathTex(\n    r\"\\therefore \\angle B = \\angle Q\"\n).next_to(conclusion2, DOWN)\n\nself.play(Write(conclusion1), run_time=3)\nself.play(Write(conclusion2), run_time=3)\nself.play(Write(conclusion3), run_time=3)\nself.wait(11.3)  # Complete 20.3s segment"
+      }
+    },
+    {
+      "section_id": 7,
+      "section_type": "example",
+      "title": "Example 3: Trigonometric Identities",
+      "renderer": "manim",
+      "decision_reason": "This example involves calculating the values of the fundamental trigonometric identity (sin\u00b2\u03b8 + cos\u00b2\u03b8 = 1) and another expression. Manim is perfect for animating the numerical calculations, including squaring fractions and adding them, to visually prove the identity.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "Let's look at another example. Consider a right-angled triangle ACB, with the right angle at C. We're given that the hypotenuse AB is 29 units, side BC is 21 units, and angle ABC is theta. First, we need to find the length of the third side, AC. Using the Pythagoras theorem, AC is the square root of AB squared minus BC squared. That's the square root of 29 squared minus 21 squared. Calculating this gives us the square root of 841 minus 441, which is the square root of 400. So, AC is 20 units. Now we can determine the values of the given expressions. First, cos squared theta plus sin squared theta. Cos theta is Adjacent/Hypotenuse, which is 21/29, and sin theta is Opposite/Hypotenuse, which is 20/29. Squaring and adding them gives us 441/841 plus 400/841. The sum is 841/841, which equals 1. This is a very important identity in trigonometry! For the second part, cos squared theta minus sin squared theta, we subtract the same fractions: 441/841 minus 400/841, which gives us 41/841.",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "Let's look at another example. Consider a right-angled triangle ACB, with the right angle at C. We're given that the hypotenuse AB is 29 units, side BC is 21 units, and angle ABC is theta.",
+            "duration_seconds": 17.77,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "diagram",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Example 3: In \u0394ACB, AB=29, BC=21, \u2220ABC=\u03b8. Determine (i) cos\u00b2\u03b8 + sin\u00b2\u03b8 and (ii) cos\u00b2\u03b8 - sin\u00b2\u03b8.",
+              "image_id": "b48d146cf1d6e0a01791f52572be6767_img.jpg",
+              "image_path": "images/b48d146cf1d6e0a01791f52572be6767_img.png"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 14.0,
+            "audio_file": "7_1.mp3",
+            "audio_path": "audio/7_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "First, we need to find the length of the third side, AC. Using the Pythagoras theorem, AC is the square root of AB squared minus BC squared. That's the square root of 29 squared minus 21 squared.",
+            "duration_seconds": 18.78,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "AC = \\sqrt{AB^2 - BC^2} = \\sqrt{29^2 - 21^2}"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 14.8,
+            "audio_file": "7_2.mp3",
+            "audio_path": "audio/7_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "Calculating this gives us the square root of 841 minus 441, which is the square root of 400. So, AC is 20 units.",
+            "duration_seconds": 11.68,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "AC = \\sqrt{841 - 441} = \\sqrt{400} = 20"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 9.2,
+            "audio_file": "7_3.mp3",
+            "audio_path": "audio/7_3.mp3"
+          },
+          {
+            "segment_id": 4,
+            "text": "Now we can determine the values of the given expressions. First, cos squared theta plus sin squared theta. Cos theta is Adjacent/Hypotenuse, which is 21/29, and sin theta is Opposite/Hypotenuse, which is 20/29.",
+            "duration_seconds": 16.75,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "bullet_points",
+              "display_format": "bullets",
+              "items": [
+                "*   sin \u03b8 = Opposite/Hypotenuse = 20/29",
+                "*   cos \u03b8 = Adjacent/Hypotenuse = 21/29"
+              ],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 13.2,
+            "audio_file": "7_4.mp3",
+            "audio_path": "audio/7_4.mp3"
+          },
+          {
+            "segment_id": 5,
+            "text": "Squaring and adding them gives us 441/841 plus 400/841. The sum is 841/841, which equals 1. This is a very important identity in trigonometry!",
+            "duration_seconds": 12.18,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 9.6,
+            "audio_file": "7_5.mp3",
+            "audio_path": "audio/7_5.mp3"
+          },
+          {
+            "segment_id": 6,
+            "text": "For the second part, cos squared theta minus sin squared theta, we subtract the same fractions: 441/841 minus 400/841, which gives us 41/841.",
+            "duration_seconds": 11.68,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "\\cos^2\\theta - \\sin^2\\theta = \\frac{21^2}{29^2} - \\frac{20^2}{29^2} = \\frac{441-400}{841} = \\frac{41}{841}"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 9.2,
+            "audio_file": "7_6.mp3",
+            "audio_path": "audio/7_6.mp3"
+          }
+        ],
+        "total_duration_seconds": 88.84
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "diagram",
+          "description": "Example 3: In \u0394ACB, AB=29, BC=21, \u2220ABC=\u03b8. Determine (i) cos\u00b2\u03b8 + sin\u00b2\u03b8 and (ii) cos\u00b2\u03b8 - sin\u00b2\u03b8.",
+          "source_block_ids": [],
+          "image_id": "b48d146cf1d6e0a01791f52572be6767_img.jpg",
+          "image_path": "images/b48d146cf1d6e0a01791f52572be6767_img.png"
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "equation",
+          "description": "AC = \u221a(AB\u00b2 - BC\u00b2) = \u221a(29\u00b2 - 21\u00b2)",
+          "source_block_ids": [],
+          "latex_content": "AC = \\sqrt{AB^2 - BC^2} = \\sqrt{29^2 - 21^2}"
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "equation",
+          "description": "AC = \u221a(841 - 441) = \u221a400 = 20",
+          "source_block_ids": [],
+          "latex_content": "AC = \\sqrt{841 - 441} = \\sqrt{400} = 20"
+        },
+        {
+          "beat_id": "beat_4",
+          "segment_id": "seg_4",
+          "visual_beat_type": "bullet_list",
+          "description": "*   sin \u03b8 = Opposite/Hypotenuse = 20/29\n*   cos \u03b8 = Adjacent/Hypotenuse = 21/29",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_5",
+          "segment_id": "seg_5",
+          "visual_beat_type": "equation",
+          "description": "Calculating cos\u00b2\u03b8 + sin\u00b2\u03b8",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_6",
+          "segment_id": "seg_6",
+          "visual_beat_type": "equation",
+          "description": "cos\u00b2\u03b8 - sin\u00b2\u03b8 = (21/29)\u00b2 - (20/29)\u00b2 = (441-400)/841 = 41/841",
+          "source_block_ids": [],
+          "latex_content": "\\cos^2\\theta - \\sin^2\\theta = \\frac{21^2}{29^2} - \\frac{20^2}{29^2} = \\frac{441-400}{841} = \\frac{41}{841}"
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        }
+      ],
+      "audio_path": "section_7.mp3",
+      "render_spec": {
+        "manim_scene_spec": {
+          "manim_code": "# Segment 1 (0-17.8s) - Introducing the triangle\ntitle = Text(\"Example 3: Trigonometric Identities\", font_size=36).to_edge(UP)\ntriangle = Polygon(\n    np.array([-2, -1, 0]), \n    np.array([1, -1, 0]), \n    np.array([-2, 1, 0]),\n    color=WHITE\n)\nlabels = VGroup(\n    MathTex(\"A\").next_to(triangle.get_vertices()[2], UP),\n    MathTex(\"B\").next_to(triangle.get_vertices()[1], RIGHT),\n    MathTex(\"C\").next_to(triangle.get_vertices()[0], LEFT),\n    MathTex(\"29\").next_to(triangle.get_vertices()[1:], UP+RIGHT, buff=0.2),\n    MathTex(\"21\").next_to(triangle.get_vertices()[0:2], RIGHT),\n    MathTex(r\"\\theta\").next_to(triangle.get_vertices()[1], DOWN+RIGHT, buff=0.3)\n)\nright_angle = Square(side_length=0.2).next_to(triangle.get_vertices()[0], UP+RIGHT, buff=0)\n\nself.play(Write(title), run_time=2)\nself.play(Create(triangle), run_time=2)\nself.play(Create(right_angle), run_time=1)\nself.play(Write(labels), run_time=3)\nself.wait(9.8)\n\n# Segment 2 (17.8-36.5s) - Finding AC using Pythagoras\npythag = VGroup(\n    MathTex(r\"AC = \\sqrt{AB^2 - BC^2}\"),\n    MathTex(r\"= \\sqrt{29^2 - 21^2}\")\n).arrange(DOWN).next_to(triangle, RIGHT, buff=1)\n\nself.play(Write(pythag[0]), run_time=3)\nself.wait(7)\nself.play(Write(pythag[1]), run_time=3)\nself.wait(5.8)\n\n# Segment 3 (36.5-48.2s) - Calculating AC\ncalculation = VGroup(\n    MathTex(r\"= \\sqrt{841 - 441}\"),\n    MathTex(r\"= \\sqrt{400}\"),\n    MathTex(r\"= 20\")\n).arrange(DOWN).next_to(pythag, RIGHT, buff=0.5)\n\nself.play(Write(calculation), run_time=4)\nac_label = MathTex(\"20\").next_to(triangle.get_vertices()[2:0:-1], LEFT, buff=0.2)\nself.play(FadeIn(ac_label), run_time=2)\nself.wait(5.7)\n\n# Segment 4 (48.2-65.0s) - Writing trig ratios\ntrig_ratios = VGroup(\n    MathTex(r\"\\sin \\theta = \\frac{\\text{Opposite}}{\\text{Hypotenuse}} = \\frac{20}{29}\"),\n    MathTex(r\"\\cos \\theta = \\frac{\\text{Adjacent}}{\\text{Hypotenuse}} = \\frac{21}{29}\")\n).arrange(DOWN, buff=0.5).next_to(calculation, DOWN, buff=1)\n\nself.play(Write(trig_ratios[0]), run_time=4)\nself.play(Write(trig_ratios[1]), run_time=4)\nself.wait(8.8)\n\n# Segment 5 (65.0-77.2s) - First identity\nidentity1 = VGroup(\n    MathTex(r\"\\cos^2 \\theta + \\sin^2 \\theta = (\\frac{21}{29})^2 + (\\frac{20}{29})^2\"),\n    MathTex(r\"= \\frac{441}{841} + \\frac{400}{841} = \\frac{841}{841} = 1\")\n).arrange(DOWN).next_to(trig_ratios, DOWN, buff=0.5)\n\nself.play(Write(identity1), run_time=6)\nself.play(Circumscribe(identity1[1][-1], color=YELLOW), run_time=2)\nself.wait(4.2)\n\n# Segment 6 (77.2-88.8s) - Second identity\nidentity2 = VGroup(\n    MathTex(r\"\\cos^2 \\theta - \\sin^2 \\theta = (\\frac{21}{29})^2 - (\\frac{20}{29})^2\"),\n    MathTex(r\"= \\frac{441-400}{841} = \\frac{41}{841}\")\n).arrange(DOWN).next_to(identity1, DOWN, buff=0.5)\n\nself.play(Write(identity2), run_time=6)\nself.play(Circumscribe(identity2[1][-1], color=YELLOW), run_time=2)\nself.wait(3.7)",
+          "code_type": "construct_body"
+        }
+      },
+      "explanation_plan": {
+        "visual_beats": [
+          {
+            "beat_id": "beat_1",
+            "segment_id": "seg_1",
+            "visual_beat_type": "diagram",
+            "description": "Example 3: In \u0394ACB, AB=29, BC=21, \u2220ABC=\u03b8. Determine (i) cos\u00b2\u03b8 + sin\u00b2\u03b8 and (ii) cos\u00b2\u03b8 - sin\u00b2\u03b8.",
+            "source_block_ids": [],
+            "image_id": "b48d146cf1d6e0a01791f52572be6767_img.jpg",
+            "image_path": "images/b48d146cf1d6e0a01791f52572be6767_img.png"
+          },
+          {
+            "beat_id": "beat_2",
+            "segment_id": "seg_2",
+            "visual_beat_type": "equation",
+            "description": "AC = \u221a(AB\u00b2 - BC\u00b2) = \u221a(29\u00b2 - 21\u00b2)",
+            "source_block_ids": [],
+            "latex_content": "AC = \\sqrt{AB^2 - BC^2} = \\sqrt{29^2 - 21^2}"
+          },
+          {
+            "beat_id": "beat_3",
+            "segment_id": "seg_3",
+            "visual_beat_type": "equation",
+            "description": "AC = \u221a(841 - 441) = \u221a400 = 20",
+            "source_block_ids": [],
+            "latex_content": "AC = \\sqrt{841 - 441} = \\sqrt{400} = 20"
+          },
+          {
+            "beat_id": "beat_4",
+            "segment_id": "seg_4",
+            "visual_beat_type": "bullet_list",
+            "description": "*   sin \u03b8 = Opposite/Hypotenuse = 20/29\n*   cos \u03b8 = Adjacent/Hypotenuse = 21/29",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_5",
+            "segment_id": "seg_5",
+            "visual_beat_type": "equation",
+            "description": "Calculating cos\u00b2\u03b8 + sin\u00b2\u03b8",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_6",
+            "segment_id": "seg_6",
+            "visual_beat_type": "equation",
+            "description": "cos\u00b2\u03b8 - sin\u00b2\u03b8 = (21/29)\u00b2 - (20/29)\u00b2 = (441-400)/841 = 41/841",
+            "source_block_ids": [],
+            "latex_content": "\\cos^2\\theta - \\sin^2\\theta = \\frac{21^2}{29^2} - \\frac{20^2}{29^2} = \\frac{441-400}{841} = \\frac{41}{841}"
+          }
+        ],
+        "v15_manim_code": "# Segment 1 (0-17.8s) - Introducing the triangle\ntitle = Text(\"Example 3: Trigonometric Identities\", font_size=36).to_edge(UP)\ntriangle = Polygon(\n    np.array([-2, -1, 0]), \n    np.array([1, -1, 0]), \n    np.array([-2, 1, 0]),\n    color=WHITE\n)\nlabels = VGroup(\n    MathTex(\"A\").next_to(triangle.get_vertices()[2], UP),\n    MathTex(\"B\").next_to(triangle.get_vertices()[1], RIGHT),\n    MathTex(\"C\").next_to(triangle.get_vertices()[0], LEFT),\n    MathTex(\"29\").next_to(triangle.get_edges()[1], UP+RIGHT, buff=0.2),\n    MathTex(\"21\").next_to(triangle.get_edges()[0], RIGHT),\n    MathTex(r\"\\theta\").next_to(triangle.get_vertices()[1], DOWN+RIGHT, buff=0.3)\n)\nright_angle = Square(side_length=0.2).next_to(triangle.get_vertices()[0], UP+RIGHT, buff=0)\n\nself.play(Write(title), run_time=2)\nself.play(Create(triangle), run_time=2)\nself.play(Create(right_angle), run_time=1)\nself.play(Write(labels), run_time=3)\nself.wait(9.8)\n\n# Segment 2 (17.8-36.5s) - Finding AC using Pythagoras\npythag = VGroup(\n    MathTex(r\"AC = \\sqrt{AB^2 - BC^2}\"),\n    MathTex(r\"= \\sqrt{29^2 - 21^2}\")\n).arrange(DOWN).next_to(triangle, RIGHT, buff=1)\n\nself.play(Write(pythag[0]), run_time=3)\nself.wait(7)\nself.play(Write(pythag[1]), run_time=3)\nself.wait(5.8)\n\n# Segment 3 (36.5-48.2s) - Calculating AC\ncalculation = VGroup(\n    MathTex(r\"= \\sqrt{841 - 441}\"),\n    MathTex(r\"= \\sqrt{400}\"),\n    MathTex(r\"= 20\")\n).arrange(DOWN).next_to(pythag, RIGHT, buff=0.5)\n\nself.play(Write(calculation), run_time=4)\nac_label = MathTex(\"20\").next_to(triangle.get_edges()[2], LEFT, buff=0.2)\nself.play(FadeIn(ac_label), run_time=2)\nself.wait(5.7)\n\n# Segment 4 (48.2-65.0s) - Writing trig ratios\ntrig_ratios = VGroup(\n    MathTex(r\"\\sin \\theta = \\frac{\\text{Opposite}}{\\text{Hypotenuse}} = \\frac{20}{29}\"),\n    MathTex(r\"\\cos \\theta = \\frac{\\text{Adjacent}}{\\text{Hypotenuse}} = \\frac{21}{29}\")\n).arrange(DOWN, buff=0.5).next_to(calculation, DOWN, buff=1)\n\nself.play(Write(trig_ratios[0]), run_time=4)\nself.play(Write(trig_ratios[1]), run_time=4)\nself.wait(8.8)\n\n# Segment 5 (65.0-77.2s) - First identity\nidentity1 = VGroup(\n    MathTex(r\"\\cos^2 \\theta + \\sin^2 \\theta = (\\frac{21}{29})^2 + (\\frac{20}{29})^2\"),\n    MathTex(r\"= \\frac{441}{841} + \\frac{400}{841} = \\frac{841}{841} = 1\")\n).arrange(DOWN).next_to(trig_ratios, DOWN, buff=0.5)\n\nself.play(Write(identity1), run_time=6)\nself.play(Circumscribe(identity1[1][-1], color=YELLOW), run_time=2)\nself.wait(4.2)\n\n# Segment 6 (77.2-88.8s) - Second identity\nidentity2 = VGroup(\n    MathTex(r\"\\cos^2 \\theta - \\sin^2 \\theta = (\\frac{21}{29})^2 - (\\frac{20}{29})^2\"),\n    MathTex(r\"= \\frac{441-400}{841} = \\frac{41}{841}\")\n).arrange(DOWN).next_to(identity1, DOWN, buff=0.5)\n\nself.play(Write(identity2), run_time=6)\nself.play(Circumscribe(identity2[1][-1], color=YELLOW), run_time=2)\nself.wait(3.7)"
+      }
+    },
+    {
+      "section_id": 8,
+      "section_type": "example",
+      "title": "Example 4: Verifying an Identity",
+      "renderer": "manim",
+      "decision_reason": "This example requires verifying an equation. Manim is the best tool to animate the logical steps, starting from tan A = 1, deriving the side relationships, and then substituting these into the expression 2sinAcosA to show it simplifies to 1.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "In this example, we're in a right triangle ABC, with the right angle at B. We are given that tan A equals 1. Our task is to verify that 2 times sin A times cos A also equals 1. First, what does tan A = 1 tell us? Since tan A is Opposite over Adjacent, or BC over AB in this triangle, it means BC/AB = 1. This implies that side BC is equal to side AB; we have an isosceles right-angled triangle. Now, let's look at the expression we want to verify: 2 sin A cos A. We know sin A is BC/AC and cos A is AB/AC. Substituting these gives us 2 times (BC/AC) times (AB/AC). This simplifies to 2 times (BC * AB) over AC squared. Since we know BC = AB, we can replace BC with AB, giving us 2 times AB squared over AC squared. From the Pythagoras theorem, we know AC squared equals AB squared plus BC squared. And since AB=BC, AC squared is equal to 2 times AB squared. Substituting this into our expression, we get 2 times AB squared divided by 2 times AB squared. Everything cancels out, and we are left with 1. The identity is verified.",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "In this example, we're in a right triangle ABC, with the right angle at B. We are given that tan A equals 1. Our task is to verify that 2 times sin A times cos A also equals 1.",
+            "duration_seconds": 19.8,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "diagram",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Example 4: In a right triangle ABC, right-angled at B, if tan A = 1, then verify that 2sin A cos A = 1.",
+              "image_id": "090b77852b0817ee9fa4c9676aa027e4_img.jpg",
+              "image_path": "images/090b77852b0817ee9fa4c9676aa027e4_img.png"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 15.6,
+            "audio_file": "8_1.mp3",
+            "audio_path": "audio/8_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "First, what does tan A = 1 tell us? Since tan A is Opposite over Adjacent, or BC over AB in this triangle, it means BC/AB = 1. This implies that side BC is equal to side AB; we have an isosceles right-angled triangle.",
+            "duration_seconds": 22.34,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "\\tan A = 1 \\Rightarrow \\frac{BC}{AB} = 1 \\Rightarrow BC = AB"
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 17.6,
+            "audio_file": "8_2.mp3",
+            "audio_path": "audio/8_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "Now, let's look at the expression we want to verify: 2 sin A cos A. We know sin A is BC/AC and cos A is AB/AC. Substituting these gives us 2 times (BC/AC) times (AB/AC). This simplifies to 2 times (BC * AB) over AC squared.",
+            "duration_seconds": 23.35,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "2\\sin A \\cos A = 2 \\cdot \\frac{BC}{AC} \\cdot \\frac{AB}{AC} = \\frac{2(BC \\cdot AB)}{AC^2}"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 18.4,
+            "audio_file": "8_3.mp3",
+            "audio_path": "audio/8_3.mp3"
+          },
+          {
+            "segment_id": 4,
+            "text": "Since we know BC = AB, we can replace BC with AB, giving us 2 times AB squared over AC squared. From the Pythagoras theorem, we know AC squared equals AB squared plus BC squared. And since AB=BC, AC squared is equal to 2 times AB squared.",
+            "duration_seconds": 23.86,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "AC^2 = AB^2 + BC^2 = 2AB^2"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 18.8,
+            "audio_file": "8_4.mp3",
+            "audio_path": "audio/8_4.mp3"
+          },
+          {
+            "segment_id": 5,
+            "text": "Substituting this into our expression, we get 2 times AB squared divided by 2 times AB squared. Everything cancels out, and we are left with 1. The identity is verified.",
+            "duration_seconds": 15.23,
+            "gesture_hint": "conclude",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 12.0,
+            "audio_file": "8_5.mp3",
+            "audio_path": "audio/8_5.mp3"
+          }
+        ],
+        "total_duration_seconds": 104.58
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "diagram",
+          "description": "Example 4: In a right triangle ABC, right-angled at B, if tan A = 1, then verify that 2sin A cos A = 1.",
+          "source_block_ids": [],
+          "image_id": "090b77852b0817ee9fa4c9676aa027e4_img.jpg",
+          "image_path": "images/090b77852b0817ee9fa4c9676aa027e4_img.png"
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "equation",
+          "description": "tan A = 1  =>  BC/AB = 1  =>  BC = AB",
+          "source_block_ids": [],
+          "latex_content": "\\tan A = 1 \\Rightarrow \\frac{BC}{AB} = 1 \\Rightarrow BC = AB"
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "equation",
+          "description": "2sin A cos A = 2 * (BC/AC) * (AB/AC) = 2(BC*AB)/AC\u00b2",
+          "source_block_ids": [],
+          "latex_content": "2\\sin A \\cos A = 2 \\cdot \\frac{BC}{AC} \\cdot \\frac{AB}{AC} = \\frac{2(BC \\cdot AB)}{AC^2}"
+        },
+        {
+          "beat_id": "beat_4",
+          "segment_id": "seg_4",
+          "visual_beat_type": "equation",
+          "description": "Using BC=AB and Pythagoras Theorem: AC\u00b2 = AB\u00b2 + BC\u00b2 = 2AB\u00b2",
+          "source_block_ids": [],
+          "latex_content": "AC^2 = AB^2 + BC^2 = 2AB^2"
+        },
+        {
+          "beat_id": "beat_5",
+          "segment_id": "seg_5",
+          "visual_beat_type": "equation",
+          "description": "Final verification step.",
+          "source_block_ids": []
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        }
+      ],
+      "audio_path": "section_8.mp3",
+      "render_spec": {
+        "manim_scene_spec": {
+          "manim_code": "# Segment 1 (0-19.8s) - Introduction\ntitle = Text(\"Example 4: Right Triangle Identity\").to_edge(UP)\nsubtitle = MathTex(r\"\\text{If } \\tan A = 1, \\text{ verify that } 2\\sin A \\cos A = 1\").next_to(title, DOWN)\n\n# Create right triangle\ntriangle = Polygon(\n    ORIGIN, RIGHT * 3, UP * 3,\n    color=WHITE, fill_opacity=0.2\n)\ntriangle.move_to(ORIGIN)\n\n# Labels\nlabel_A = MathTex(\"A\").next_to(triangle.get_vertices()[2], UP+RIGHT)\nlabel_B = MathTex(\"B\").next_to(triangle.get_vertices()[0], DOWN+LEFT)\nlabel_C = MathTex(\"C\").next_to(triangle.get_vertices()[1], DOWN+RIGHT)\n\nself.play(Write(title), run_time=2)\nself.play(Write(subtitle), run_time=2)\nself.play(Create(triangle), run_time=2)\nself.play(Write(label_A), Write(label_B), Write(label_C), run_time=2)\nself.wait(11.8)\n\n# Segment 2 (19.8-42.1s) - Tan A = 1 implication\ntan_eq = MathTex(r\"\\tan A = \\frac{BC}{AB} = 1\").to_edge(LEFT).shift(UP)\nimplies = MathTex(r\"\\Rightarrow BC = AB\").next_to(tan_eq, DOWN)\n\n# Highlight equal sides\nside_ab = Line(triangle.get_vertices()[0], triangle.get_vertices()[1], color=YELLOW)\nside_bc = Line(triangle.get_vertices()[1], triangle.get_vertices()[2], color=YELLOW)\n\nself.play(Write(tan_eq), run_time=3)\nself.play(Write(implies), run_time=2)\nself.play(\n    Create(side_ab),\n    Create(side_bc),\n    run_time=2\n)\nself.wait(15.3)\n\n# Segment 3 (42.1-65.5s) - Expression analysis\nexpr1 = MathTex(r\"2\\sin A \\cos A\").to_edge(RIGHT).shift(UP * 2)\nexpr2 = MathTex(r\"= 2 \\cdot \\frac{BC}{AC} \\cdot \\frac{AB}{AC}\").next_to(expr1, DOWN)\nexpr3 = MathTex(r\"= \\frac{2(BC \\cdot AB)}{AC^2}\").next_to(expr2, DOWN)\n\nself.play(Write(expr1), run_time=2)\nself.play(Write(expr2), run_time=3)\nself.play(Write(expr3), run_time=2)\nself.wait(16.4)\n\n# Segment 4 (65.5-89.4s) - Pythagoras application\npythag = MathTex(r\"AC^2 = AB^2 + BC^2\").to_edge(RIGHT).shift(DOWN)\npythag2 = MathTex(r\"= AB^2 + AB^2 = 2AB^2\").next_to(pythag, DOWN)\n\nself.play(Write(pythag), run_time=3)\nself.play(Write(pythag2), run_time=3)\nself.wait(17.9)\n\n# Segment 5 (89.4-104.6s) - Final verification\nfinal = MathTex(r\"\\therefore 2\\sin A \\cos A = \\frac{2AB^2}{2AB^2} = 1\").scale(1.2)\nfinal.move_to(ORIGIN).shift(DOWN * 2)\n\nself.play(Write(final), run_time=3)\nbox = SurroundingRectangle(final, color=GREEN)\nself.play(Create(box), run_time=2)\nself.wait(10.2)",
+          "code_type": "construct_body"
+        }
+      },
+      "explanation_plan": {
+        "visual_beats": [
+          {
+            "beat_id": "beat_1",
+            "segment_id": "seg_1",
+            "visual_beat_type": "diagram",
+            "description": "Example 4: In a right triangle ABC, right-angled at B, if tan A = 1, then verify that 2sin A cos A = 1.",
+            "source_block_ids": [],
+            "image_id": "090b77852b0817ee9fa4c9676aa027e4_img.jpg",
+            "image_path": "images/090b77852b0817ee9fa4c9676aa027e4_img.png"
+          },
+          {
+            "beat_id": "beat_2",
+            "segment_id": "seg_2",
+            "visual_beat_type": "equation",
+            "description": "tan A = 1  =>  BC/AB = 1  =>  BC = AB",
+            "source_block_ids": [],
+            "latex_content": "\\tan A = 1 \\Rightarrow \\frac{BC}{AB} = 1 \\Rightarrow BC = AB"
+          },
+          {
+            "beat_id": "beat_3",
+            "segment_id": "seg_3",
+            "visual_beat_type": "equation",
+            "description": "2sin A cos A = 2 * (BC/AC) * (AB/AC) = 2(BC*AB)/AC\u00b2",
+            "source_block_ids": [],
+            "latex_content": "2\\sin A \\cos A = 2 \\cdot \\frac{BC}{AC} \\cdot \\frac{AB}{AC} = \\frac{2(BC \\cdot AB)}{AC^2}"
+          },
+          {
+            "beat_id": "beat_4",
+            "segment_id": "seg_4",
+            "visual_beat_type": "equation",
+            "description": "Using BC=AB and Pythagoras Theorem: AC\u00b2 = AB\u00b2 + BC\u00b2 = 2AB\u00b2",
+            "source_block_ids": [],
+            "latex_content": "AC^2 = AB^2 + BC^2 = 2AB^2"
+          },
+          {
+            "beat_id": "beat_5",
+            "segment_id": "seg_5",
+            "visual_beat_type": "equation",
+            "description": "Final verification step.",
+            "source_block_ids": []
+          }
+        ],
+        "v15_manim_code": "# Segment 1 (0-19.8s) - Introduction\ntitle = Text(\"Example 4: Right Triangle Identity\").to_edge(UP)\nsubtitle = MathTex(r\"\\text{If } \\tan A = 1, \\text{ verify that } 2\\sin A \\cos A = 1\").next_to(title, DOWN)\n\n# Create right triangle\ntriangle = Polygon(\n    ORIGIN, RIGHT * 3, UP * 3,\n    color=WHITE, fill_opacity=0.2\n)\ntriangle.move_to(ORIGIN)\n\n# Labels\nlabel_A = MathTex(\"A\").next_to(triangle.get_vertices()[2], UP+RIGHT)\nlabel_B = MathTex(\"B\").next_to(triangle.get_vertices()[0], DOWN+LEFT)\nlabel_C = MathTex(\"C\").next_to(triangle.get_vertices()[1], DOWN+RIGHT)\n\nself.play(Write(title), run_time=2)\nself.play(Write(subtitle), run_time=2)\nself.play(Create(triangle), run_time=2)\nself.play(Write(label_A), Write(label_B), Write(label_C), run_time=2)\nself.wait(11.8)\n\n# Segment 2 (19.8-42.1s) - Tan A = 1 implication\ntan_eq = MathTex(r\"\\tan A = \\frac{BC}{AB} = 1\").to_edge(LEFT).shift(UP)\nimplies = MathTex(r\"\\Rightarrow BC = AB\").next_to(tan_eq, DOWN)\n\n# Highlight equal sides\nside_ab = Line(triangle.get_vertices()[0], triangle.get_vertices()[1], color=YELLOW)\nside_bc = Line(triangle.get_vertices()[1], triangle.get_vertices()[2], color=YELLOW)\n\nself.play(Write(tan_eq), run_time=3)\nself.play(Write(implies), run_time=2)\nself.play(\n    Create(side_ab),\n    Create(side_bc),\n    run_time=2\n)\nself.wait(15.3)\n\n# Segment 3 (42.1-65.5s) - Expression analysis\nexpr1 = MathTex(r\"2\\sin A \\cos A\").to_edge(RIGHT).shift(UP * 2)\nexpr2 = MathTex(r\"= 2 \\cdot \\frac{BC}{AC} \\cdot \\frac{AB}{AC}\").next_to(expr1, DOWN)\nexpr3 = MathTex(r\"= \\frac{2(BC \\cdot AB)}{AC^2}\").next_to(expr2, DOWN)\n\nself.play(Write(expr1), run_time=2)\nself.play(Write(expr2), run_time=3)\nself.play(Write(expr3), run_time=2)\nself.wait(16.4)\n\n# Segment 4 (65.5-89.4s) - Pythagoras application\npythag = MathTex(r\"AC^2 = AB^2 + BC^2\").to_edge(RIGHT).shift(DOWN)\npythag2 = MathTex(r\"= AB^2 + AB^2 = 2AB^2\").next_to(pythag, DOWN)\n\nself.play(Write(pythag), run_time=3)\nself.play(Write(pythag2), run_time=3)\nself.wait(17.9)\n\n# Segment 5 (89.4-104.6s) - Final verification\nfinal = MathTex(r\"\\therefore 2\\sin A \\cos A = \\frac{2AB^2}{2AB^2} = 1\").scale(1.2)\nfinal.move_to(ORIGIN).shift(DOWN * 2)\n\nself.play(Write(final), run_time=3)\nbox = SurroundingRectangle(final, color=GREEN)\nself.play(Create(box), run_time=2)\nself.wait(10.2)"
+      },
+      "video_path": "videos/topic_8.mp4"
+    },
+    {
+      "section_id": 9,
+      "section_type": "example",
+      "title": "Example 5: Solving for Sides and Ratios",
+      "renderer": "manim",
+      "decision_reason": "This problem involves solving an equation derived from the Pythagoras theorem. Manim is the ideal renderer to animate the algebraic solution, including expanding a binomial, cancelling terms, and solving for the unknown side length.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "For our final example, we have a triangle OPQ, right-angled at P. We are given that side OP is 7 cm, and that the difference between the hypotenuse OQ and side PQ is 1 cm. We need to find the values of sin Q and cos Q. From OQ - PQ = 1, we can write OQ = 1 + PQ. Now we apply the Pythagoras theorem: OQ squared equals PQ squared plus OP squared. We can substitute our expressions for OQ and OP. This gives us (1 + PQ) squared equals PQ squared plus 7 squared. Expanding the left side, we get 1 plus PQ squared plus 2 times PQ. Now we have PQ squared on both sides of the equation, so they cancel out. We are left with 1 plus 2PQ equals 49. Solving for PQ, we subtract 1 from 49 to get 48, and then divide by 2. So, PQ is 24 cm. Since OQ is 1 + PQ, OQ must be 25 cm. Now we have all three sides: Opposite (OP) is 7, Adjacent (PQ) is 24, and Hypotenuse (OQ) is 25. Therefore, sin Q is 7/25, and cos Q is 24/25.",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "For our final example, we have a triangle OPQ, right-angled at P. We are given that side OP is 7 cm, and that the difference between the hypotenuse OQ and side PQ is 1 cm. We need to find the values of sin Q and cos Q.",
+            "duration_seconds": 23.86,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "diagram",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Example 5: In \u0394OPQ, right-angled at P, OP=7cm and OQ-PQ=1cm. Find sin Q and cos Q.",
+              "image_id": "bf2c0d1b2eb4b6ff625647706ac9e129_img.jpg",
+              "image_path": "images/bf2c0d1b2eb4b6ff625647706ac9e129_img.png"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 18.8,
+            "audio_file": "9_1.mp3",
+            "audio_path": "audio/9_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "From OQ - PQ = 1, we can write OQ = 1 + PQ. Now we apply the Pythagoras theorem: OQ squared equals PQ squared plus OP squared.",
+            "duration_seconds": 14.22,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "OQ^2 = PQ^2 + OP^2"
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 11.2,
+            "audio_file": "9_2.mp3",
+            "audio_path": "audio/9_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "We can substitute our expressions for OQ and OP. This gives us (1 + PQ) squared equals PQ squared plus 7 squared. Expanding the left side, we get 1 plus PQ squared plus 2 times PQ.",
+            "duration_seconds": 18.28,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": "(1+PQ)^2 = PQ^2 + 7^2 \\Rightarrow 1 + 2PQ + PQ^2 = PQ^2 + 49"
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 14.4,
+            "audio_file": "9_3.mp3",
+            "audio_path": "audio/9_3.mp3"
+          },
+          {
+            "segment_id": 4,
+            "text": "Now we have PQ squared on both sides of the equation, so they cancel out. We are left with 1 plus 2PQ equals 49. Solving for PQ, we subtract 1 from 49 to get 48, and then divide by 2. So, PQ is 24 cm.",
+            "duration_seconds": 22.85,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "equation",
+              "display_format": "latex",
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 18.0,
+            "audio_file": "9_4.mp3",
+            "audio_path": "audio/9_4.mp3"
+          },
+          {
+            "segment_id": 5,
+            "text": "Since OQ is 1 + PQ, OQ must be 25 cm. Now we have all three sides: Opposite (OP) is 7, Adjacent (PQ) is 24, and Hypotenuse (OQ) is 25. Therefore, sin Q is 7/25, and cos Q is 24/25.",
+            "duration_seconds": 20.31,
+            "gesture_hint": "conclude",
+            "visual_content": {
+              "content_type": "bullet_points",
+              "display_format": "bullets",
+              "items": [
+                "*   OQ = 1 + 24 = 25 cm",
+                "*   sin Q = OP/OQ = 7/25",
+                "*   cos Q = PQ/OQ = 24/25"
+              ],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 16.0,
+            "audio_file": "9_5.mp3",
+            "audio_path": "audio/9_5.mp3"
+          }
+        ],
+        "total_duration_seconds": 99.52
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "diagram",
+          "description": "Example 5: In \u0394OPQ, right-angled at P, OP=7cm and OQ-PQ=1cm. Find sin Q and cos Q.",
+          "source_block_ids": [],
+          "image_id": "bf2c0d1b2eb4b6ff625647706ac9e129_img.jpg",
+          "image_path": "images/bf2c0d1b2eb4b6ff625647706ac9e129_img.png"
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "equation",
+          "description": "OQ = 1 + PQ\nPythagoras Theorem: OQ\u00b2 = PQ\u00b2 + OP\u00b2",
+          "source_block_ids": [],
+          "latex_content": "OQ^2 = PQ^2 + OP^2"
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "equation",
+          "description": "Substitute and expand: (1+PQ)\u00b2 = PQ\u00b2 + 7\u00b2 => 1 + 2PQ + PQ\u00b2 = PQ\u00b2 + 49",
+          "source_block_ids": [],
+          "latex_content": "(1+PQ)^2 = PQ^2 + 7^2 \\Rightarrow 1 + 2PQ + PQ^2 = PQ^2 + 49"
+        },
+        {
+          "beat_id": "beat_4",
+          "segment_id": "seg_4",
+          "visual_beat_type": "equation",
+          "description": "Solving for PQ.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_5",
+          "segment_id": "seg_5",
+          "visual_beat_type": "bullet_list",
+          "description": "*   OQ = 1 + 24 = 25 cm\n*   sin Q = OP/OQ = 7/25\n*   cos Q = PQ/OQ = 24/25",
+          "source_block_ids": []
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        }
+      ],
+      "audio_path": "section_9.mp3",
+      "render_spec": {
+        "manim_scene_spec": {
+          "manim_code": "# Segment 1 (0-23.9s) - Setup triangle and initial conditions\ntitle = Text(\"Example 5:\", font_size=36).to_edge(UP+LEFT)\nproblem = Text(\"In \u0394OPQ, right-angled at P, OP=7cm and OQ-PQ=1cm\", font_size=32)\nproblem2 = Text(\"Find sin Q and cos Q\", font_size=32)\nproblem_group = VGroup(problem, problem2).arrange(DOWN).next_to(title, RIGHT)\n\n# Create triangle\ntriangle = Polygon(\n    np.array([0, 0, 0]),  # O point\n    np.array([3, -2, 0]),  # P point \n    np.array([4, 0, 0]),   # Q point\n    color=WHITE\n)\ntriangle.scale(1.5).shift(DOWN)\n\n# Labels for points\nO_label = Text(\"O\", font_size=24).next_to(triangle.get_vertices()[0], UP+LEFT)\nP_label = Text(\"P\", font_size=24).next_to(triangle.get_vertices()[1], DOWN)\nQ_label = Text(\"Q\", font_size=24).next_to(triangle.get_vertices()[2], RIGHT)\n\n# Label for right angle\nright_angle = Square(side_length=0.3).next_to(triangle.get_vertices()[1], UP+RIGHT, buff=0)\n\nself.play(Write(title), Write(problem), Write(problem2), run_time=4)\nself.play(\n    Create(triangle),\n    Write(O_label), Write(P_label), Write(Q_label),\n    Create(right_angle),\n    run_time=3\n)\nself.wait(16.9)  # Complete 23.9s segment\n\n# Segment 2 (23.9-38.1s) - Show OQ-PQ relation and Pythagoras\neq1 = MathTex(r\"OQ - PQ = 1\").shift(DOWN * 2.5)\neq2 = MathTex(r\"OQ = 1 + PQ\").shift(DOWN * 2.5)\npythag = MathTex(r\"OQ^2 = PQ^2 + OP^2\").shift(DOWN * 3.2)\n\nself.play(Write(eq1), run_time=2)\nself.play(ReplacementTransform(eq1, eq2), run_time=2)\nself.play(Write(pythag), run_time=2)\nself.wait(8.2)  # Complete 14.2s segment\n\n# Segment 3 (38.1-56.4s) - Substitute and expand\neq3 = MathTex(r\"(1 + PQ)^2 = PQ^2 + 7^2\").shift(DOWN * 2.5)\neq4 = MathTex(r\"1 + 2PQ + PQ^2 = PQ^2 + 49\").shift(DOWN * 3.2)\n\nself.play(\n    ReplacementTransform(eq2, eq3),\n    FadeOut(pythag),\n    run_time=3\n)\nself.play(Write(eq4), run_time=3)\nself.wait(12.3)  # Complete 18.3s segment\n\n# Segment 4 (56.4-79.2s) - Solve for PQ\neq5 = MathTex(r\"2PQ = 48\").shift(DOWN * 2.5)\neq6 = MathTex(r\"PQ = 24\").shift(DOWN * 3.2)\n\nself.play(\n    ReplacementTransform(eq3, eq5),\n    ReplacementTransform(eq4, eq6),\n    run_time=3\n)\nself.wait(19.9)  # Complete 22.9s segment\n\n# Segment 5 (79.2-99.5s) - Final calculations\nfinal_calcs = VGroup(\n    MathTex(r\"OQ = 1 + 24 = 25\"),\n    MathTex(r\"\\sin Q = \\frac{OP}{OQ} = \\frac{7}{25}\"),\n    MathTex(r\"\\cos Q = \\frac{PQ}{OQ} = \\frac{24}{25}\")\n).arrange(DOWN, buff=0.5).shift(DOWN * 2.5)\n\nself.play(\n    FadeOut(eq5), FadeOut(eq6),\n    Write(final_calcs),\n    run_time=4\n)\nself.wait(16.3)  # Complete 20.3s segment",
+          "code_type": "construct_body"
+        }
+      },
+      "explanation_plan": {
+        "visual_beats": [
+          {
+            "beat_id": "beat_1",
+            "segment_id": "seg_1",
+            "visual_beat_type": "diagram",
+            "description": "Example 5: In \u0394OPQ, right-angled at P, OP=7cm and OQ-PQ=1cm. Find sin Q and cos Q.",
+            "source_block_ids": [],
+            "image_id": "bf2c0d1b2eb4b6ff625647706ac9e129_img.jpg",
+            "image_path": "images/bf2c0d1b2eb4b6ff625647706ac9e129_img.png"
+          },
+          {
+            "beat_id": "beat_2",
+            "segment_id": "seg_2",
+            "visual_beat_type": "equation",
+            "description": "OQ = 1 + PQ\nPythagoras Theorem: OQ\u00b2 = PQ\u00b2 + OP\u00b2",
+            "source_block_ids": [],
+            "latex_content": "OQ^2 = PQ^2 + OP^2"
+          },
+          {
+            "beat_id": "beat_3",
+            "segment_id": "seg_3",
+            "visual_beat_type": "equation",
+            "description": "Substitute and expand: (1+PQ)\u00b2 = PQ\u00b2 + 7\u00b2 => 1 + 2PQ + PQ\u00b2 = PQ\u00b2 + 49",
+            "source_block_ids": [],
+            "latex_content": "(1+PQ)^2 = PQ^2 + 7^2 \\Rightarrow 1 + 2PQ + PQ^2 = PQ^2 + 49"
+          },
+          {
+            "beat_id": "beat_4",
+            "segment_id": "seg_4",
+            "visual_beat_type": "equation",
+            "description": "Solving for PQ.",
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_5",
+            "segment_id": "seg_5",
+            "visual_beat_type": "bullet_list",
+            "description": "*   OQ = 1 + 24 = 25 cm\n*   sin Q = OP/OQ = 7/25\n*   cos Q = PQ/OQ = 24/25",
+            "source_block_ids": []
+          }
+        ],
+        "v15_manim_code": "# Segment 1 (0-23.9s) - Setup triangle and initial conditions\ntitle = Text(\"Example 5:\", font_size=36).to_edge(UP+LEFT)\nproblem = Text(\"In \u0394OPQ, right-angled at P, OP=7cm and OQ-PQ=1cm\", font_size=32)\nproblem2 = Text(\"Find sin Q and cos Q\", font_size=32)\nproblem_group = VGroup(problem, problem2).arrange(DOWN).next_to(title, RIGHT)\n\n# Create triangle\ntriangle = Polygon(\n    np.array([0, 0, 0]),  # O point\n    np.array([3, -2, 0]),  # P point \n    np.array([4, 0, 0]),   # Q point\n    color=WHITE\n)\ntriangle.scale(1.5).shift(DOWN)\n\n# Labels for points\nO_label = Text(\"O\", font_size=24).next_to(triangle.get_vertices()[0], UP+LEFT)\nP_label = Text(\"P\", font_size=24).next_to(triangle.get_vertices()[1], DOWN)\nQ_label = Text(\"Q\", font_size=24).next_to(triangle.get_vertices()[2], RIGHT)\n\n# Label for right angle\nright_angle = Square(side_length=0.3).next_to(triangle.get_vertices()[1], UP+RIGHT, buff=0)\n\nself.play(Write(title), Write(problem), Write(problem2), run_time=4)\nself.play(\n    Create(triangle),\n    Write(O_label), Write(P_label), Write(Q_label),\n    Create(right_angle),\n    run_time=3\n)\nself.wait(16.9)  # Complete 23.9s segment\n\n# Segment 2 (23.9-38.1s) - Show OQ-PQ relation and Pythagoras\neq1 = MathTex(r\"OQ - PQ = 1\").shift(DOWN * 2.5)\neq2 = MathTex(r\"OQ = 1 + PQ\").shift(DOWN * 2.5)\npythag = MathTex(r\"OQ^2 = PQ^2 + OP^2\").shift(DOWN * 3.2)\n\nself.play(Write(eq1), run_time=2)\nself.play(ReplacementTransform(eq1, eq2), run_time=2)\nself.play(Write(pythag), run_time=2)\nself.wait(8.2)  # Complete 14.2s segment\n\n# Segment 3 (38.1-56.4s) - Substitute and expand\neq3 = MathTex(r\"(1 + PQ)^2 = PQ^2 + 7^2\").shift(DOWN * 2.5)\neq4 = MathTex(r\"1 + 2PQ + PQ^2 = PQ^2 + 49\").shift(DOWN * 3.2)\n\nself.play(\n    ReplacementTransform(eq2, eq3),\n    FadeOut(pythag),\n    run_time=3\n)\nself.play(Write(eq4), run_time=3)\nself.wait(12.3)  # Complete 18.3s segment\n\n# Segment 4 (56.4-79.2s) - Solve for PQ\neq5 = MathTex(r\"2PQ = 48\").shift(DOWN * 2.5)\neq6 = MathTex(r\"PQ = 24\").shift(DOWN * 3.2)\n\nself.play(\n    ReplacementTransform(eq3, eq5),\n    ReplacementTransform(eq4, eq6),\n    run_time=3\n)\nself.wait(19.9)  # Complete 22.9s segment\n\n# Segment 5 (79.2-99.5s) - Final calculations\nfinal_calcs = VGroup(\n    MathTex(r\"OQ = 1 + 24 = 25\"),\n    MathTex(r\"\\sin Q = \\frac{OP}{OQ} = \\frac{7}{25}\"),\n    MathTex(r\"\\cos Q = \\frac{PQ}{OQ} = \\frac{24}{25}\")\n).arrange(DOWN, buff=0.5).shift(DOWN * 2.5)\n\nself.play(\n    FadeOut(eq5), FadeOut(eq6),\n    Write(final_calcs),\n    run_time=4\n)\nself.wait(16.3)  # Complete 20.3s segment"
+      }
+    },
+    {
+      "section_id": 10,
+      "section_type": "memory",
+      "title": "Key Concepts to Remember",
+      "renderer": "none",
+      "decision_reason": "This is a flashcard section for memorization. It requires simple text on cards, so no special renderer is needed.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "Let's quickly review the key definitions with some flashcards. Remember these, as they are the building blocks of trigonometry. First, what is Sine A? It's the ratio of the Opposite side to the Hypotenuse. Remember SOH. Next, Cosine A. Cosine A is the ratio of the Adjacent side to the Hypotenuse. Remember CAH. And Tangent A? Tangent A is the ratio of the Opposite side to the Adjacent side. Remember TOA. Finally, the reciprocal ratios. Cosecant, Secant, and Cotangent are the reciprocals of Sine, Cosine, and Tangent, respectively. Just flip the fraction!",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "Let's quickly review the key definitions with some flashcards. Remember these, as they are the building blocks of trigonometry.",
+            "duration_seconds": 9.65,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Key Concepts Review"
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 7.6,
+            "audio_file": "10_1.mp3",
+            "audio_path": "audio/10_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "First, what is Sine A? It's the ratio of the Opposite side to the Hypotenuse. Remember SOH.",
+            "duration_seconds": 8.63,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Flashcard will show front, then flip to back."
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 6.8,
+            "audio_file": "10_2.mp3",
+            "audio_path": "audio/10_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "Next, Cosine A. Cosine A is the ratio of the Adjacent side to the Hypotenuse. Remember CAH.",
+            "duration_seconds": 8.63,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Flashcard will show front, then flip to back."
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 6.8,
+            "audio_file": "10_3.mp3",
+            "audio_path": "audio/10_3.mp3"
+          },
+          {
+            "segment_id": 4,
+            "text": "And Tangent A? Tangent A is the ratio of the Opposite side to the Adjacent side. Remember TOA.",
+            "duration_seconds": 9.14,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Flashcard will show front, then flip to back."
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 7.2,
+            "audio_file": "10_4.mp3",
+            "audio_path": "audio/10_4.mp3"
+          },
+          {
+            "segment_id": 5,
+            "text": "Finally, the reciprocal ratios. Cosecant, Secant, and Cotangent are the reciprocals of Sine, Cosine, and Tangent, respectively. Just flip the fraction!",
+            "duration_seconds": 10.66,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": "Flashcard will show front, then flip to back."
+            },
+            "display_directives": {
+              "text_layer": "show",
+              "visual_layer": "hide",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 8.4,
+            "audio_file": "10_5.mp3",
+            "audio_path": "audio/10_5.mp3"
+          }
+        ],
+        "total_duration_seconds": 46.71
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "text",
+          "description": "Key Concepts Review",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "text",
+          "description": "Flashcard will show front, then flip to back.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "text",
+          "description": "Flashcard will show front, then flip to back.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_4",
+          "segment_id": "seg_4",
+          "visual_beat_type": "text",
+          "description": "Flashcard will show front, then flip to back.",
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_5",
+          "segment_id": "seg_5",
+          "visual_beat_type": "text",
+          "description": "Flashcard will show front, then flip to back.",
+          "source_block_ids": []
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        }
+      ],
+      "flashcards": [
+        {
+          "front": "Sin A (SOH)",
+          "back": "Opposite / Hypotenuse"
+        },
+        {
+          "front": "Cos A (CAH)",
+          "back": "Adjacent / Hypotenuse"
+        },
+        {
+          "front": "Tan A (TOA)",
+          "back": "Opposite / Adjacent"
+        },
+        {
+          "front": "Reciprocal Ratios",
+          "back": "csc A = 1/sin A\nsec A = 1/cos A\ncot A = 1/tan A"
+        }
+      ],
+      "audio_path": "section_10.mp3"
+    },
+    {
+      "section_id": 11,
+      "section_type": "recap",
+      "title": "Chapter Recap",
+      "renderer": "wan_video",
+      "decision_reason": "The recap uses a narrative, story-based approach to summarize the practical application of trigonometry. Cinematic video prompts are required for this section to create an engaging and memorable summary.",
+      "avatar_layout": {
+        "visibility": "always",
+        "mode": "floating",
+        "position": "right",
+        "width_percent": 52
+      },
+      "narration": {
+        "full_text": "Let's recap what we've learned through a short story. Imagine a young student, Priya, standing in a park, looking up at a very tall flagpole. She wonders, 'How tall is that flagpole? I can't possibly climb it to measure it.' Then, Priya remembers her trigonometry lesson. She realizes she can form a right-angled triangle with herself, the base of the pole, and the top of the pole. The height of the flagpole is the 'Opposite' side. She takes a few steps back, measuring her distance from the pole. This will be her 'Adjacent' side. Let's say it's 10 meters. Now, all she needs is the angle. She uses a simple clinometer app on her phone to measure the angle of elevation from her eyes to the top of the pole, finding it to be 45 degrees. With the adjacent side and the angle, she knows she can use the tangent ratio. Tan of 45 degrees equals the Opposite side (the height) divided by the Adjacent side (10 meters). Since tan 45 is 1, the height must be 10 meters. With a smile, Priya realizes the power of trigonometry \u2013 to measure the unreachable.",
+        "segments": [
+          {
+            "segment_id": 1,
+            "text": "Let's recap what we've learned through a short story. Imagine a young student, Priya, standing in a park, looking up at a very tall flagpole. She wonders, 'How tall is that flagpole? I can't possibly climb it to measure it.'",
+            "duration_seconds": 20.31,
+            "gesture_hint": "introduce",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 16.0,
+            "audio_file": "11_1.mp3",
+            "audio_path": "audio/11_1.mp3"
+          },
+          {
+            "segment_id": 2,
+            "text": "Then, Priya remembers her trigonometry lesson. She realizes she can form a right-angled triangle with herself, the base of the pole, and the top of the pole. The height of the flagpole is the 'Opposite' side.",
+            "duration_seconds": 18.28,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 14.4,
+            "audio_file": "11_2.mp3",
+            "audio_path": "audio/11_2.mp3"
+          },
+          {
+            "segment_id": 3,
+            "text": "She takes a few steps back, measuring her distance from the pole. This will be her 'Adjacent' side. Let's say it's 10 meters.",
+            "duration_seconds": 11.68,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 9.2,
+            "audio_file": "11_3.mp3",
+            "audio_path": "audio/11_3.mp3"
+          },
+          {
+            "segment_id": 4,
+            "text": "Now, all she needs is the angle. She uses a simple clinometer app on her phone to measure the angle of elevation from her eyes to the top of the pole, finding it to be 45 degrees.",
+            "duration_seconds": 18.78,
+            "gesture_hint": "explain",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 14.8,
+            "audio_file": "11_4.mp3",
+            "audio_path": "audio/11_4.mp3"
+          },
+          {
+            "segment_id": 5,
+            "text": "With the adjacent side and the angle, she knows she can use the tangent ratio. Tan of 45 degrees equals the Opposite side (the height) divided by the Adjacent side (10 meters). Since tan 45 is 1, the height must be 10 meters. With a smile, Priya realizes the power of trigonometry \u2013 to measure the unreachable.",
+            "duration_seconds": 28.94,
+            "gesture_hint": "conclude",
+            "visual_content": {
+              "content_type": "text",
+              "display_format": null,
+              "items": [],
+              "verbatim_content": null
+            },
+            "display_directives": {
+              "text_layer": "hide",
+              "visual_layer": "show",
+              "avatar_layer": "show"
+            },
+            "duration_estimate": 22.8,
+            "audio_file": "11_5.mp3",
+            "audio_path": "audio/11_5.mp3"
+          }
+        ],
+        "total_duration_seconds": 97.99
+      },
+      "visual_beats": [
+        {
+          "beat_id": "beat_1",
+          "segment_id": "seg_1",
+          "visual_beat_type": "video",
+          "description": null,
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_2",
+          "segment_id": "seg_2",
+          "visual_beat_type": "video",
+          "description": null,
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_3",
+          "segment_id": "seg_3",
+          "visual_beat_type": "video",
+          "description": null,
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_4",
+          "segment_id": "seg_4",
+          "visual_beat_type": "video",
+          "description": null,
+          "source_block_ids": []
+        },
+        {
+          "beat_id": "beat_5",
+          "segment_id": "seg_5",
+          "visual_beat_type": "video",
+          "description": null,
+          "source_block_ids": []
+        }
+      ],
+      "display_directives": [
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        }
+      ],
+      "video_prompts": [
+        {
+          "segment_id": "seg_1",
+          "prompt": "Cinematic, sun-drenched wide shot of a young Indian girl, Priya, standing in a lush green park on a bright afternoon. She is looking up with a puzzled expression at a very tall flagpole with the Indian flag waving at the top. The camera is at a low angle, emphasizing the height of the pole and her curiosity. The lighting is warm and golden, creating a sense of wonder and gentle curiosity. The background shows other park elements like trees and a pathway, but the focus is clearly on Priya and the flagpole. The camera slowly dollies towards her, capturing her thoughtful gaze. Duration 10 seconds.",
+          "duration_hint": 10,
+          "duration_seconds": 15
+        },
+        {
+          "segment_id": "seg_2",
+          "prompt": "An imaginative animated overlay appears on the live-action scene. A bright, glowing, stylized right-angled triangle is drawn connecting Priya's eyes, the base of the flagpole, and the top of the flagpole. Text labels 'Opposite', 'Adjacent', and 'Hypotenuse' fade in to label the corresponding sides of the glowing triangle. The word 'Opposite' pulses next to the flagpole's height. This is a 'eureka' moment, visualizing the mathematical concept in the real world. The animation is clean and modern, contrasting with the realistic park scene. The camera remains static during this overlay to ensure the geometric overlay is clear. Duration 12 seconds.",
+          "duration_hint": 12,
+          "duration_seconds": 15
+        },
+        {
+          "segment_id": "seg_3",
+          "prompt": "A dynamic shot showing Priya's feet, clad in sandals, walking backwards on the grass, counting her steps. The camera then cuts to a close-up of a measuring tape being unrolled on the ground from the base of the pole to where she now stands. The tape clearly shows the '10m' mark. This action-oriented sequence visually establishes the length of the 'Adjacent' side. The scene has a practical, hands-on feel, with natural lighting and the sounds of the park in the background. The focus is on the action of measuring, making the process tangible. Duration 10 seconds.",
+          "duration_hint": 10,
+          "duration_seconds": 11
+        },
+        {
+          "segment_id": "seg_4",
+          "prompt": "Close-up shot over Priya's shoulder as she holds up her smartphone. On the screen, a realistic-looking clinometer app is running, showing the camera view aimed at the top of the flagpole. The digital display on the app clearly shows the angle increasing and then settling on '45.0\u00b0'. Her finger taps the screen to lock the measurement. The focus is sharp on the phone screen, with the background slightly blurred. This shot connects the traditional math problem with modern technology, making it relatable for students. The lighting reflects off the screen, highlighting the numbers. Duration 12 seconds.",
+          "duration_hint": 12,
+          "duration_seconds": 15
+        },
+        {
+          "segment_id": "seg_5",
+          "prompt": "A triumphant, slow-motion shot of Priya smiling, a look of accomplishment on her face. An animated calculation `tan(45\u00b0) = Height / 10m`, then `1 = Height / 10m`, and finally `Height = 10m` elegantly writes itself in the air beside her. The text glows with a soft golden light. The camera slowly orbits around her as she looks from her calculation back to the flagpole, now with a confident expression. The sun creates a slight lens flare, giving the scene a warm, victorious, and inspiring feel. The final shot is a freeze-frame on her happy face. Duration 15 seconds.",
+          "duration_hint": 15,
+          "duration_seconds": 15
+        }
+      ],
+      "audio_path": "section_11.mp3",
+      "renderer_override_reason": "Recap sections use WAN for storyboard visualization",
+      "explanation_plan": {
+        "visual_beats": [
+          {
+            "beat_id": "beat_1",
+            "segment_id": "seg_1",
+            "visual_beat_type": "video",
+            "description": null,
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_2",
+            "segment_id": "seg_2",
+            "visual_beat_type": "video",
+            "description": null,
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_3",
+            "segment_id": "seg_3",
+            "visual_beat_type": "video",
+            "description": null,
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_4",
+            "segment_id": "seg_4",
+            "visual_beat_type": "video",
+            "description": null,
+            "source_block_ids": []
+          },
+          {
+            "beat_id": "beat_5",
+            "segment_id": "seg_5",
+            "visual_beat_type": "video",
+            "description": null,
+            "source_block_ids": []
+          }
+        ],
+        "compiled_wan_prompt": "[Beat 0]: Cinematic, sun-drenched wide shot of a young Indian girl, Priya, standing in a lush green park on a bright afternoon. She is looking up with a puzzled expression at a very tall flagpole with the Indian flag waving at the top. The camera is at a low angle, emphasizing the height of the pole and her curiosity. The lighting is warm and golden, creating a sense of wonder and gentle curiosity. The background shows other park elements like trees and a pathway, but the focus is clearly on Priya and the flagpole. The camera slowly dollies towards her, capturing her thoughtful gaze. Duration 10 seconds.\n\n[Beat 1]: An imaginative animated overlay appears on the live-action scene. A bright, glowing, stylized right-angled triangle is drawn connecting Priya's eyes, the base of the flagpole, and the top of the flagpole. Text labels 'Opposite', 'Adjacent', and 'Hypotenuse' fade in to label the corresponding sides of the glowing triangle. The word 'Opposite' pulses next to the flagpole's height. This is a 'eureka' moment, visualizing the mathematical concept in the real world. The animation is clean and modern, contrasting with the realistic park scene. The camera remains static during this overlay to ensure the geometric overlay is clear. Duration 12 seconds.\n\n[Beat 2]: A dynamic shot showing Priya's feet, clad in sandals, walking backwards on the grass, counting her steps. The camera then cuts to a close-up of a measuring tape being unrolled on the ground from the base of the pole to where she now stands. The tape clearly shows the '10m' mark. This action-oriented sequence visually establishes the length of the 'Adjacent' side. The scene has a practical, hands-on feel, with natural lighting and the sounds of the park in the background. The focus is on the action of measuring, making the process tangible. Duration 10 seconds.\n\n[Beat 3]: Close-up shot over Priya's shoulder as she holds up her smartphone. On the screen, a realistic-looking clinometer app is running, showing the camera view aimed at the top of the flagpole. The digital display on the app clearly shows the angle increasing and then settling on '45.0\u00b0'. Her finger taps the screen to lock the measurement. The focus is sharp on the phone screen, with the background slightly blurred. This shot connects the traditional math problem with modern technology, making it relatable for students. The lighting reflects off the screen, highlighting the numbers. Duration 12 seconds.\n\n[Beat 4]: A triumphant, slow-motion shot of Priya smiling, a look of accomplishment on her face. An animated calculation `tan(45\u00b0) = Height / 10m`, then `1 = Height / 10m`, and finally `Height = 10m` elegantly writes itself in the air beside her. The text glows with a soft golden light. The camera slowly orbits around her as she looks from her calculation back to the flagpole, now with a confident expression. The sun creates a slight lens flare, giving the scene a warm, victorious, and inspiring feel. The final shot is a freeze-frame on her happy face. Duration 15 seconds.",
+        "video_prompts": [
+          {
+            "segment_id": "seg_1",
+            "prompt": "Cinematic, sun-drenched wide shot of a young Indian girl, Priya, standing in a lush green park on a bright afternoon. She is looking up with a puzzled expression at a very tall flagpole with the Indian flag waving at the top. The camera is at a low angle, emphasizing the height of the pole and her curiosity. The lighting is warm and golden, creating a sense of wonder and gentle curiosity. The background shows other park elements like trees and a pathway, but the focus is clearly on Priya and the flagpole. The camera slowly dollies towards her, capturing her thoughtful gaze. Duration 10 seconds.",
+            "duration_hint": 10,
+            "duration_seconds": 15
+          },
+          {
+            "segment_id": "seg_2",
+            "prompt": "An imaginative animated overlay appears on the live-action scene. A bright, glowing, stylized right-angled triangle is drawn connecting Priya's eyes, the base of the flagpole, and the top of the flagpole. Text labels 'Opposite', 'Adjacent', and 'Hypotenuse' fade in to label the corresponding sides of the glowing triangle. The word 'Opposite' pulses next to the flagpole's height. This is a 'eureka' moment, visualizing the mathematical concept in the real world. The animation is clean and modern, contrasting with the realistic park scene. The camera remains static during this overlay to ensure the geometric overlay is clear. Duration 12 seconds.",
+            "duration_hint": 12,
+            "duration_seconds": 15
+          },
+          {
+            "segment_id": "seg_3",
+            "prompt": "A dynamic shot showing Priya's feet, clad in sandals, walking backwards on the grass, counting her steps. The camera then cuts to a close-up of a measuring tape being unrolled on the ground from the base of the pole to where she now stands. The tape clearly shows the '10m' mark. This action-oriented sequence visually establishes the length of the 'Adjacent' side. The scene has a practical, hands-on feel, with natural lighting and the sounds of the park in the background. The focus is on the action of measuring, making the process tangible. Duration 10 seconds.",
+            "duration_hint": 10,
+            "duration_seconds": 11
+          },
+          {
+            "segment_id": "seg_4",
+            "prompt": "Close-up shot over Priya's shoulder as she holds up her smartphone. On the screen, a realistic-looking clinometer app is running, showing the camera view aimed at the top of the flagpole. The digital display on the app clearly shows the angle increasing and then settling on '45.0\u00b0'. Her finger taps the screen to lock the measurement. The focus is sharp on the phone screen, with the background slightly blurred. This shot connects the traditional math problem with modern technology, making it relatable for students. The lighting reflects off the screen, highlighting the numbers. Duration 12 seconds.",
+            "duration_hint": 12,
+            "duration_seconds": 15
+          },
+          {
+            "segment_id": "seg_5",
+            "prompt": "A triumphant, slow-motion shot of Priya smiling, a look of accomplishment on her face. An animated calculation `tan(45\u00b0) = Height / 10m`, then `1 = Height / 10m`, and finally `Height = 10m` elegantly writes itself in the air beside her. The text glows with a soft golden light. The camera slowly orbits around her as she looks from her calculation back to the flagpole, now with a confident expression. The sun creates a slight lens flare, giving the scene a warm, victorious, and inspiring feel. The final shot is a freeze-frame on her happy face. Duration 15 seconds.",
+            "duration_hint": 15,
+            "duration_seconds": 15
+          }
+        ]
+      },
+      "_recap_video_paths": [
+        "/app/player/jobs/aa400742/videos/topic_11_beat_0.mp4",
+        "/app/player/jobs/aa400742/videos/topic_11_beat_1.mp4",
+        "/app/player/jobs/aa400742/videos/topic_11_beat_2.mp4",
+        "/app/player/jobs/aa400742/videos/topic_11_beat_3.mp4",
+        "/app/player/jobs/aa400742/videos/topic_11_beat_4.mp4"
+      ],
+      "video_path": "videos/topic_11_beat_0.mp4",
+      "recap_video_paths": [
+        "videos/topic_11_beat_0.mp4",
+        "videos/topic_11_beat_1.mp4",
+        "videos/topic_11_beat_2.mp4",
+        "videos/topic_11_beat_3.mp4",
+        "videos/topic_11_beat_4.mp4"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+Generate a manim_scene_spec from the following input.
+
+INPUT:
+- Narration text
+- Narration duration
+- Visual beats (descriptive)
+- Symbolic overlays allowed
+
+REQUIREMENTS:
+- One scene spec per section.
+- Animate steps in order.
+- Match duration exactly.
+
+=== TIMING REQUIREMENTS ===
+1. First animation action must be a visual element (appear, show_equation), NOT a wait.
+2. First visual should appear within 2 seconds of start.
+3. Include closing animation in final 3-5 seconds (fade_out, highlight, or move to center).
+4. Do NOT start or end with long wait actions (> 2 seconds).
+
+=== LAYOUT REQUIREMENTS ===
+1. Minimum 1.5 units vertical spacing between equation lines.
+2. Maximum 4 major elements visible at once.
+3. Labels must NOT overlap formulas - position 0.8+ units away with arrows.
+4. Center main content at x=0.
+5. Use y-positions: 2.5 (top), 1.0, -0.5, -2.0 (bottom) for vertical stacking.
+6. For worked examples: reveal steps sequentially, fade out previous steps if screen gets crowded.
+
+SECTION DATA:
+{section_json}
+
+RESPONSE FORMAT (use EXACTLY this structure):
+{
+  "section_id": "content_01",
+  "manim_scene_spec": {
+    "objects": [
+      {"id": "obj_1", "type": "equation|label|shape|graph|vector", "position": [0, 0], "properties": {...}}
+    ],
+    "animation_sequence": [
+      {"action": "show_equation|highlight|appear|draw|fade_out", "target": "obj_1", "duration": 2}
+    ]
+  }
+}
+
+CRITICAL: Use exactly "manim_scene_spec" as the key. Not "scene_spec", "manim_spec", or "spec".
+Output JSON only. No extra text.

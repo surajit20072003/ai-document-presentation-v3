@@ -1,0 +1,429 @@
+{
+  "version": "1.2",
+  "description": "Status messages for job progress display. Fun messages for progress, precise error messages with impact for failures. V1.5 phases added.",
+  
+  "phases": {
+    "queued": {
+      "display_name": "Waiting in Queue",
+      "messages": [
+        "Take a deep breath in... and breathe out...",
+        "Warming up the creative engines...",
+        "Gathering cosmic energy for your video...",
+        "Preparing the digital canvas...",
+        "The learning journey is about to begin...",
+        "Aligning the educational stars...",
+        "Brewing a fresh pot of knowledge...",
+        "Stretching our neural networks...",
+        "Sharpening the digital pencils...",
+        "Calibrating the imagination sensors..."
+      ],
+      "failure_message": "QUEUE ERROR: Job failed before processing started",
+      "impact": "No artifacts generated. Check input file format.",
+      "dev_hint": "Check job submission params and file upload handling"
+    },
+    
+    "pdf_conversion": {
+      "display_name": "Converting PDF",
+      "messages": [
+        "Extracting wisdom from your PDF...",
+        "Teaching our AI to read your document...",
+        "Decoding the knowledge within...",
+        "Scanning pages with laser focus..."
+      ],
+      "failure_message": "PDF CONVERSION FAILED: Could not extract content from PDF",
+      "impact": "No markdown generated. Pipeline cannot proceed.",
+      "dev_hint": "Check Datalab API key and PDF structure. Look for encryption or scan-only PDFs."
+    },
+    
+    "chunker": {
+      "display_name": "Parsing Content",
+      "messages": [
+        "Reading through your document with care...",
+        "Breaking down the wisdom into bite-sized pieces...",
+        "Organizing thoughts like a librarian...",
+        "Finding the story in your content...",
+        "Mapping the learning journey ahead...",
+        "Untangling the threads of knowledge...",
+        "Sorting concepts like a master chef preps ingredients..."
+      ],
+      "failure_message": "PARSE FAILED: Chunker could not segment content",
+      "impact": "No chunks generated. Director phase cannot start.",
+      "dev_hint": "Check Gemini Pro API response. Verify markdown structure and content length."
+    },
+    
+    "section_planner": {
+      "display_name": "Planning Lesson Structure",
+      "messages": [
+        "The Section Planner is designing your lesson...",
+        "Mapping out the perfect learning journey...",
+        "Creating a blueprint for understanding...",
+        "Organizing concepts for maximum clarity...",
+        "Crafting the educational architecture..."
+      ],
+      "failure_message": "SECTION PLANNER FAILED: Could not create section structure",
+      "impact": "No section blueprints generated. Narration cannot proceed.",
+      "dev_hint": "Check SectionPlannerAgent output. Verify section_type and renderer assignments."
+    },
+    
+    "narration": {
+      "display_name": "Writing Narration",
+      "messages": [
+        "Crafting the perfect explanation...",
+        "Writing words that teach and inspire...",
+        "The Narration Writer is finding the right voice...",
+        "Turning concepts into spoken wisdom...",
+        "Creating the script for understanding..."
+      ],
+      "failure_message": "NARRATION FAILED: Could not generate narration for section",
+      "impact": "Section has no narration text. Audio and timing will be missing.",
+      "dev_hint": "Check NarrationWriterAgent output. Verify segments have text and duration_seconds."
+    },
+    
+    "visuals": {
+      "display_name": "Designing Visuals",
+      "messages": [
+        "The Visual Artist is sketching ideas...",
+        "Designing the perfect visual accompaniment...",
+        "Creating visual beats that teach...",
+        "Mapping visuals to narration moments...",
+        "Painting knowledge in pixels..."
+      ],
+      "failure_message": "VISUALS FAILED: Could not design visual elements",
+      "impact": "Section has no visual_beats. Display directives may be incomplete.",
+      "dev_hint": "Check VisualSpecArtistAgent output. Verify visual_beats match segment_ids."
+    },
+    
+    "renderer_spec": {
+      "display_name": "Creating Render Specifications",
+      "messages": [
+        "Preparing render specifications...",
+        "Setting up the animation pipeline...",
+        "Configuring video generation parameters...",
+        "Fine-tuning the visual output..."
+      ],
+      "failure_message": "RENDERER SPEC FAILED: Could not create render specifications",
+      "impact": "Section video may not render correctly. Check manim or video specs.",
+      "dev_hint": "Check RendererSpecAgent output. Verify manim_scene_spec or video_prompts are valid."
+    },
+    
+    "memory": {
+      "display_name": "Creating Memory Flashcards",
+      "messages": [
+        "Building flashcards for retention...",
+        "The Memory Agent is reinforcing key concepts...",
+        "Creating quick-reference cards...",
+        "Distilling wisdom into bite-sized pieces...",
+        "Making knowledge stick..."
+      ],
+      "failure_message": "MEMORY FAILED: Could not generate memory flashcards",
+      "impact": "No memory section generated. Flashcards will be missing.",
+      "dev_hint": "Check MemoryFlashcardAgent output. Verify exactly 5 flashcards with front/back."
+    },
+    
+    "recap": {
+      "display_name": "Creating Recap Videos",
+      "messages": [
+        "The Recap Agent is summarizing the journey...",
+        "Creating visual summaries of key concepts...",
+        "Building the recap experience...",
+        "Designing memorable review scenes...",
+        "Wrapping up the learning adventure..."
+      ],
+      "failure_message": "RECAP FAILED: Could not generate recap video prompts",
+      "impact": "No recap section generated. Video summaries will be missing.",
+      "dev_hint": "Check RecapSceneAgent output. Verify 5 video_prompts with 80-150 words each."
+    },
+    
+    "manim_code": {
+      "display_name": "Generating Animation Code",
+      "messages": [
+        "Writing Manim animation code...",
+        "The code generator is crafting visual magic...",
+        "Translating math into motion...",
+        "Building animations from scratch...",
+        "Programming the dance of equations..."
+      ],
+      "failure_message": "MANIM CODE FAILED: Could not generate valid animation code",
+      "impact": "Section manim animation may not render. Fallback to text display.",
+      "dev_hint": "Check ManimCodeGenerator output. Verify Python code has no syntax errors."
+    },
+    
+    "render_execute": {
+      "display_name": "Rendering Videos",
+      "messages": [
+        "Rendering animations and videos...",
+        "The render engine is creating magic...",
+        "Turning code into visual art...",
+        "Processing video generation requests...",
+        "Almost there... final rendering..."
+      ],
+      "failure_message": "RENDER EXECUTE FAILED: Video rendering encountered errors",
+      "impact": "Some section videos may be missing. Check individual renderer logs.",
+      "dev_hint": "Check manim_runner.py and wan_client.py logs for specific errors."
+    },
+    
+    "director": {
+      "display_name": "Planning the Lesson",
+      "messages": [
+        "The AI director is storyboarding your lesson...",
+        "Crafting the perfect educational narrative...",
+        "Deciding how best to teach this concept...",
+        "Choreographing visuals and narration...",
+        "Building a bridge from confusion to clarity...",
+        "Assembling the educational dream team...",
+        "Plotting the path to enlightenment..."
+      ],
+      "failure_message": "DIRECTOR FAILED: Could not create lesson structure",
+      "impact": "No presentation.json generated. Rendering cannot proceed.",
+      "dev_hint": "Check Gemini Pro API response. Verify schema validation errors in logs."
+    },
+    
+    "director_retry": {
+      "display_name": "Refining the Lesson Plan",
+      "messages": [
+        "Polishing the lesson structure...",
+        "Fine-tuning the educational flow...",
+        "Making sure every detail is perfect...",
+        "Double-checking the teaching approach...",
+        "Ironing out the wrinkles in our plan..."
+      ],
+      "failure_message": "DIRECTOR RETRY FAILED: Structure repair unsuccessful after 2 attempts",
+      "impact": "Invalid presentation structure. Hard fail - no fallbacks.",
+      "dev_hint": "Check director_retry prompts. Review schema validation errors for specific missing fields."
+    },
+    
+    "content_director": {
+      "display_name": "Planning Main Content",
+      "messages": [
+        "The Content Director is crafting your lesson...",
+        "Building intro, summary, and core teachings...",
+        "Designing the educational narrative...",
+        "Structuring knowledge for maximum clarity...",
+        "Creating engaging content sections..."
+      ],
+      "failure_message": "CONTENT DIRECTOR FAILED: Could not generate main lesson sections",
+      "impact": "No intro/summary/content sections. Pipeline cannot proceed.",
+      "dev_hint": "Check Gemini Pro response. Verify content_director.py validation. Review structural errors."
+    },
+    
+    "recap_director": {
+      "display_name": "Creating Recap & Memory Aids",
+      "messages": [
+        "The Recap Director is reinforcing key concepts...",
+        "Building memory flashcards for retention...",
+        "Creating visual recap scenes...",
+        "Designing the review experience...",
+        "Crafting memorable summaries..."
+      ],
+      "failure_message": "RECAP DIRECTOR FAILED: Could not generate memory and recap sections",
+      "impact": "No memory flashcards or recap scenes. Pipeline cannot proceed.",
+      "dev_hint": "Check Gemini Pro response. Verify recap_director.py validation. Review 5 recap_scene requirements."
+    },
+    
+    "merge": {
+      "display_name": "Combining Lesson Parts",
+      "messages": [
+        "Merging content and recap into final lesson...",
+        "Combining all the pieces together...",
+        "Assembling the complete learning experience...",
+        "Finalizing the lesson structure..."
+      ],
+      "failure_message": "MERGE STEP FAILED: Could not combine Content + Recap Director outputs",
+      "impact": "No presentation.json generated. Rendering cannot proceed.",
+      "dev_hint": "Check merge_step.py. Verify section ordering and recap scene merging logic."
+    },
+    
+    "tts_duration": {
+      "display_name": "Measuring Audio Timing",
+      "messages": [
+        "Recording narration to measure precise timing...",
+        "Calculating audio durations for sync...",
+        "Measuring how long each section will take...",
+        "Timing the spoken explanations..."
+      ],
+      "failure_message": "TTS DURATION FAILED: Could not measure audio durations",
+      "impact": "Timing may be inaccurate. Display directives could fire at wrong times.",
+      "dev_hint": "Check TTS provider (narakeet/pyttsx3/estimate). Verify audio file generation."
+    },
+    
+    "validation": {
+      "display_name": "Quality Check",
+      "messages": [
+        "Running quality checks on the lesson...",
+        "Making sure everything meets our standards...",
+        "Verifying the educational integrity...",
+        "Checking all the boxes...",
+        "The quality inspector has arrived..."
+      ],
+      "failure_message": "VALIDATION FAILED: Presentation did not pass v1.3 requirements",
+      "impact": "Missing required sections or fields. Check hard_fail_validator output.",
+      "dev_hint": "Review 3-tier validation results. Check for missing intro/summary/memory/recap sections."
+    },
+    
+    "dry_run": {
+      "display_name": "Dry Run Validation",
+      "messages": [
+        "Running pre-flight checks...",
+        "Testing the waters before diving in...",
+        "Validating everything is in order...",
+        "Performing dress rehearsal..."
+      ],
+      "failure_message": "DRY RUN FAILED: Render specs failed pre-validation",
+      "impact": "Would fail during actual rendering. Check WAN prompts (<300 words) or missing manim specs.",
+      "dev_hint": "Review dry_run_validator.py output. Check video_prompts word counts."
+    },
+    
+    "remotion_renderer": {
+      "display_name": "Creating Motion Graphics",
+      "messages": [
+        "Designing beautiful intro animations...",
+        "Crafting visual elements with care...",
+        "Adding that professional polish...",
+        "Making your content shine...",
+        "Sprinkling motion magic..."
+      ],
+      "failure_message": "REMOTION RENDER FAILED: Motion graphics generation error",
+      "impact": "Intro/summary/memory sections missing animations. Player shows placeholder.",
+      "dev_hint": "Check Claude Sonnet response. Verify remotion_scene_spec is valid JSON."
+    },
+    
+    "manim_renderer": {
+      "display_name": "Animating Mathematics",
+      "messages": [
+        "Bringing equations to life...",
+        "Drawing mathematical beauty...",
+        "Animating the dance of numbers...",
+        "Creating visual proofs...",
+        "Making abstract concepts visible...",
+        "Graphing the path to understanding..."
+      ],
+      "failure_message": "MANIM RENDER FAILED: Mathematical animation generation error",
+      "impact": "Math/physics sections missing animations. Player shows placeholder.",
+      "dev_hint": "Check Claude Sonnet response. Verify manim_scene_spec has valid animation_sequence."
+    },
+    
+    "video_renderer": {
+      "display_name": "Generating Conceptual Videos",
+      "messages": [
+        "Painting visual stories with AI...",
+        "Generating cinematic explanations...",
+        "Creating videos that teach...",
+        "Visualizing complex concepts...",
+        "Turning ideas into moving pictures...",
+        "The visual storyteller is at work..."
+      ],
+      "failure_message": "VIDEO RENDER FAILED: Video prompt generation error",
+      "impact": "Content sections missing conceptual videos. Player shows black panel.",
+      "dev_hint": "Check video_prompts in presentation.json. Verify 300+ word requirement met."
+    },
+    
+    "wan_video": {
+      "display_name": "Generating Educational Video",
+      "messages": [
+        "The AI artist is at work...",
+        "Creating stunning visual explanations...",
+        "Rendering knowledge into video form...",
+        "Patience... beautiful things take time...",
+        "Each frame is being crafted with care...",
+        "The pixels are learning to teach...",
+        "Summoning the video generation wizards..."
+      ],
+      "failure_message": "WAN VIDEO FAILED: kie.ai video generation service error",
+      "impact": "Section video not generated. Player shows placeholder or black screen.",
+      "dev_hint": "Check KIE_API_KEY. Review wan_runner.py logs for API response. Verify prompt >300 words."
+    },
+    
+    "wan_polling": {
+      "display_name": "Waiting for Video",
+      "messages": [
+        "The video is rendering in the cloud...",
+        "AI artists are hard at work...",
+        "Patience is a virtue... and so is great video...",
+        "Good things come to those who wait...",
+        "The masterpiece is almost ready..."
+      ],
+      "failure_message": "WAN POLLING TIMEOUT: Video generation did not complete in time",
+      "impact": "Section video incomplete. May have partial result or need retry.",
+      "dev_hint": "Check wan_runner.py poll timeout. Review kie.ai task status."
+    },
+    
+    "audio": {
+      "display_name": "Recording Narration",
+      "messages": [
+        "The narrator is warming up...",
+        "Converting text to speech...",
+        "Adding the voice of knowledge...",
+        "Recording the explanation...",
+        "The voice of wisdom speaks...",
+        "Giving life to the written word..."
+      ],
+      "failure_message": "AUDIO FAILED: Narakeet TTS generation error",
+      "impact": "Section has no narration audio. Playback will be silent.",
+      "dev_hint": "Check NARAKEET_API_KEY. Review narration text length and character encoding."
+    },
+    
+    "timing_sync": {
+      "display_name": "Synchronizing Timing",
+      "messages": [
+        "Aligning audio and visuals...",
+        "Making sure everything is in sync...",
+        "Calibrating the timeline..."
+      ],
+      "failure_message": "TIMING SYNC FAILED: Could not reconcile audio durations",
+      "impact": "Display directives may fire at wrong times. Audio/visual drift possible.",
+      "dev_hint": "Check sync_timing_with_audio() in generate_audio.py. Review actual vs LLM durations."
+    },
+    
+    "assembly": {
+      "display_name": "Assembling Final Video",
+      "messages": [
+        "Putting all the pieces together...",
+        "Mixing audio and visuals...",
+        "Adding the finishing touches...",
+        "Almost there...",
+        "The final countdown begins..."
+      ],
+      "failure_message": "ASSEMBLY FAILED: Could not combine video and audio elements",
+      "impact": "Final video not created. Individual assets may be available.",
+      "dev_hint": "Check moviepy or ffmpeg logs. Verify all input files exist."
+    },
+    
+    "completed": {
+      "display_name": "Complete!",
+      "messages": [
+        "Your educational masterpiece is ready!",
+        "Knowledge has been transformed into video!",
+        "The lesson is ready to inspire!",
+        "Success! Time to learn and grow!",
+        "Mic drop! Your video is done!",
+        "Achievement unlocked: Video Complete!"
+      ]
+    },
+    
+    "failed": {
+      "display_name": "Error Occurred",
+      "messages": [
+        "Something went wrong during processing."
+      ],
+      "impact": "Job incomplete. Check error details below."
+    }
+  },
+  
+  "general_waiting": [
+    "Good things come to those who wait...",
+    "Building something amazing takes time...",
+    "Your patience will be rewarded...",
+    "The best lessons are worth waiting for...",
+    "Quality education can't be rushed...",
+    "Rome wasn't built in a day, and neither is great content...",
+    "The AI hamsters are running as fast as they can..."
+  ],
+  
+  "progress_milestones": {
+    "10": "Just getting started...",
+    "25": "Making good progress...",
+    "50": "Halfway there!",
+    "75": "Almost done!",
+    "90": "Final touches..."
+  }
+}

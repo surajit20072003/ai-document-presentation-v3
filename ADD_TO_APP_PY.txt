@@ -1,0 +1,99 @@
+"""
+Add this as a NEW endpoint at the end of api/app.py (before if __name__ == '__main__')
+
+This adds a /regenerate_manim/<job_id> endpoint without modifying any existing code.
+"""
+
+@app.route('/regenerate_manim/<job_id>', methods=['POST'])
+def regenerate_manim(job_id):
+    """
+    Regenerate Manim code for all manim sections in a job.
+    Uses the V2.5 Director data mapping fix.
+    """
+    from core.agents.manim_code_generator import ManimCodeGenerator, integrate_manim_code_into_section
+    
+    job_dir = JOBS_DIR / job_id
+    pres_path = job_dir / "presentation.json"
+    
+    if not pres_path.exists():
+        return jsonify({"error": "Job not found"}), 404
+    
+    try:
+        # Load presentation
+        with open(pres_path, "r", encoding="utf-8") as f:
+            presentation = json.load(f)
+        
+        manim_gen = ManimCodeGenerator()
+        sections = presentation.get("sections", [])
+        results = {"generated": [], "skipped": [], "failed": []}
+        
+        for section in sections:
+            if section.get("renderer") != "manim":
+                continue
+            
+            section_id = section.get("section_id")
+            
+            # Transform V2.5 Director data (same as pipeline fix)
+            nar = section.get("narration", {})
+            segments = nar.get("segments", [])
+            
+            render_spec = section.get("render_spec", {})
+            manim_spec_from_director = render_spec.get("manim_scene_spec")
+            if isinstance(manim_spec_from_director, dict):
+                manim_spec_from_director = manim_spec_from_director.get("description", "")
+            
+            section_data = {
+                "section_title": section.get("title", "Section"),
+                "narration_segments": segments,
+                "manim_spec": manim_spec_from_director or section.get("explanation_plan", ""),
+                "visual_description": "",
+                "formulas": [],
+                "key_terms": []
+            }
+            
+            try:
+                code = manim_gen.generate_code(section_data, style_config={"style": "standard"})
+                
+                if not code or len(code) < 100:
+                    results["failed"].append({
+                        "section_id": section_id,
+                        "error": "Generated code too short"
+                    })
+                    continue
+                
+                # Save to file
+                manim_code_dir = job_dir / "manim_code"
+                manim_code_dir.mkdir(exist_ok=True)
+                code_file = manim_code_dir / f"section_{section_id}.py"
+                
+                with open(code_file, "w", encoding="utf-8") as f:
+                    f.write(code)
+                
+                # Update presentation.json
+                integrate_manim_code_into_section(section, code)
+                
+                results["generated"].append({
+                    "section_id": section_id,
+                    "title": section.get("title"),
+                    "code_length": len(code),
+                    "segments": len(segments)
+                })
+                
+            except Exception as e:
+                results["failed"].append({
+                    "section_id": section_id,
+                    "error": str(e)
+                })
+        
+        # Save updated presentation
+        with open(pres_path, "w", encoding="utf-8") as f:
+            json.dump(presentation, f, indent=4)
+        
+        return jsonify({
+            "status": "complete",
+            "job_id": job_id,
+            "results": results
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

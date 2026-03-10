@@ -1,0 +1,178 @@
+{
+  "test_id": "E2E-001",
+  "job_id": "3ffaf8d2",
+  "date": "2025-12-25",
+  "input_file": "attached_assets/3-Page-Maths_1766637932776.pdf",
+  "pipeline_version": "v1.5",
+  "duration_minutes": 5.5,
+  "status": "COMPLETED_WITH_ISSUES",
+  
+  "test_summary": {
+    "sections_generated": 9,
+    "audio_files_generated": 0,
+    "video_files_generated": 1,
+    "manim_sections_with_code": 5,
+    "manim_videos_rendered": 0,
+    "wan_videos_rendered": 1
+  },
+  
+  "issues_found": [
+    {
+      "id": "TC-001",
+      "severity": "CRITICAL",
+      "category": "Audio Generation",
+      "title": "No audio files generated",
+      "description": "Audio directory is empty. All segment audio_url fields are null.",
+      "evidence": {
+        "audio_directory": "player/jobs/3ffaf8d2/audio/ - EMPTY",
+        "segment_audio_url": "All 9 sections have audio_url=null"
+      },
+      "affected_sections": "ALL",
+      "expected_behavior": "Edge TTS should generate section_X.mp3 for each section",
+      "root_cause_hypothesis": "TTS step skipped or failed silently",
+      "fix_priority": "P0"
+    },
+    {
+      "id": "TC-002", 
+      "severity": "CRITICAL",
+      "category": "Manim Rendering",
+      "title": "LaTeX standalone.cls still not found despite texliveFull",
+      "description": "Manim render fails with 'LaTeX Error: File standalone.cls not found' for sections with MathTex content",
+      "evidence": {
+        "error_log": "ERROR LaTeX compilation error: LaTeX Error: File `standalone.cls' not found",
+        "sections_affected": [5, 6],
+        "nix_package": "texliveFull is installed but standalone.cls not accessible"
+      },
+      "affected_sections": "5, 6",
+      "expected_behavior": "MathTex formulas should render in Manim",
+      "root_cause_hypothesis": "texliveFull path not in Manim's TeX search path, or package needs restart",
+      "fix_priority": "P0"
+    },
+    {
+      "id": "TC-003",
+      "severity": "CRITICAL", 
+      "category": "Manim Rendering",
+      "title": "LLM-generated Manim code is truncated",
+      "description": "Code ends mid-statement with incomplete expressions like 'run_time='",
+      "evidence": {
+        "section_3_code_end": "...run_time=2)\n        self.wait(5.7)\n        # Segment 4...",
+        "section_5_code_end": "...self.play(Write(hyp_label), run_time=",
+        "section_7_code_end": "...r\"\\csc A = \\frac{5"
+      },
+      "affected_sections": "3, 4, 5, 6, 7",
+      "expected_behavior": "Complete Python code without truncation",
+      "root_cause_hypothesis": "LLM max_tokens limit reached, or validation not rejecting incomplete code",
+      "fix_priority": "P1"
+    },
+    {
+      "id": "TC-004",
+      "severity": "HIGH",
+      "category": "Render Spec",
+      "title": "render_spec.renderer field is MISSING",
+      "description": "All sections have renderer=MISSING in render_spec, even those with manim_scene_spec populated",
+      "evidence": {
+        "section_3": "renderer: MISSING, manim_scene_spec: True (2719 chars)",
+        "section_4": "renderer: MISSING, manim_scene_spec: True (2831 chars)"
+      },
+      "affected_sections": "ALL",
+      "expected_behavior": "renderer field should be 'manim' for content sections, 'video' for recap",
+      "root_cause_hypothesis": "MergeStep not setting renderer field from RendererSpecAgent output",
+      "fix_priority": "P1"
+    },
+    {
+      "id": "TC-005",
+      "severity": "MEDIUM",
+      "category": "Display",
+      "title": "section.type field is MISSING (uses section_type instead)",
+      "description": "Sections have section_type but not type field",
+      "evidence": {
+        "section_1": "type: MISSING, section_type: intro"
+      },
+      "affected_sections": "ALL",
+      "expected_behavior": "Both type and section_type should be populated for compatibility",
+      "root_cause_hypothesis": "Schema inconsistency - merge step uses section_type only",
+      "fix_priority": "P2"
+    },
+    {
+      "id": "TC-006",
+      "severity": "MEDIUM",
+      "category": "Video Quality",
+      "title": "WAN API prompt too long warning",
+      "description": "Recap video prompts exceed recommended length (924+ chars)",
+      "evidence": {
+        "error_log": "Runway API error: Please reduce the length of prompt",
+        "prompt_length": "924-948 chars per beat"
+      },
+      "affected_sections": "9",
+      "expected_behavior": "Prompts should be under API limit",
+      "root_cause_hypothesis": "RecapAgent generating overly verbose prompts",
+      "fix_priority": "P2"
+    }
+  ],
+  
+  "verified_fixes": [
+    {
+      "id": "VF-001",
+      "issue_reference": "ISS-131",
+      "title": "Avatar width_percent = 52% for all sections",
+      "status": "VERIFIED",
+      "evidence": {
+        "all_sections": "width_percent=52",
+        "verified_in": "presentation.json avatar_layout"
+      }
+    },
+    {
+      "id": "VF-002", 
+      "issue_reference": "ISS-136",
+      "title": "Avatar visibility = 'always' for all sections including recap",
+      "status": "VERIFIED",
+      "evidence": {
+        "all_sections": "visibility='always'",
+        "recap_section": "Section 9 has visibility='always'"
+      }
+    }
+  ],
+  
+  "player_code_review": {
+    "player.js": {
+      "avatar_handling": {
+        "line_309": "avatarCanvas.style.opacity = '1' - ALWAYS visible",
+        "line_312": "widthPercent from avatar_layout.width_percent - uses 52% from JSON",
+        "line_344": "avatarCanvas.style.width = ${widthPercent}% - applies correctly",
+        "default_fallback_321-327": "Default widths 60/45/35 only used if JSON missing - OK"
+      },
+      "issues": [
+        "Line 321-326: Default widths (60/45/35) don't match new 52% spec - should update fallbacks"
+      ]
+    },
+    "index.html": {
+      "avatar_canvas": {
+        "line_407-417": "#avatar-canvas CSS - position:absolute, bottom:0, z-index:20",
+        "line_419-425": ".mode-center styles - height:85%",
+        "line_449-454": ".mode-side styles - height:85%"
+      },
+      "issues": [
+        "No explicit width:52% in CSS - relies on JS to set width",
+        "maxWidth:600px in JS may conflict with 52% width on large screens"
+      ]
+    }
+  },
+  
+  "files_generated": {
+    "presentation.json": "154708 bytes - GENERATED",
+    "render_prompts.json": "23820 bytes - GENERATED", 
+    "index.html": "26371 bytes - COPIED",
+    "player.js": "74482 bytes - COPIED",
+    "audio/": "EMPTY - 0 files",
+    "videos/": "topic_9.mp4 (14132 bytes) - 1 file"
+  },
+  
+  "next_steps_priority": [
+    "P0: Fix audio generation - investigate why TTS step produced no output",
+    "P0: Fix LaTeX standalone.cls - verify texliveFull installation and path",
+    "P1: Fix code truncation - increase max_tokens or improve validation",
+    "P1: Fix renderer field - ensure MergeStep populates it from agent output",
+    "P2: Update player.js default avatar widths to 52%",
+    "P2: Shorten WAN/recap prompts"
+  ]
+}

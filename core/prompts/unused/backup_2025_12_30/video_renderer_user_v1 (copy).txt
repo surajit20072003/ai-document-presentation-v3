@@ -1,0 +1,32 @@
+Expand the following section's visual beats into fully concrete video prompts.
+
+SECTION DATA:
+{section_json}
+
+REQUIREMENTS FOR EACH BEAT:
+- At least 300 words per prompt (MANDATORY).
+- Describe each object explicitly with color, size, position.
+- Specify all motion: direction, speed, duration.
+- Include camera framing: angle, movement, zoom level.
+- Include timing breakdown: what happens second-by-second.
+- No narration text - describe visuals only.
+- No abstract phrases - be literal and specific.
+
+RESPONSE FORMAT (use EXACTLY this structure):
+{
+  "section_id": number,
+  "video_prompts": [
+    {
+      "beat_id": 1,
+      "prompt": "Dense cinematographic description of at least 300 words describing: camera starts with a wide establishing shot showing [specific objects with colors and sizes]. The camera slowly pushes in over 3 seconds as [describe motion]. At 4 seconds, [next action with precise timing]...",
+      "duration_seconds": 8,
+      "style": "realistic | animated | educational"
+    }
+  ]
+}
+
+CRITICAL RULES:
+- Use exactly "video_prompts" as the key.
+- Each prompt MUST be at least 300 words.
+- Prompts under 300 words will be REJECTED and retried.
+- Output JSON only. No markdown. No backticks.

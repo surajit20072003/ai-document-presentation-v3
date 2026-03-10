@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Introduction to Trigonometry — V3</title>
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:#0d1117; --surf:#161b22; --surf2:#21262d;
+  --border:rgba(255,255,255,0.07);
+  --w:#e6edf3; --dim:rgba(230,237,243,0.42);
+  --gold:#f6c44e; --amber:#ff9f43; --teal:#00d2b4;
+  --rose:#ff6b8a; --sky:#79c0ff; --lav:#b8a9ff; --grn:#7ee787;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);color:var(--w);font-family:'Sora',sans-serif}
+
+/* ── LAYOUT ── */
+#app{width:100vw;height:100vh;display:flex;flex-direction:column}
+#topbar{height:48px;background:rgba(10,14,20,.97);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:20}
+#main{flex:1;position:relative;overflow:hidden}
+#botbar{height:60px;background:rgba(8,12,18,.98);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0;z-index:20}
+
+/* ── TOPBAR ── */
+.tb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;
+  padding:3px 8px;border-radius:4px;text-transform:uppercase}
+.tb-title{font-size:13px;font-weight:600;color:var(--w)}
+.tb-sec-name{font-size:12px;color:var(--dim);margin-left:4px}
+.tb-dots{display:flex;gap:5px;margin-left:auto;align-items:center}
+.tb-dot{height:5px;border-radius:3px;cursor:pointer;transition:all .35s;background:rgba(255,255,255,.1)}
+.tb-dot.past{background:rgba(246,196,78,.35);width:16px}
+.tb-dot.cur{background:var(--gold);width:28px}
+.tb-dot.future{width:16px}
+
+/* ── SCENES ── */
+.scene{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .55s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;gap:18px}
+.scene.on{opacity:1;pointer-events:all}
+
+/* ── AVATAR OVERLAY ── */
+#av-overlay{position:fixed;bottom:68px;right:16px;z-index:50;
+  width:100px;border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);
+  transition:all .3s;cursor:pointer}
+#av-overlay:hover{width:130px}
+#av-overlay video{width:100%;display:block;object-fit:cover}
+#av-overlay .av-tag{position:absolute;bottom:0;left:0;right:0;text-align:center;
+  font-size:9px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,.6);
+  background:rgba(0,0,0,.55);padding:3px}
+
+/* ── BOTTOM BAR ── */
+.nb{width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.04);color:var(--w);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.nb:hover{border-color:var(--gold);color:var(--gold)}
+.pb{width:42px;height:42px;border-radius:10px;
+  background:linear-gradient(135deg,var(--gold),var(--amber));
+  color:#1a1000;font-size:16px;cursor:pointer;border:none;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 4px 16px rgba(246,196,78,.25);transition:all .2s}
+.pb:hover{transform:scale(1.06)}
+.prog-wrap{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+.prog-meta{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:rgba(255,255,255,.3)}
+.prog-track{height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--amber));
+  border-radius:2px;transition:width .4s}
+.seg-dots{display:flex;gap:5px;margin-top:2px}
+.sdot{width:6px;height:6px;border-radius:50%;cursor:pointer;transition:all .25s;
+  background:rgba(255,255,255,.1)}
+.sdot.on{background:var(--gold);transform:scale(1.3)}
+.sdot.done{background:rgba(255,255,255,.3)}
+
+/* ══════════════════════════
+   S1 — INTRO
+══════════════════════════ */
+.intro-icon{font-size:56px;animation:floatPulse 3s ease infinite}
+@keyframes floatPulse{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.05)}}
+.intro-title{font-family:'Caveat',cursive;font-size:54px;font-weight:700;text-align:center;line-height:1.1;
+  background:linear-gradient(135deg,var(--gold) 0%,var(--amber) 40%,var(--sky) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:riseIn .8s .2s both}
+.intro-sub{font-size:15px;color:var(--dim);text-align:center;max-width:500px;line-height:1.6;
+  animation:riseIn .8s .5s both}
+.intro-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;animation:riseIn .8s .8s both}
+.chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid}
+@keyframes riseIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══════════════════════════
+   S2 — SUMMARY bullets
+══════════════════════════ */
+#s2{align-items:flex-start;max-width:680px;margin:0 auto;width:100%}
+.sum-hd{font-family:'Caveat',cursive;font-size:28px;font-weight:700;color:var(--gold);width:100%}
+.sbullet{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:12px;
+  background:var(--surf);border:1px solid var(--border);width:100%;
+  opacity:0;transform:translateX(-20px);transition:opacity .5s,transform .5s}
+.sbullet.show{opacity:1;transform:translateX(0)}
+.sbullet-n{width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:rgba(246,196,78,.12);border:1px solid rgba(246,196,78,.28);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold);font-weight:600}
+.sbullet-t{font-size:14px;line-height:1.5}
+
+/* ══════════════════════════
+   S3 — CHALK TRIANGLE + RATIOS
+══════════════════════════ */
+#s3{flex-direction:row;gap:24px;align-items:stretch;padding:20px 28px}
+.s3-left{display:flex;flex-direction:column;gap:14px;width:320px;flex-shrink:0}
+.s3-right{flex:1;display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px}
+.panel-title{font-family:'Caveat',cursive;font-size:17px;color:var(--dim);margin-bottom:10px}
+
+/* Chalk canvas */
+#chalkCanvas{border-radius:8px;background:#1a2015;display:block;width:100%;cursor:pointer}
+
+/* Angle toggle */
+.ang-toggle{display:flex;gap:8px}
+.atog{flex:1;padding:8px;border-radius:8px;border:1px solid;cursor:pointer;
+  font-weight:600;font-size:12px;text-align:center;transition:all .3s;font-family:'Sora',sans-serif}
+.atog.A{color:var(--gold);border-color:rgba(246,196,78,.3);background:rgba(246,196,78,.06)}
+.atog.C{color:var(--teal);border-color:rgba(0,210,180,.3);background:rgba(0,210,180,.06)}
+.atog.active{filter:brightness(1.5);transform:scale(1.04);box-shadow:0 0 12px rgba(255,255,255,.1)}
+
+/* SOH-CAH-TOA */
+.soh-row{display:flex;gap:8px;justify-content:center}
+.soh-card{flex:1;padding:10px 8px;border-radius:9px;text-align:center;border:1px solid}
+.soh-abbr{font-family:'Caveat',cursive;font-size:22px;font-weight:700}
+.soh-def{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-top:3px}
+
+/* Ratio rows - animated reveal */
+.ratio-table{width:100%}
+.rt-head{display:grid;grid-template-columns:80px 1fr 1fr;gap:4px;margin-bottom:4px}
+.rt-hcell{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);
+  letter-spacing:.08em;padding:4px 8px}
+.rt-row{display:grid;grid-template-columns:80px 1fr 1fr;gap:4px;margin-bottom:3px;
+  opacity:0;transform:translateX(-10px);transition:opacity .4s,transform .4s}
+.rt-row.show{opacity:1;transform:translateX(0)}
+.rt-cell{padding:8px 10px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:12px}
+.rt-name{background:rgba(121,192,255,.08);color:var(--sky);font-weight:600}
+.rt-val{background:var(--surf2);color:var(--dim);transition:all .3s}
+.rt-val.lit{background:rgba(126,231,135,.1);color:var(--grn);font-weight:600}
+
+/* ══════════════════════════
+   S4 — EXAMPLE 1
+══════════════════════════ */
+#s4{flex-direction:row;gap:22px;align-items:flex-start;padding:20px 28px}
+.s4-left{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0}
+.s4-right{width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+
+.given-box{background:rgba(246,196,78,.05);border:1px solid rgba(246,196,78,.2);
+  border-radius:11px;padding:14px}
+.given-title{font-family:'Caveat',cursive;font-size:18px;color:var(--gold);margin-bottom:6px}
+.given-eq{font-family:'JetBrains Mono',monospace;font-size:17px;color:var(--w)}
+
+.steps-panel{background:var(--surf);border:1px solid var(--border);border-radius:11px;padding:14px}
+.steps-title{font-family:'Caveat',cursive;font-size:15px;color:var(--dim);margin-bottom:8px}
+.step-line{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;
+  background:var(--surf2);margin-bottom:4px;
+  opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.step-line.show{opacity:1;transform:translateY(0)}
+.step-line.final{background:rgba(126,231,135,.1);border:1px solid rgba(126,231,135,.2)}
+.step-num{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--dim)}
+.step-math{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--w);line-height:1.5}
+.step-math .ans{color:var(--grn);font-size:14px;font-weight:700}
+.step-sub{font-size:10px;color:rgba(255,255,255,.3);display:block;margin-top:1px}
+
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.res-card{background:var(--surf2);border-radius:8px;padding:8px 10px;
+  opacity:0;transform:scale(.92);transition:opacity .4s,transform .4s}
+.res-card.show{opacity:1;transform:scale(1)}
+.res-nm{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--sky)}
+.res-v{font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--grn);font-weight:700}
+
+/* ══════════════════════════
+   S5 — PROOF
+══════════════════════════ */
+#s5{flex-direction:column;gap:14px;padding:20px 28px;align-items:stretch}
+.proof-hdr{background:rgba(184,169,255,.06);border:1px solid rgba(184,169,255,.2);
+  border-radius:11px;padding:14px 18px}
+.proof-hdr-title{font-family:'Caveat',cursive;font-size:20px;color:var(--lav)}
+.proof-hdr-sub{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5}
+.proof-body{display:flex;gap:18px;flex:1}
+.proof-steps-col{flex:1;display:flex;flex-direction:column;gap:6px}
+.proof-vis-col{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.pstep{padding:10px 14px;border-radius:8px;background:var(--surf);
+  border-left:3px solid transparent;
+  opacity:0;transform:translateX(-14px);transition:opacity .5s,transform .5s,border-color .3s}
+.pstep.show{opacity:1;transform:translateX(0)}
+.pstep.active{border-left-color:var(--gold);background:rgba(246,196,78,.05)}
+.pstep-eq{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--sky);
+  display:block;margin-top:4px}
+.pstep-why{font-size:10px;color:var(--dim);display:block;margin-top:2px}
+.proof-qed{padding:12px;border-radius:9px;background:rgba(126,231,135,.08);
+  border:1px solid rgba(126,231,135,.25);text-align:center;
+  font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--grn);
+  opacity:0;transform:translateY(8px);transition:opacity .6s,transform .6s}
+.proof-qed.show{opacity:1;transform:translateY(0)}
+
+/* ══════════════════════════
+   S6 — FLASHCARDS
+══════════════════════════ */
+#s6{gap:16px}
+.mem-hd{font-family:'Caveat',cursive;font-size:28px;color:var(--gold);text-align:center}
+.card-scene{width:100%;max-width:540px;perspective:1100px}
+.card-3d{width:100%;height:200px;position:relative;
+  transform-style:preserve-3d;transition:transform .65s cubic-bezier(.4,0,.2,1);cursor:pointer}
+.card-3d.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;border-radius:16px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.card-front{background:var(--surf2);border:1px solid var(--border);border-top:4px solid var(--gold)}
+.card-back{background:rgba(246,196,78,.05);border:1px solid rgba(246,196,78,.22);
+  border-top:4px solid var(--amber);transform:rotateY(180deg)}
+.card-q{font-size:15px;font-weight:600;text-align:center;line-height:1.5}
+.card-hint{font-size:10px;color:var(--dim);margin-top:10px;font-family:'JetBrains Mono',monospace}
+.card-a{font-size:13px;line-height:1.7;text-align:center}
+.card-a b{color:var(--gold)}
+.card-nav{display:flex;gap:12px;align-items:center}
+.card-pips{display:flex;gap:7px}
+.cpip{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.1);
+  cursor:pointer;transition:all .3s}
+.cpip.on{background:var(--gold);transform:scale(1.3)}
+.cpip.done{background:rgba(255,255,255,.3)}
+.card-ctr{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim)}
+
+/* ══════════════════════════
+   S7 — RECAP
+══════════════════════════ */
+#s7{gap:12px;padding:24px 32px;align-items:stretch;max-width:760px;margin:0 auto;width:100%}
+.recap-hd{font-family:'Caveat',cursive;font-size:26px;color:var(--lav);text-align:center}
+.recap-seg{background:var(--surf);border-radius:11px;padding:14px 18px;
+  border-left:3px solid var(--lav);
+  opacity:0;transform:translateY(10px);transition:opacity .6s,transform .6s}
+.recap-seg.show{opacity:1;transform:translateY(0)}
+.recap-seg-n{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--lav);
+  letter-spacing:.1em;margin-bottom:5px}
+.recap-seg-t{font-size:12px;line-height:1.7;color:rgba(255,255,255,.7)}
+.recap-seg-t b{color:var(--gold)}
+
+/* badge colours */
+.badge-intro{background:rgba(0,210,180,.12);color:#00d2b4;border:1px solid rgba(0,210,180,.25)}
+.badge-summary{background:rgba(246,196,78,.12);color:#f6c44e;border:1px solid rgba(246,196,78,.25)}
+.badge-content{background:rgba(121,192,255,.12);color:#79c0ff;border:1px solid rgba(121,192,255,.25)}
+.badge-example{background:rgba(255,166,87,.12);color:#ffa657;border:1px solid rgba(255,166,87,.25)}
+.badge-memory{background:rgba(184,169,255,.12);color:#b8a9ff;border:1px solid rgba(184,169,255,.25)}
+.badge-recap{background:rgba(126,231,135,.12);color:#7ee787;border:1px solid rgba(126,231,135,.25)}
+/* narr box for avatar */
+#av-narr{font-size:10px;line-height:1.55;color:rgba(255,255,255,.55);padding:8px;
+  background:rgba(0,0,0,.4);border-top:1px solid rgba(255,255,255,.08);display:none}
+#av-overlay:hover #av-narr{display:block}
+
+/* ── THREE.JS LAYER — behind all scene content ── */
+#threejs-layer{position:absolute;inset:0;z-index:1;display:none}
+#threejs-layer.on{display:block}
+
+/* ── AVATAR playing pulse ring ── */
+#av-wrap.playing::after{content:'';position:absolute;inset:-2px;border-radius:16px;
+  border:2px solid rgba(246,196,78,.45);animation:avPulse 2s ease infinite;pointer-events:none}
+@keyframes avPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.8;transform:scale(1.02)}}
+
+/* ── GESTURE HUD ── */
+#gesture-hud{position:fixed;top:58px;left:12px;z-index:60;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+#g-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.18);transition:background .3s}
+#g-dot.active{background:#00d2b4}
+#g-dot.denied{background:#ff6b8a}
+#g-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:#f6c44e;
+  background:rgba(0,0,0,.65);padding:3px 8px;border-radius:4px;
+  opacity:0;transition:opacity .25s;white-space:nowrap}
+#g-lbl.show{opacity:1}
+#g-zoom{font-size:9px;color:rgba(230,237,243,.38);font-family:'JetBrains Mono',monospace;
+  background:rgba(0,0,0,.4);padding:2px 6px;border-radius:3px;opacity:0;transition:opacity .3s}
+#g-zoom.show{opacity:1}
+
+/* hidden camera feed for HandPose */
+#cam-vid{position:fixed;bottom:-9999px;left:-9999px;width:320px;height:240px}
+
+</style>
+<!-- THREE.JS must load before any initScene() call -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- TF HandPose: async, gesture controls silently disabled if camera denied -->
+<script>
+(function(){
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js';
+  s.onload=function(){
+    var s2=document.createElement('script');
+    s2.src='https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js';
+    s2.onload=function(){window._handposeReady=true;if(window._initGestures)window._initGestures();};
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s);
+})();
+</script>
+
+</head>
+<body>
+<div id="app">
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="tb-badge badge-intro" id="bot-badge">INTRO</div>
+  <div class="tb-title">Trigonometry</div>
+  <div class="tb-sec-name" id="tb-secname">/ Introduction</div>
+  <div class="tb-dots" id="tb-dots"></div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+<!-- THREE.JS VISUAL LAYER — sits behind all scene content -->
+<div id="threejs-layer"></div>
+
+<!-- S1: INTRO -->
+<div class="scene on" id="s1">
+  <div class="intro-icon">&#9651;</div>
+  <div class="intro-title">Introduction to<br>Trigonometry</div>
+  <div class="intro-sub">The study of relationships between the sides and angles of a triangle — from gopurams to GPS satellites.</div>
+  <div class="intro-chips">
+    <div class="chip" style="color:var(--gold);border-color:rgba(246,196,78,.3)">6 Ratios</div>
+    <div class="chip" style="color:var(--sky);border-color:rgba(121,192,255,.3)">Right Triangles</div>
+    <div class="chip" style="color:var(--teal);border-color:rgba(0,210,180,.3)">SOH-CAH-TOA</div>
+    <div class="chip" style="color:var(--lav);border-color:rgba(184,169,255,.3)">Pythagorean Theorem</div>
+  </div>
+</div>
+
+<!-- S2: SUMMARY -->
+<div class="scene" id="s2">
+  <div class="sum-hd">By the end of this lesson, you will...</div>
+  <div id="sum-bullets"></div>
+</div>
+
+<!-- S3: CONTENT -->
+<div class="scene" id="s3">
+  <div class="s3-left">
+    <!-- chalk canvas -->
+    <div class="panel" style="padding:12px;flex:1">
+      <div class="panel-title" id="tri-label">Right Triangle — Click an angle below</div>
+      <canvas id="chalkCanvas" style="width:100%;height:190px;border-radius:6px;background:#141a0e"></canvas>
+      <div class="ang-toggle" style="margin-top:10px">
+        <div class="atog A active" onclick="focusAngle('A')">&#8736; Angle A</div>
+        <div class="atog C" onclick="focusAngle('C')">&#8736; Angle C</div>
+      </div>
+    </div>
+    <!-- SOH CAH TOA -->
+    <div class="panel" style="padding:14px">
+      <div class="panel-title">Mnemonic</div>
+      <div class="soh-row">
+        <div class="soh-card" style="color:var(--rose);border-color:rgba(255,107,138,.3);background:rgba(255,107,138,.06)">
+          <div class="soh-abbr">SOH</div><div class="soh-def">sin=Opp/Hyp</div>
+        </div>
+        <div class="soh-card" style="color:var(--teal);border-color:rgba(0,210,180,.3);background:rgba(0,210,180,.06)">
+          <div class="soh-abbr">CAH</div><div class="soh-def">cos=Adj/Hyp</div>
+        </div>
+        <div class="soh-card" style="color:var(--gold);border-color:rgba(246,196,78,.3);background:rgba(246,196,78,.06)">
+          <div class="soh-abbr">TOA</div><div class="soh-def">tan=Opp/Adj</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="s3-right">
+    <div class="panel" style="flex:1">
+      <div class="panel-title">All 6 Trigonometric Ratios — click an angle to highlight</div>
+      <div class="ratio-table">
+        <div class="rt-head">
+          <div class="rt-hcell">Ratio</div>
+          <div class="rt-hcell" style="color:var(--gold)">&#8736; A (reference)</div>
+          <div class="rt-hcell" style="color:var(--teal)">&#8736; C (reference)</div>
+        </div>
+        <div id="ratio-table-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S4: EXAMPLE 1 -->
+<div class="scene" id="s4">
+  <div class="s4-left">
+    <div class="given-box">
+      <div class="given-title">&#128270; Example 1</div>
+      <div class="given-eq">tan A = 4/3 &nbsp;&#8594;&nbsp; Find all 6 ratios</div>
+    </div>
+    <div class="steps-panel">
+      <div class="steps-title">Step-by-step solution</div>
+      <div id="steps4"></div>
+    </div>
+    <div class="panel" style="padding:14px">
+      <div class="panel-title">All Six Ratios</div>
+      <div class="results-grid" id="rr-grid"></div>
+    </div>
+  </div>
+  <div class="s4-right">
+    <div class="panel" style="padding:12px">
+      <div class="panel-title">3-4-5 Triangle</div>
+      <canvas id="canvas345" width="180" height="200" style="width:100%;background:#141a0e;border-radius:6px"></canvas>
+      <div style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.6">
+        <b style="color:var(--gold)">Pythagorean Triple:</b><br>
+        3&#178; + 4&#178; = 9 + 16 = <span style="color:var(--grn)">25 = 5&#178;</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S5: EXAMPLE 2 PROOF -->
+<div class="scene" id="s5">
+  <div class="proof-hdr">
+    <div class="proof-hdr-title">Example 2: If sin B = sin Q, prove &#8736;B = &#8736;Q</div>
+    <div class="proof-hdr-sub">B and Q are acute angles in two different right-angled triangles.</div>
+  </div>
+  <div class="proof-body">
+    <div class="proof-steps-col" id="proof-steps-col"></div>
+    <div class="proof-vis-col">
+      <div class="panel" style="padding:10px">
+        <canvas id="canvasSim" width="190" height="300" style="width:100%;background:#141a0e;border-radius:6px"></canvas>
+      </div>
+      <div class="proof-qed" id="proof-qed">&#8756; &#8736;B = &#8736;Q &nbsp;&#10003;<br><span style="font-size:10px;color:var(--dim)">By SSS Similarity</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- S6: MEMORY -->
+<div class="scene" id="s6">
+  <div class="mem-hd">Memory Cards &#8212; SOH-CAH-TOA</div>
+  <div class="card-scene">
+    <div class="card-3d" id="card-3d" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="card-q" id="card-q">How do you remember the three main ratios?</div>
+        <div class="card-hint">&#128161; Click card to reveal answer</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-a" id="card-a"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-nav">
+    <button class="nb" onclick="prevCard()">&#8592;</button>
+    <div class="card-pips" id="card-pips"></div>
+    <button class="nb" onclick="nextCard()">&#8594;</button>
+  </div>
+  <div class="card-ctr" id="card-ctr">1 of 5</div>
+  <div style="font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace">
+    keyboard: f=flip &nbsp; j/k=next/prev &nbsp; Enter=flip
+  </div>
+</div>
+
+<!-- S7: RECAP -->
+<div class="scene" id="s7">
+  <div class="recap-hd">&#127917; Lesson Recap</div>
+  <div id="recap-segs"></div>
+</div>
+
+</div><!-- /main -->
+
+<!-- GESTURE HUD — silently disabled if camera denied -->
+<div id="gesture-hud">
+  <div id="g-dot" title="Camera gesture control"></div>
+  <div id="g-lbl"></div>
+  <div id="g-zoom">Pinch to zoom</div>
+</div>
+<video id="cam-vid" autoplay playsinline muted></video>
+
+<!-- AVATAR OVERLAY -->
+<div id="av-overlay">
+  <video id="av-vid" autoplay muted loop playsinline style="aspect-ratio:9/16;width:100%"></video>
+  <div class="av-tag">Priya &middot; Maths</div>
+  <div id="av-narr"></div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="botbar">
+  <button class="nb" onclick="prevSection()">&#8592;</button>
+  <button class="pb" onclick="replaySection()">&#9654;</button>
+  <div class="prog-wrap">
+    <div class="prog-meta">
+      <span id="bot-label">Introduction</span>
+      <span id="bot-ctr">1 / 7</span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:14.3%"></div></div>
+    <div class="seg-dots" id="seg-dots"></div>
+  </div>
+  <div class="tb-badge badge-intro" id="bot-badge" style="margin-left:auto">INTRO</div>
+  <button class="nb" onclick="nextSection()">&#8594;</button>
+</div>
+
+</div><!-- /app -->
+
+<script>
+
+// ══════════════════════════════════════════
+// CHALK DRAWING ENGINE
+// ══════════════════════════════════════════
+var chalk = {
+  canvas: null, ctx: null,
+  queue: [], running: false,
+  init: function(id) {
+    this.canvas = document.getElementById(id);
+    this.ctx = this.canvas.getContext('2d');
+    this.clear();
+  },
+  clear: function() {
+    if (!this.ctx) return;
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.queue = []; this.running = false;
+  },
+  style: function(color, lw) {
+    this.ctx.strokeStyle = color || 'rgba(240,235,224,0.88)';
+    this.ctx.lineWidth = lw || 2.5;
+    this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round';
+  },
+  // Draw a line stroke-by-stroke with chalk texture
+  drawLine: function(x1, y1, x2, y2, color, lw, delay, cb) {
+    var self = this, ctx = this.ctx;
+    var steps = 40, dx = (x2-x1)/steps, dy = (y2-y1)/steps;
+    var i = 0;
+    setTimeout(function() {
+      var iv = setInterval(function() {
+        ctx.beginPath();
+        ctx.strokeStyle = color || 'rgba(240,235,224,0.88)';
+        ctx.lineWidth = (lw||2.5) + (Math.random()*.6-.3);
+        ctx.globalAlpha = 0.7 + Math.random()*.25;
+        ctx.moveTo(x1 + dx*i + Math.random()*.5, y1 + dy*i + Math.random()*.5);
+        ctx.lineTo(x1 + dx*(i+1) + Math.random()*.5, y1 + dy*(i+1) + Math.random()*.5);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        i++;
+        if (i >= steps) { clearInterval(iv); if (cb) cb(); }
+      }, 12);
+    }, delay || 0);
+  },
+  // Chalk text that appears letter by letter
+  text: function(txt, x, y, color, size, delay, cb) {
+    var self = this, ctx = this.ctx;
+    ctx.font = (size||22) + 'px Caveat, cursive';
+    ctx.fillStyle = color || 'rgba(240,235,224,0.85)';
+    ctx.textAlign = 'center';
+    var i = 0;
+    setTimeout(function() {
+      var iv = setInterval(function() {
+        // redraw up to i chars
+        ctx.clearRect(x-200, y-size*1.2, 400, size*1.5);
+        ctx.globalAlpha = 0.85 + Math.random()*.12;
+        ctx.fillText(txt.substring(0, i+1), x, y);
+        ctx.globalAlpha = 1;
+        i++;
+        if (i >= txt.length) { clearInterval(iv); if (cb) cb(); }
+      }, 60);
+    }, delay || 0);
+  },
+  // Arc
+  arc: function(cx, cy, r, sa, ea, color, lw, delay, cb) {
+    var self = this, ctx = this.ctx;
+    var steps = 30, da = (ea-sa)/steps, i = 0;
+    setTimeout(function() {
+      var iv = setInterval(function() {
+        ctx.beginPath();
+        ctx.strokeStyle = color || 'rgba(240,235,224,0.7)';
+        ctx.lineWidth = lw || 2;
+        ctx.globalAlpha = 0.7 + Math.random()*.2;
+        var a1 = sa + da*i, a2 = sa + da*(i+1);
+        ctx.arc(cx, cy, r, a1, a2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        i++;
+        if (i >= steps) { clearInterval(iv); if (cb) cb(); }
+      }, 14);
+    }, delay || 0);
+  }
+};
+
+// ══════════════════════════════════════════
+// TRIANGLE CHALK DRAWING
+// ══════════════════════════════════════════
+var W = 0, H = 0; // canvas dims set on load
+
+function drawTriangleAngleA() {
+  chalk.clear();
+  var canvas = chalk.canvas;
+  W = canvas.width; H = canvas.height;
+  var ax=40, ay=H-40, bx=W-40, by=H-40, cx=W-40, cy=40;
+  // Sides
+  chalk.drawLine(ax, ay, bx, by, 'rgba(0,210,180,0.85)', 3, 0, function() {   // adj bottom
+    chalk.drawLine(cx, cy, bx, by, 'rgba(255,107,138,0.85)', 3, 0, function() { // opp right
+      chalk.drawLine(ax, ay, cx, cy, 'rgba(246,196,78,0.85)', 3, 0, function() { // hyp diagonal
+        // Right angle box
+        var sz = 16;
+        chalk.drawLine(bx-sz, by, bx-sz, by-sz, 'rgba(255,255,255,0.35)', 1.5, 0);
+        chalk.drawLine(bx-sz, by-sz, bx, by-sz, 'rgba(255,255,255,0.35)', 1.5, 0);
+        // Labels
+        setTimeout(function() {
+          var ctx = chalk.ctx;
+          ctx.font = 'bold 20px Caveat, cursive';
+          // A
+          ctx.fillStyle = '#f6c44e'; ctx.textAlign='center';
+          ctx.fillText('A', ax-12, ay+8);
+          // B
+          ctx.fillStyle = 'rgba(240,235,224,0.4)';
+          ctx.fillText('B', bx+12, by+16);
+          // C
+          ctx.fillStyle = '#00d2b4';
+          ctx.fillText('C', cx+12, cy-4);
+          // Side labels
+          ctx.font = '16px Caveat, cursive';
+          ctx.fillStyle = 'rgba(255,107,138,0.9)';
+          ctx.textAlign = 'left';
+          ctx.fillText('Opposite', cx+6, (cy+by)/2);
+          ctx.fillStyle = 'rgba(0,210,180,0.9)';
+          ctx.textAlign = 'center';
+          ctx.fillText('Adjacent', (ax+bx)/2, by+18);
+          ctx.fillStyle = 'rgba(246,196,78,0.9)';
+          ctx.save();
+          ctx.translate((ax+cx)/2-18, (ay+cy)/2);
+          ctx.rotate(-Math.atan2(ay-cy, cx-ax));
+          ctx.textAlign='center';
+          ctx.fillText('Hypotenuse', 0, -8);
+          ctx.restore();
+          // Angle arc at A
+          chalk.arc(ax, ay, 32, -0.35, 0, '#f6c44e', 2, 0);
+          chalk.arc(ax, ay, 32, Math.PI*1.5, Math.PI*1.5+0.35, '#f6c44e', 2, 0);
+        }, 200);
+      });
+    });
+  });
+}
+
+function drawTriangleAngleC() {
+  chalk.clear();
+  var canvas = chalk.canvas;
+  W = canvas.width; H = canvas.height;
+  var ax=40, ay=H-40, bx=W-40, by=H-40, cx=W-40, cy=40;
+  chalk.drawLine(ax, ay, bx, by, 'rgba(255,107,138,0.85)', 3, 0, function() { // opp bottom for C
+    chalk.drawLine(cx, cy, bx, by, 'rgba(0,210,180,0.85)', 3, 0, function() { // adj right for C
+      chalk.drawLine(ax, ay, cx, cy, 'rgba(246,196,78,0.85)', 3, 0, function() { // hyp
+        var sz = 16;
+        chalk.drawLine(bx-sz, by, bx-sz, by-sz, 'rgba(255,255,255,0.35)', 1.5, 0);
+        chalk.drawLine(bx-sz, by-sz, bx, by-sz, 'rgba(255,255,255,0.35)', 1.5, 0);
+        setTimeout(function() {
+          var ctx = chalk.ctx;
+          ctx.font = 'bold 20px Caveat, cursive';
+          ctx.fillStyle = 'rgba(240,235,224,0.4)'; ctx.textAlign='center';
+          ctx.fillText('A', ax-12, ay+8);
+          ctx.fillStyle = 'rgba(240,235,224,0.4)';
+          ctx.fillText('B', bx+12, by+16);
+          ctx.fillStyle = '#f6c44e'; // C is now the focus
+          ctx.fillText('C', cx+12, cy-4);
+          ctx.font = '16px Caveat, cursive';
+          // For angle C: opp = AB (bottom), adj = BC (right)
+          ctx.fillStyle = 'rgba(255,107,138,0.9)';
+          ctx.textAlign = 'center';
+          ctx.fillText('Opposite (AB)', (ax+bx)/2, by+18);
+          ctx.fillStyle = 'rgba(0,210,180,0.9)';
+          ctx.textAlign = 'left';
+          ctx.fillText('Adjacent (BC)', cx+6, (cy+by)/2);
+          ctx.fillStyle = 'rgba(246,196,78,0.9)';
+          ctx.save();
+          ctx.translate((ax+cx)/2-18, (ay+cy)/2);
+          ctx.rotate(-Math.atan2(ay-cy, cx-ax));
+          ctx.textAlign='center';
+          ctx.fillText('Hypotenuse', 0, -8);
+          ctx.restore();
+          // Angle arc at C
+          var angle = Math.atan2(bx-cx, cy-by);
+          chalk.arc(cx, cy, 28, Math.PI*0.5, Math.PI*0.5+angle, '#f6c44e', 2, 0);
+        }, 200);
+      });
+    });
+  });
+}
+
+function draw345Triangle() {
+  var c = document.getElementById('canvas345');
+  if (!c) return;
+  var ctx = c.getContext('2d'), W = c.width, H = c.height;
+  ctx.clearRect(0,0,W,H);
+  var ax=30, ay=H-30, bx=W-30, by=H-30, cx=W-30, cy=30;
+  function chalkLine(x1,y1,x2,y2,col,lw,delay,cb) {
+    var steps=35, dx=(x2-x1)/steps, dy=(y2-y1)/steps, i=0;
+    setTimeout(function(){
+      var iv=setInterval(function(){
+        ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=lw+(Math.random()*.5-.25);
+        ctx.globalAlpha=0.75+Math.random()*.2;ctx.lineCap='round';
+        ctx.moveTo(x1+dx*i+Math.random()*.4,y1+dy*i+Math.random()*.4);
+        ctx.lineTo(x1+dx*(i+1)+Math.random()*.4,y1+dy*(i+1)+Math.random()*.4);
+        ctx.stroke();ctx.globalAlpha=1;i++;
+        if(i>=steps){clearInterval(iv);if(cb)cb();}
+      },10);
+    },delay||0);
+  }
+  chalkLine(ax,ay,bx,by,'rgba(0,210,180,.85)',3,0,function(){
+    chalkLine(cx,cy,bx,by,'rgba(255,107,138,.85)',3,0,function(){
+      chalkLine(ax,ay,cx,cy,'rgba(246,196,78,.85)',3,0,function(){
+        var sz=14;
+        chalkLine(bx-sz,by,bx-sz,by-sz,'rgba(255,255,255,.35)',1.5,0);
+        chalkLine(bx-sz,by-sz,bx,by-sz,'rgba(255,255,255,.35)',1.5,0);
+        setTimeout(function(){
+          ctx.font='bold 18px Caveat,cursive';
+          ctx.fillStyle='#f6c44e';ctx.textAlign='center';ctx.fillText('A',ax-10,ay+8);
+          ctx.fillStyle='rgba(240,235,224,.45)';ctx.fillText('B',bx+10,by+14);
+          ctx.fillStyle='#00d2b4';ctx.fillText('C',cx+10,cy-4);
+          ctx.font='bold 20px Caveat,cursive';
+          ctx.fillStyle='rgba(255,107,138,.9)';ctx.textAlign='left';ctx.fillText('4',cx+7,(cy+by)/2);
+          ctx.fillStyle='rgba(0,210,180,.9)';ctx.textAlign='center';ctx.fillText('3',(ax+bx)/2,by+16);
+          ctx.fillStyle='rgba(246,196,78,.9)';
+          ctx.save();ctx.translate((ax+cx)/2-14,(ay+cy)/2);
+          ctx.rotate(-Math.atan2(ay-cy,cx-ax));ctx.textAlign='center';ctx.fillText('5',0,-8);ctx.restore();
+        },150);
+      });
+    });
+  });
+}
+
+function drawSimilarTriangles() {
+  var c = document.getElementById('canvasSim');
+  if (!c) return;
+  var ctx = c.getContext('2d'), W = c.width, H = c.height;
+  ctx.clearRect(0,0,W,H);
+  function cl(x1,y1,x2,y2,col,delay,cb){
+    var s=30,dx=(x2-x1)/s,dy=(y2-y1)/s,i=0;
+    setTimeout(function(){
+      var iv=setInterval(function(){
+        ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=2+Math.random()*.4;
+        ctx.globalAlpha=.75+Math.random()*.2;ctx.lineCap='round';
+        ctx.moveTo(x1+dx*i+Math.random()*.4,y1+dy*i+Math.random()*.4);
+        ctx.lineTo(x1+dx*(i+1)+Math.random()*.4,y1+dy*(i+1)+Math.random()*.4);
+        ctx.stroke();ctx.globalAlpha=1;i++;
+        if(i>=s){clearInterval(iv);if(cb)cb();}
+      },10);
+    },delay||0);
+  }
+  // Triangle ABC (top-left, smaller)
+  var a1x=15,a1y=140,b1x=100,b1y=140,c1x=100,c1y=30;
+  cl(a1x,a1y,b1x,b1y,'rgba(121,192,255,.8)',0,function(){
+    cl(c1x,c1y,b1x,b1y,'rgba(255,107,138,.8)',0,function(){
+      cl(a1x,a1y,c1x,c1y,'rgba(246,196,78,.8)',0,function(){
+        // right angle
+        cl(b1x-10,b1y,b1x-10,b1y-10,'rgba(255,255,255,.3)',0);
+        cl(b1x-10,b1y-10,b1x,b1y-10,'rgba(255,255,255,.3)',0);
+        setTimeout(function(){
+          ctx.font='bold 16px Caveat,cursive';
+          ctx.fillStyle='#79c0ff';ctx.textAlign='center';
+          ctx.fillText('A',a1x-8,a1y+5);ctx.fillText('C',b1x+10,b1y+12);ctx.fillText('B',c1x+10,c1y-4);
+          ctx.font='12px Caveat,cursive';
+          ctx.fillStyle='rgba(246,196,78,.8)';
+          ctx.save();ctx.translate((a1x+c1x)/2-10,(a1y+c1y)/2);ctx.rotate(-Math.atan2(a1y-c1y,c1x-a1x));
+          ctx.textAlign='center';ctx.fillText('AB',0,-7);ctx.restore();
+          ctx.fillStyle='rgba(121,192,255,.8)';ctx.textAlign='center';ctx.fillText('AC',(a1x+b1x)/2,b1y+14);
+          ctx.fillStyle='rgba(255,107,138,.8)';ctx.textAlign='left';ctx.fillText('BC',b1x+4,(b1y+c1y)/2);
+        },100);
+      });
+    });
+  });
+  // Triangle PQR (bottom-right, larger)
+  var p2x=10,p2y=290,q2x=170,q2y=290,r2x=170,r2y=160;
+  cl(p2x,p2y,q2x,q2y,'rgba(184,169,255,.8)',600,function(){
+    cl(r2x,r2y,q2x,q2y,'rgba(255,107,138,.8)',0,function(){
+      cl(p2x,p2y,r2x,r2y,'rgba(246,196,78,.8)',0,function(){
+        cl(q2x-12,q2y,q2x-12,q2y-12,'rgba(255,255,255,.3)',0);
+        cl(q2x-12,q2y-12,q2x,q2y-12,'rgba(255,255,255,.3)',0);
+        setTimeout(function(){
+          ctx.font='bold 16px Caveat,cursive';
+          ctx.fillStyle='#b8a9ff';ctx.textAlign='center';
+          ctx.fillText('P',p2x-8,p2y+5);ctx.fillText('R',q2x+12,q2y+13);ctx.fillText('Q',r2x+12,r2y-4);
+          ctx.font='12px Caveat,cursive';
+          ctx.fillStyle='rgba(246,196,78,.8)';
+          ctx.save();ctx.translate((p2x+r2x)/2-10,(p2y+r2y)/2);ctx.rotate(-Math.atan2(p2y-r2y,r2x-p2x));
+          ctx.textAlign='center';ctx.fillText('PQ',0,-7);ctx.restore();
+          ctx.fillStyle='rgba(184,169,255,.8)';ctx.textAlign='center';ctx.fillText('PR',(p2x+q2x)/2,q2y+15);
+          ctx.fillStyle='rgba(255,107,138,.8)';ctx.textAlign='left';ctx.fillText('QR',q2x+4,(q2y+r2y)/2);
+          // Similar label
+          ctx.font='bold 13px Caveat,cursive';ctx.fillStyle='rgba(126,231,135,.8)';
+          ctx.textAlign='center';ctx.fillText('~ Similar', 90, 150);
+        },100);
+      });
+    });
+  });
+}
+
+// ══════════════════════════════════════════
+// SECTION DATA
+// ══════════════════════════════════════════
+var SECTIONS = [
+  { id:1, type:'intro', title:'Introduction', badge:'INTRO', badgeCls:'badge-intro', dur:24,
+    avatar:'https://f005.backblazeb2.com/file/Simplelectureaivideo/task_1770810606_af105e3b.mp4',
+    narr:'Namaste! Welcome to our exploration of trigonometry — the mathematics of triangles. It\'s a powerful tool used in everything from building bridges to creating video games.' },
+  { id:2, type:'summary', title:'Learning Objectives', badge:'SUMMARY', badgeCls:'badge-summary', dur:22,
+    avatar:'https://f005.backblazeb2.com/file/Simplelectureaivideo/task_1770702099_7485378d.mp4',
+    narr:'By the end of this lesson, you will be able to define trigonometry, identify the three sides of a right-angled triangle, recall all six trigonometric ratios, and apply the Pythagorean theorem.' },
+  { id:3, type:'content', title:'Trigonometric Ratios', badge:'CONTENT', badgeCls:'badge-content', dur:71,
+    avatar:'https://f005.backblazeb2.com/file/Simplelectureaivideo/task_1770702100_fa52b59a.mp4',
+    narr:'Focus on angle A: BC is Opposite, AB is Adjacent, AC is the Hypotenuse. Click Angle C — the labels swap! SOH-CAH-TOA helps you remember all six ratios.' },
+  { id:4, type:'example', title:'Example 1: Finding All Ratios', badge:'EXAMPLE', badgeCls:'badge-example', dur:48,
+    avatar:'',
+    narr:'Given tan A = 4/3, we set Opposite=4, Adjacent=3. By Pythagoras: AC² = 9+16 = 25, so AC = 5. Now all six ratios can be read directly from the triangle!' },
+  { id:5, type:'example', title:'Example 2: Proving ∠B = ∠Q', badge:'PROOF', badgeCls:'badge-example', dur:71,
+    avatar:'https://f005.backblazeb2.com/file/Simplelectureaivideo/task_1770702101_3c303a72.mp4',
+    narr:'If sin B = sin Q, the ratios of sides are equal. We set them equal to k, find all three side ratios equal k, and conclude by SSS similarity that ∠B = ∠Q.' },
+  { id:6, type:'memory', title:'Key Concepts — Flashcards', badge:'MEMORY', badgeCls:'badge-memory', dur:85,
+    avatar:'https://f005.backblazeb2.com/file/Simplelectureaivideo/task_1770702101_13f9eeb5.mp4',
+    narr:'Click each card to flip it and reveal the answer. Use SOH-CAH-TOA as your mnemonic anchor — it unlocks all six ratios instantly.' },
+  { id:7, type:'recap', title:'Lesson Recap', badge:'RECAP', badgeCls:'badge-recap', dur:119,
+    avatar:'https://f005.backblazeb2.com/file/Simplelectureaivideo/task_1770702102_cc1f0832.mp4',
+    narr:'We\'ve come a long way — from the gopuram analogy to formal proofs of similarity. These ratios are the foundation of all higher mathematics and engineering.' }
+];
+
+var FLASHCARDS = [
+  { q:'How do you remember the three main ratios?',
+    a:'Use <b>SOH-CAH-TOA</b>! Sin=Opp/Hyp, Cos=Adj/Hyp, Tan=Opp/Adj' },
+  { q:'What are the reciprocal pairs in trigonometry?',
+    a:'<b>cosec = 1/sin</b>, <b>sec = 1/cos</b>, <b>cot = 1/tan</b>. Just flip the fraction!' },
+  { q:'State the Pythagorean Theorem.',
+    a:'<b>a² + b² = c²</b>. Squares of the two shorter sides = square of the hypotenuse.' },
+  { q:'How do you identify Opposite vs Adjacent?',
+    a:'It depends on the <b>reference angle</b>! Opposite is across from it. Adjacent is beside it (not hypotenuse).' },
+  { q:'How is Tangent related to Sine and Cosine?',
+    a:'<b>tan(A) = sin(A) / cos(A)</b>. Very useful identity for solving complex problems.' }
+];
+
+var RATIO_DATA = [
+  { name:'sin A',  forA:'Opp/Hyp = BC/AC', forC:'Adj/Hyp = AB/AC' },
+  { name:'cos A',  forA:'Adj/Hyp = AB/AC', forC:'Opp/Hyp = BC/AC' },
+  { name:'tan A',  forA:'Opp/Adj = BC/AB', forC:'Adj/Opp = AB/BC' },
+  { name:'cosec',  forA:'Hyp/Opp = AC/BC', forC:'Hyp/Adj = AC/AB' },
+  { name:'sec A',  forA:'Hyp/Adj = AC/AB', forC:'Hyp/Opp = AC/BC' },
+  { name:'cot A',  forA:'Adj/Opp = AB/BC', forC:'Opp/Adj = BC/AB' },
+];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+var curSec = 0, timers = [], cardIdx = 0, cardFlipped = false;
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+function init() {
+  buildTopDots();
+  buildRatioTable();
+  buildRRGrid();
+  buildProofSteps();
+  buildCardPips();
+  buildSummaryBullets();
+  loadSection(0);
+}
+
+function buildTopDots() {
+  var c = document.getElementById('tb-dots');
+  SECTIONS.forEach(function(s, i) {
+    var d = document.createElement('div');
+    d.className = 'tb-dot future'; d.id = 'tbd'+i;
+    d.onclick = function() { loadSection(i); };
+    d.title = s.title;
+    c.appendChild(d);
+  });
+}
+
+function clearTimers() {
+  timers.forEach(function(t) { clearTimeout(t); clearInterval(t); });
+  timers = [];
+}
+
+// activeScene holds {onResize, onPinchZoom, dispose} from a live Three.js scene
+var activeScene = null;
+
+function loadSection(idx) {
+  clearTimers();
+
+  // Dispose any live Three.js scene before leaving
+  if (activeScene) { try { activeScene.dispose(); } catch(e) {} activeScene = null; }
+  document.getElementById('threejs-layer').classList.remove('on');
+
+  document.getElementById('s'+(curSec+1)).classList.remove('on');
+  curSec = idx;
+  var sec = SECTIONS[idx];
+  document.getElementById('s'+(idx+1)).classList.add('on');
+
+  // Update dots
+  for (var i=0;i<SECTIONS.length;i++) {
+    var d = document.getElementById('tbd'+i);
+    d.className='tb-dot '+(i<idx?'past':i===idx?'cur':'future');
+  }
+  document.getElementById('tb-secname').textContent = '/ '+sec.title;
+  var badge = document.getElementById('bot-badge');
+  badge.textContent = sec.badge;
+  badge.className = 'tb-badge '+sec.badgeCls;
+  document.getElementById('bot-label').textContent = sec.title;
+  document.getElementById('bot-ctr').textContent = (idx+1)+' / '+SECTIONS.length;
+  document.getElementById('prog-fill').style.width = ((idx+1)/SECTIONS.length*100)+'%';
+  document.getElementById('seg-dots').innerHTML='';
+
+  // ── AVATAR = MASTER CLOCK ──────────────────────────────────────────────────
+  // Rule: avatar.onended is the ONLY trigger to advance to the next section.
+  // No other timing logic drives section advance.
+  // If no avatar clip exists for this section, fall back to sec.dur timer.
+  var vid = document.getElementById('av-vid');
+  var wrap = document.getElementById('av-wrap');
+  vid.onended = null; // always clear previous handler
+  if (sec.avatar) {
+    vid.src = sec.avatar; vid.load();
+    vid.play().catch(function(){});
+    wrap.classList.add('playing');
+    vid.onended = function() {
+      wrap.classList.remove('playing');
+      if (curSec < SECTIONS.length - 1) {
+        timers.push(setTimeout(function() { loadSection(curSec + 1); }, 700));
+      }
+    };
+  } else {
+    vid.src = ''; wrap.classList.remove('playing');
+    // Fallback: section has no avatar — use duration-based timer
+    // This should not happen in production (every section must have an avatar clip)
+    timers.push(setTimeout(function() {
+      if (curSec < SECTIONS.length - 1) loadSection(curSec + 1);
+    }, (sec.dur || 30) * 1000));
+  }
+  document.getElementById('av-narr').textContent = sec.narr || '';
+
+  // Run section init
+  if (idx===1) initS2();
+  if (idx===2) initS3();
+  if (idx===3) initS4();
+  if (idx===4) initS5();
+  if (idx===5) initS6();
+  if (idx===6) initS7();
+}
+
+function replaySection() { loadSection(curSec); }
+function nextSection() { if(curSec<SECTIONS.length-1) loadSection(curSec+1); }
+function prevSection() { if(curSec>0) loadSection(curSec-1); }
+
+// ── S2 SUMMARY ──
+function buildSummaryBullets() {
+  var data = [
+    'Define trigonometry and its core purpose',
+    'Identify Hypotenuse, Opposite, Adjacent sides',
+    'Recall all 6 trigonometric ratios (SOH-CAH-TOA)',
+    'Apply the Pythagorean theorem to find side lengths'
+  ];
+  var box = document.getElementById('sum-bullets');
+  box.innerHTML='';
+  data.forEach(function(t,i) {
+    var d=document.createElement('div'); d.className='sbullet'; d.id='sb'+i;
+    d.innerHTML='<div class="sbullet-n">'+(i+1)+'</div><div class="sbullet-t">'+t+'</div>';
+    box.appendChild(d);
+  });
+}
+function initS2() {
+  for(var i=0;i<4;i++) document.getElementById('sb'+i).classList.remove('show');
+  var delays=[400,3500,7200,11800];
+  delays.forEach(function(d,i){
+    timers.push(setTimeout(function(idx){return function(){document.getElementById('sb'+idx).classList.add('show');};}(i),d));
+  });
+}
+
+// ── S3 CONTENT ──
+function buildRatioTable() {
+  var g=document.getElementById('ratio-table-body'); g.innerHTML='';
+  RATIO_DATA.forEach(function(r,i) {
+    var row=document.createElement('div'); row.className='rt-row'; row.id='rtr'+i;
+    row.innerHTML='<div class="rt-cell rt-name">'+r.name+'</div>'+
+      '<div class="rt-cell rt-val" id="rtA'+i+'">'+r.forA+'</div>'+
+      '<div class="rt-cell rt-val" id="rtC'+i+'">'+r.forC+'</div>';
+    g.appendChild(row);
+  });
+}
+function initS3() {
+  // Reset table
+  for(var i=0;i<6;i++) {
+    var r=document.getElementById('rtr'+i);
+    if(r){r.classList.remove('show'); ['rtA','rtC'].forEach(function(p){var el=document.getElementById(p+i);if(el)el.classList.remove('lit');});}
+  }
+  // Draw chalk triangle for A by default
+  var canvas = document.getElementById('chalkCanvas');
+  canvas.width=canvas.offsetWidth||260; canvas.height=canvas.offsetHeight||200;
+  chalk.init('chalkCanvas');
+  timers.push(setTimeout(function(){drawTriangleAngleA();},300));
+  // Reveal ratio rows
+  for(var i=0;i<6;i++){
+    (function(idx){timers.push(setTimeout(function(){var r=document.getElementById('rtr'+idx);if(r)r.classList.add('show');},800+idx*400));})(i);
+  }
+  // Default angle A highlight
+  timers.push(setTimeout(function(){setAngleFocus('A');},400));
+}
+
+function focusAngle(ang) {
+  chalk.init('chalkCanvas');
+  var canvas=document.getElementById('chalkCanvas');
+  canvas.width=canvas.offsetWidth||260;canvas.height=canvas.offsetHeight||200;
+  if(ang==='A') drawTriangleAngleA(); else drawTriangleAngleC();
+  setAngleFocus(ang);
+  document.querySelectorAll('.atog').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('.atog.'+ang).classList.add('active');
+}
+
+function setAngleFocus(ang) {
+  for(var i=0;i<6;i++){
+    var a=document.getElementById('rtA'+i), c=document.getElementById('rtC'+i);
+    if(!a||!c) return;
+    if(ang==='A'){a.classList.add('lit');c.classList.remove('lit');}
+    else{c.classList.add('lit');a.classList.remove('lit');}
+  }
+}
+
+// ── S4 EXAMPLE 1 ──
+var STEPS4 = [
+  {n:1, math:'tan A = Opp/Adj = 4/3', note:'Given — place Opp=4, Adj=3'},
+  {n:2, math:'AC² = AB² + BC²', note:'Pythagorean theorem'},
+  {n:3, math:'AC² = 3² + 4² = 9 + 16 = 25', note:'Substitute values'},
+  {n:4, math:'<span class="ans">AC = 5</span>', note:'Hypotenuse found!', final:true},
+];
+var RESULTS4 = [
+  {nm:'sin A',v:'4/5'},{nm:'cos A',v:'3/5'},{nm:'tan A',v:'4/3'},
+  {nm:'cosec',v:'5/4'},{nm:'sec A',v:'5/3'},{nm:'cot A',v:'3/4'},
+];
+function buildRRGrid() {
+  var g=document.getElementById('rr-grid'); g.innerHTML='';
+  RESULTS4.forEach(function(r,i){
+    var d=document.createElement('div');d.className='res-card';d.id='rc'+i;
+    d.innerHTML='<div class="res-nm">'+r.nm+'</div><div class="res-v">'+r.v+'</div>';
+    g.appendChild(d);
+  });
+}
+function initS4() {
+  var box=document.getElementById('steps4'); box.innerHTML='';
+  STEPS4.forEach(function(s,i){
+    var d=document.createElement('div');d.className='step-line'+(s.final?' final':'');d.id='sl'+i;
+    d.innerHTML='<div class="step-num">'+s.n+'</div><div class="step-math">'+s.math+'<span class="step-sub">'+s.note+'</span></div>';
+    box.appendChild(d);
+  });
+  RESULTS4.forEach(function(_,i){var el=document.getElementById('rc'+i);if(el)el.classList.remove('show');});
+  var delays=[400,2800,5200,8000];
+  delays.forEach(function(d,i){
+    timers.push(setTimeout(function(idx){return function(){var el=document.getElementById('sl'+idx);if(el)el.classList.add('show');};}(i),d));
+  });
+  // Draw 345 triangle
+  timers.push(setTimeout(function(){draw345Triangle();},500));
+  // Results after steps
+  RESULTS4.forEach(function(_,i){
+    timers.push(setTimeout(function(idx){return function(){var el=document.getElementById('rc'+idx);if(el)el.classList.add('show');};}(i),10000+i*350));
+  });
+}
+
+// ── S5 PROOF ──
+var PSTEPS=[
+  {txt:'Given: sin B = sin Q',eq:'AC/AB = PR/PQ',why:'Definition of sine ratio'},
+  {txt:'Set common ratio k',eq:'AC/PR = AB/PQ = k  ——(1)',why:'Rearranging the equality'},
+  {txt:'Find BC using Pythagoras',eq:'BC = k√(PQ²−PR²)  ——(2)',why:'Substitute kPR & kPQ'},
+  {txt:'Similarly derive QR',eq:'BC/QR = k  ——(3)',why:'From (1) and (2)'},
+  {txt:'All three side ratios equal k',eq:'∴ △ABC ~ △PQR',why:'SSS Similarity theorem'},
+  {txt:'Similar triangles → equal angles',eq:'∴ ∠B = ∠Q  ✓',why:'Corresponding angles — QED'},
+];
+function buildProofSteps() {
+  var box=document.getElementById('proof-steps-col'); box.innerHTML='';
+  PSTEPS.forEach(function(s,i){
+    var d=document.createElement('div');d.className='pstep';d.id='ps'+i;
+    d.innerHTML=s.txt+'<span class="pstep-eq">'+s.eq+'</span><span class="pstep-why">'+s.why+'</span>';
+    box.appendChild(d);
+  });
+}
+function initS5() {
+  for(var i=0;i<PSTEPS.length;i++){var el=document.getElementById('ps'+i);if(el){el.classList.remove('show','active');}}
+  document.getElementById('proof-qed').classList.remove('show');
+  // Draw similar triangles
+  timers.push(setTimeout(function(){drawSimilarTriangles();},400));
+  var delays=[300,3000,6200,10000,13800,17500];
+  delays.forEach(function(d,i){
+    timers.push(setTimeout(function(idx){return function(){
+      var el=document.getElementById('ps'+idx);if(!el)return;
+      el.classList.add('show');
+      if(idx>0){var p=document.getElementById('ps'+(idx-1));if(p)p.classList.remove('active');}
+      el.classList.add('active');
+      if(idx===PSTEPS.length-1){timers.push(setTimeout(function(){document.getElementById('proof-qed').classList.add('show');},1200));}
+    };}(i),d));
+  });
+}
+
+// ── S6 MEMORY ──
+function buildCardPips() {
+  var c=document.getElementById('card-pips');c.innerHTML='';
+  FLASHCARDS.forEach(function(_,i){
+    var d=document.createElement('div');d.className='cpip';d.id='pip'+i;
+    d.onclick=function(idx){return function(){goCard(idx);};}(i);
+    c.appendChild(d);
+  });
+}
+function initS6() { cardIdx=0;cardFlipped=false;showCard(); }
+function showCard() {
+  var fc=FLASHCARDS[cardIdx];
+  document.getElementById('card-q').textContent=fc.q;
+  document.getElementById('card-a').innerHTML=fc.a;
+  var c3d=document.getElementById('card-3d');
+  c3d.classList.remove('flipped');cardFlipped=false;
+  document.getElementById('card-ctr').textContent=(cardIdx+1)+' of '+FLASHCARDS.length;
+  for(var i=0;i<FLASHCARDS.length;i++){
+    var p=document.getElementById('pip'+i);
+    p.className='cpip'+(i===cardIdx?' on':i<cardIdx?' done':'');
+  }
+}
+function flipCard(){cardFlipped=!cardFlipped;document.getElementById('card-3d').classList.toggle('flipped',cardFlipped);}
+function nextCard(){if(cardIdx<FLASHCARDS.length-1){cardIdx++;showCard();}}
+function prevCard(){if(cardIdx>0){cardIdx--;showCard();}}
+function goCard(i){cardIdx=i;showCard();}
+
+// ── S7 RECAP ──
+var RECAP_TEXT=[
+  {n:'01 / ORIGIN',t:'Trigonometry is <b>born from observation</b> — finding triangles everywhere, from a gopuram\'s shadow to the angle of a kite string.'},
+  {n:'02 / SIDES',t:'Inside a right triangle: <b>Hypotenuse</b> (longest), <b>Opposite</b> (across the angle), <b>Adjacent</b> (beside it). These labels shift with the reference angle!'},
+  {n:'03 / RATIOS',t:'<b>SOH-CAH-TOA</b> encodes Sin, Cos, Tan. Three primary ratios, all derived from just the sides of a right triangle.'},
+  {n:'04 / RECIPROCALS',t:'<b>cosec, sec, cot</b> are just flipped fractions of sin, cos, tan. Recognise the pair and you have all six instantly.'},
+  {n:'05 / POWER',t:'These abstract ratios solve real problems — heights without climbing, angles without measuring directly, and triangle proofs by pure algebra.'},
+];
+function initS7() {
+  RECAP_TEXT.forEach(function(_,i){var el=document.getElementById('rs'+i);if(el)el.classList.remove('show');});
+  var delays=[200,2800,5500,8000,10500];
+  delays.forEach(function(d,i){
+    timers.push(setTimeout(function(idx){return function(){var el=document.getElementById('rs'+idx);if(el)el.classList.add('show');};}(i),d));
+  });
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight')nextSection();
+  if(e.key==='ArrowLeft')prevSection();
+  if(e.key===' '){e.preventDefault();replaySection();}
+  if(curSec===5){
+    if(e.key==='ArrowUp'||e.key==='k')prevCard();
+    if(e.key==='ArrowDown'||e.key==='j')nextCard();
+    if(e.key==='Enter'||e.key==='f')flipCard();
+  }
+});
+
+window.addEventListener('load',function(){init();});
+
+// build recap
+(function(){
+  var RECAP_TEXT=[
+    {n:'01 / ORIGIN',t:'Trigonometry is <b>born from observation</b> — finding triangles everywhere, from a gopuram shadow to a kite string angle.'},
+    {n:'02 / SIDES',t:'Inside a right triangle: <b>Hypotenuse</b> (longest, always), <b>Opposite</b> (across from angle), <b>Adjacent</b> (beside it). Labels shift with the reference angle!'},
+    {n:'03 / RATIOS',t:'<b>SOH-CAH-TOA</b> — Sin=Opp/Hyp, Cos=Adj/Hyp, Tan=Opp/Adj. Three primary ratios derived purely from triangle sides.'},
+    {n:'04 / RECIPROCALS',t:'<b>cosec, sec, cot</b> are flipped fractions of sin, cos, tan respectively. Recognise the pair and you have all six instantly.'},
+    {n:'05 / POWER',t:'These ratios solve real-world problems — heights without climbing, angles without direct measurement, and triangle proofs by pure algebra.'},
+  ];
+  var box=document.getElementById('recap-segs');
+  RECAP_TEXT.forEach(function(r,i){
+    var d=document.createElement('div');d.className='recap-seg';d.id='rs'+i;
+    d.innerHTML='<div class="recap-seg-n">'+r.n+'</div><div class="recap-seg-t">'+r.t+'</div>';
+    box.appendChild(d);
+  });
+})();
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GESTURE ENGINE
+// HandPose loads async. If camera is denied, the entire block is a silent no-op.
+// Pinch zoom calls activeScene.onPinchZoom(delta) when a Three.js scene is live.
+// ═══════════════════════════════════════════════════════════════════════════════
+var _gestureModel = null, _gestureOn = false;
+var _lastPinch = null, _lastGTime = 0, _lastGName = '';
+var _waveHist = [], _avPaused = false;
+var GESTURE_COOLDOWN = 800;
+
+function _initGestures() {
+  if (typeof handpose === 'undefined') return;
+  navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:320, height:240 } })
+    .then(function(stream) {
+      var cam = document.getElementById('cam-vid');
+      cam.srcObject = stream; cam.play();
+      document.getElementById('g-dot').classList.add('active');
+      document.getElementById('g-zoom').classList.add('show');
+      handpose.load().then(function(m) {
+        _gestureModel = m; _gestureOn = true; _detectLoop();
+      }).catch(function(){});
+    })
+    .catch(function() { document.getElementById('g-dot').classList.add('denied'); });
+}
+window._initGestures = _initGestures;
+
+function _detectLoop() {
+  if (!_gestureOn || !_gestureModel) return;
+  _gestureModel.estimateHands(document.getElementById('cam-vid')).then(function(hands) {
+    if (hands.length > 0) _processHand(hands[0]);
+    requestAnimationFrame(_detectLoop);
+  }).catch(function() { requestAnimationFrame(_detectLoop); });
+}
+
+function _processHand(hand) {
+  var lm = hand.landmarks;
+  var thumbTip = lm[4], indexTip = lm[8], wrist = lm[0];
+
+  // PINCH ZOOM: thumb tip close to index tip
+  var pd = _dist(thumbTip, indexTip);
+  if (pd < 60) {
+    if (_lastPinch !== null) {
+      var delta = (_lastPinch - pd) * 0.04;
+      // Positive delta = zoom in. Only applies to Three.js scenes.
+      if (activeScene && activeScene.onPinchZoom) activeScene.onPinchZoom(-delta);
+    }
+    _lastPinch = pd;
+    _showGHint('Pinch Zoom');
+    return; // pinch takes priority over all other gestures
+  }
+  _lastPinch = null;
+
+  var up = _fingersUp(lm);
+
+  // OPEN PALM: 4+ fingers extended = pause/resume
+  if (up >= 4) {
+    _fireGesture('palm', function() { _toggleAvatar(); _showGHint('Pause / Resume'); });
+    return;
+  }
+
+  // POINT DOWN: 1 finger, pointing downward = replay
+  if (up === 1 && (indexTip[1] - lm[5][1]) > 40) {
+    _fireGesture('down', function() { replaySection(); _showGHint('Replay'); });
+    return;
+  }
+
+  // WAVE: side-to-side wrist movement = next scene
+  _waveHist.push(wrist[0]);
+  if (_waveHist.length > 20) _waveHist.shift();
+  if (_waveHist.length >= 20) {
+    var mn = Math.min.apply(null, _waveHist), mx = Math.max.apply(null, _waveHist);
+    if (mx - mn > 80) {
+      _fireGesture('wave', function() { nextSection(); _showGHint('Next'); });
+      _waveHist = [];
+    }
+  }
+}
+
+function _dist(a, b) { return Math.sqrt(Math.pow(a[0]-b[0],2) + Math.pow(a[1]-b[1],2)); }
+function _fingersUp(lm) {
+  var tips=[8,12,16,20], pips=[6,10,14,18], c=0;
+  tips.forEach(function(t,i){ if(lm[t][1] < lm[pips[i]][1]) c++; });
+  return c;
+}
+function _fireGesture(name, fn) {
+  var now = Date.now();
+  if (name === _lastGName && now - _lastGTime < GESTURE_COOLDOWN) return;
+  _lastGName = name; _lastGTime = now; fn();
+}
+function _toggleAvatar() {
+  var v = document.getElementById('av-vid');
+  _avPaused = !_avPaused;
+  if (_avPaused) v.pause(); else v.play().catch(function(){});
+}
+var _gLblTimer = null;
+function _showGHint(txt) {
+  var el = document.getElementById('g-lbl');
+  el.textContent = txt; el.classList.add('show');
+  clearTimeout(_gLblTimer);
+  _gLblTimer = setTimeout(function(){ el.classList.remove('show'); }, 1500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOUCH CONTROLS (mobile)
+// Pinch zoom mirrors gesture engine pinch — same onPinchZoom hook
+// ═══════════════════════════════════════════════════════════════════════════════
+(function() {
+  var el = document.getElementById('main');
+  var sx=0, sy=0, st=0;
+  el.addEventListener('touchstart', function(e) {
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now();
+  }, { passive: true });
+  el.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - sx;
+    var dy = e.changedTouches[0].clientY - sy;
+    var dt = Date.now() - st;
+    if (dt < 300 && Math.abs(dx) < 12 && Math.abs(dy) < 12) { _toggleAvatar(); return; } // tap
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) nextSection(); else replaySection();
+    }
+  }, { passive: true });
+  // Two-finger pinch zoom
+  var lastTD = null;
+  el.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 2) {
+      var td = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      if (lastTD !== null) {
+        var delta = (td - lastTD) * 0.025;
+        if (activeScene && activeScene.onPinchZoom) activeScene.onPinchZoom(-delta);
+      }
+      lastTD = td;
+    }
+  }, { passive: true });
+  el.addEventListener('touchend', function(e) {
+    if (e.touches.length < 2) lastTD = null;
+  }, { passive: true });
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RESIZE — forward to active Three.js scene if one is live
+// ═══════════════════════════════════════════════════════════════════════════════
+window.addEventListener('resize', function() {
+  if (activeScene && activeScene.onResize) activeScene.onResize();
+});
+
+</script>
+</body>
+</html>

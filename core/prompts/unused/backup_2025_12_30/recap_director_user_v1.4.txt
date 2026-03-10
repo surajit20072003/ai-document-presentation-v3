@@ -1,0 +1,69 @@
+Create memory and recap scenes for this {subject} lesson at {grade} level.
+
+## Full Source Content
+{full_markdown}
+
+## Your Task
+Create EXACTLY 6 sections in this order:
+
+### 1. Memory Section (section_type: "memory")
+- Create 5 flashcards with a memorable mnemonic
+- Use the first letters of key concepts to form a word or phrase
+- Each flashcard: mnemonic_letter, concept, definition
+- Renderer: remotion
+
+### 2-6. Five Recap Scene Sections (section_type: "recap_scene_1", "recap_scene_2", etc.)
+Each recap scene is a SEPARATE section with:
+- section_id: "recap_scene_1" through "recap_scene_5"
+- section_type: "recap_scene_1", "recap_scene_2", "recap_scene_3", "recap_scene_4", "recap_scene_5"
+- Renderer: video
+- Avatar: MUST be hidden
+- narration: 60-100 words per scene (total ~400 words across all 5)
+- video_prompt: 100-150 words describing the cinematic scene
+
+**VIDEO PROMPT REQUIREMENT (100+ words per scene):**
+Each scene's video_prompt should be 2 paragraphs:
+1. Setting/Camera (50+ words): Location, camera movement, visual atmosphere
+2. Action/Details (50+ words): What happens, colors, textures, mood
+
+## Example Mnemonic
+For photosynthesis concepts: "LIGHT"
+- L = Light energy (sun provides energy)
+- I = Intake of CO2 (plants absorb carbon dioxide)
+- G = Glucose production (sugar is made)
+- H = H2O requirement (water is essential)
+- T = Transport (nutrients move through plant)
+
+## Video Prompt Example (100+ words per scene)
+"The camera slowly descends through a canopy of tropical trees, morning sunlight filtering through leaves creating dappled patterns of gold and green. Mist rises gently from the forest floor as we push deeper into the wilderness.
+
+We settle on a single leaf glistening with morning dew, each droplet catching light like tiny diamonds. Pushing through the surface, we enter a microscopic world where cell walls appear like stained glass windows, translucent and beautiful. Chloroplasts scatter through the cell like tiny green jewels pulsing with energy."
+
+## Output Structure
+```json
+{{
+  "sections": [
+    {{
+      "section_id": "memory",
+      "section_type": "memory",
+      "renderer": "remotion",
+      "flashcards": [...],
+      "narration": {{...}}
+    }},
+    {{
+      "section_id": "recap_scene_1",
+      "section_type": "recap_scene_1",
+      "renderer": "video",
+      "video_prompt": "100+ word cinematic description...",
+      "layout": {{"avatar_position": "hidden"}},
+      "narration": {{
+        "full_text": "60-100 words...",
+        "segments": [...]
+      }}
+    }},
+    ... (recap_scene_2 through recap_scene_5)
+  ]
+}}
+```
+
+Output valid JSON only.

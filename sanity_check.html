@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Player V2.5 Sanity Checker</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 20px;
+        }
+
+        .pass {
+            color: #a6e3a1;
+            font-weight: bold;
+        }
+
+        .fail {
+            color: #f38ba8;
+            font-weight: bold;
+        }
+
+        .warn {
+            color: #f9e2af;
+            font-weight: bold;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            border: 1px solid #45475a;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #313244;
+        }
+
+        h1 {
+            border-bottom: 2px solid #585b70;
+            padding-bottom: 10px;
+        }
+
+        .sub-item {
+            display: block;
+            margin-bottom: 4px;
+            border-bottom: 1px dashed #45475a;
+            padding-bottom: 2px;
+        }
+
+        a {
+            color: #89b4fa;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Player V2.5 Sanity Checker</h1>
+    <div id="status">Loading...</div>
+    <table id="report">
+        <thead>
+            <tr>
+                <th>Sec ID</th>
+                <th>Type</th>
+                <th>Avatar</th>
+                <th>Video</th>
+                <th>Images (Visual Beats)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        // Auto-detect job ID from URL or default to known bad job
+        const urlParams = new URLSearchParams(window.location.search);
+        const JOB_ID = urlParams.get('job') || '0f1eaff8';
+
+        let BASE_PATH;
+        if (window.location.protocol.startsWith('http')) {
+            // Server mode: Use API structure
+            BASE_PATH = `/jobs/${JOB_ID}/`;
+        } else {
+            // Local file mode: Use relative file structure
+            BASE_PATH = `./player/jobs/${JOB_ID}/`;
+        }
+
+        const PRESENTATION_URL = `${BASE_PATH}presentation.json`;
+
+        async function checkUrl(url, type = 'misc') {
+            if (!url) return { status: 'N/A', valid: true };
+            try {
+                let fetchUrl = url;
+
+                // Logic to mimic player_v2.js resolveMediaPath logic
+                // 1. Clean Windows backslashes
+                if (fetchUrl.includes('\\')) fetchUrl = fetchUrl.replace(/\\/g, '/');
+
+                // 2. Extract basename if it looks like a full path
+                if (fetchUrl.includes(':')) {
+                    const parts = fetchUrl.split('/');
+                    fetchUrl = parts[parts.length - 1];
+                }
+
+                // 3. Resolve relative to BASE_PATH based on type
+                if (fetchUrl.startsWith('http')) {
+                    // keep as is
+                } else if (fetchUrl.startsWith('/jobs/')) {
+                    fetchUrl = '.' + fetchUrl; // serve relative
+                } else {
+                    // It's a filename or relative path
+                    if (type === 'avatar' && !fetchUrl.includes('/')) fetchUrl = BASE_PATH + 'avatars/' + fetchUrl;
+                    else if (type === 'video' && !fetchUrl.includes('/')) fetchUrl = BASE_PATH + 'videos/' + fetchUrl;
+                    else if (type === 'image' && !fetchUrl.includes('/')) fetchUrl = BASE_PATH + 'images/' + fetchUrl;
+                    else if (!fetchUrl.startsWith('./') && !fetchUrl.startsWith('../')) fetchUrl = BASE_PATH + fetchUrl;
+                }
+
+                const response = await fetch(fetchUrl, { method: 'HEAD' });
+                return {
+                    status: response.status,
+                    valid: response.ok,
+                    url: fetchUrl,
+                    original: url
+                };
+            } catch (e) {
+                return { status: 'ERR', valid: false, error: e.message, original: url };
+            }
+        }
+
+        async function runCheck() {
+            const statusDiv = document.getElementById('status');
+            const tbody = document.querySelector('#report tbody');
+
+            statusDiv.innerHTML = `Checking Job: <strong>${JOB_ID}</strong><br>Fetching ${PRESENTATION_URL}...`;
+
+            try {
+                // 1. Fetch JSON
+                const res = await fetch(PRESENTATION_URL);
+                if (!res.ok) throw new Error(`Failed to load presentation.json: ${res.status} (Is the job ID correct?)`);
+                const data = await res.json();
+
+                statusDiv.innerHTML += `<br>Found ${data.sections.length} sections. Verifying media accessibility...`;
+
+                for (const section of data.sections) {
+                    const row = document.createElement('tr');
+
+                    // Avatar Check
+                    const avatarPath = section.avatar_video || section.avatar_video_path;
+                    const avatarCheck = await checkUrl(avatarPath, 'avatar');
+
+                    // Video Check
+                    const videoPath = section.video_path || (section.beat_videos ? section.beat_videos[0] : null);
+                    const videoCheck = await checkUrl(videoPath, 'video');
+
+                    // Image Beats Check
+                    let imageHtml = '';
+                    if (section.visual_beats) {
+                        for (const beat of section.visual_beats) {
+                            if (beat.visual_type === 'image' || beat.visual_type === 'diagram') {
+                                const imgPath = beat.image_id || beat.image_path;
+                                if (imgPath) {
+                                    const imgCheck = await checkUrl(imgPath, 'image');
+                                    const statusClass = imgCheck.valid ? 'pass' : 'fail';
+                                    imageHtml += `
+                                        <div class="sub-item">
+                                            Beat ${beat.beat_id}: <a href="${imgCheck.url}" target="_blank">${imgPath}</a>
+                                            <span class="${statusClass}">[${imgCheck.status}]</span>
+                                        </div>`;
+                                }
+                            }
+                        }
+                    }
+                    if (!imageHtml) imageHtml = '<span style="color:#666">No images</span>';
+
+
+                    row.innerHTML = `
+                        <td>${section.section_id}</td>
+                        <td>${section.section_type}</td>
+                        <td>
+                            ${avatarPath ? `<a href="${avatarCheck.url}" target="_blank">${avatarPath}</a>` : 'None'}
+                            <br><span class="${avatarCheck.valid ? 'pass' : 'fail'}">[${avatarCheck.status}]</span>
+                        </td>
+                        <td>
+                            ${videoPath ? `<a href="${videoCheck.url}" target="_blank">${videoPath}</a>` : 'None'}
+                            <br><span class="${videoCheck.valid ? 'pass' : 'fail'}">[${videoCheck.status}]</span>
+                        </td>
+                        <td>${imageHtml}</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+                statusDiv.innerHTML += "<br><span class='pass'>Check Complete!</span>";
+
+            } catch (e) {
+                statusDiv.innerHTML += `<br><span class="fail">CRITICAL ERROR: ${e.message}</span>`;
+            }
+        }
+
+        runCheck();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,16 @@
+Create 5 flashcards for this educational content:
+
+Subject: {subject}
+
+## SOURCE CONTENT:
+{source_markdown}
+
+## INSTRUCTIONS:
+
+1. Identify the 5 most important concepts to remember
+2. Create one flashcard for each concept
+3. Mix categories: include definitions, formulas, and applications
+4. Keep front concise (question/term) and back informative (answer)
+5. flashcard_id must be 1, 2, 3, 4, 5 in order
+
+Output ONLY the JSON structure with your 5 flashcards.

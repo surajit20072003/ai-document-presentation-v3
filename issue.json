@@ -1,0 +1,114 @@
+{
+  "issue_id": "ISS-302",
+  "title": "Complete Pipeline Failure - All Video Types Not Generating",
+  "description": "After upgrading to Claude Sonnet 4.5, a new job resulted in complete video generation failure across all renderer types (WAN, Manim, others). Analytics show incorrect counts. The issue requires systematic isolation of the failure point in the pipeline.",
+  "status": "investigating",
+  "priority": "critical",
+  "created_at": "2026-01-03T18:30:00+05:30",
+  "symptoms": [
+    "WAN videos (intro, summary) not generated",
+    "All Manim sections failed to render",
+    "Other video types also failed",
+    "Analytics displaying incorrect video counts",
+    "Insufficient logging to diagnose root cause"
+  ],
+  "context": {
+    "recent_changes": [
+      "Upgraded Manim code generator from Claude 3.5 Sonnet to Claude 4.5 Sonnet",
+      "Updated system prompt with strict 80-line limit and anti-truncation measures",
+      "Set max_tokens = 8192 for Claude 4.5",
+      "Added code stats logging (lines, chars, token usage)"
+    ],
+    "previous_issue": "ISS-301: Manim dependency issues (resolved)",
+    "environment": "Docker container with Python 3.12, Manim v0.19.0, full LaTeX stack"
+  },
+  "analysis": {
+    "hypothesis": [
+      "Possibility 1: Claude 4.5 API authentication/access issue",
+      "Possibility 2: Prompt format incompatible with Claude 4.5",
+      "Possibility 3: Code generation producing invalid Python",
+      "Possibility 4: Manim rendering encountering new errors",
+      "Possibility 5: WAN API credentials/endpoint issue"
+    ],
+    "investigation_approach": {
+      "strategy": "Systematic isolation via enhanced logging and component testing",
+      "phases": [
+        "Phase 1: Add debug logging to all pipeline components",
+        "Phase 2: Create isolated unit tests for each component",
+        "Phase 3: Run tests to identify exact failure point",
+        "Phase 4: Fix identified issue and verify"
+      ]
+    }
+  },
+  "debugging_plan": {
+    "enhanced_logging": {
+      "manim_code_generator": [
+        "Log section title and narration segment count before generation",
+        "Log Claude API response status and body",
+        "Log extracted code length and preview",
+        "Log code stats (lines, chars, token usage, finish reason)",
+        "Add warnings for long code or high token usage"
+      ],
+      "renderer_executor": [
+        "Log Manim command before execution",
+        "Log return code after execution",
+        "Log full STDOUT and STDERR",
+        "Log output file path and size"
+      ],
+      "wan_video_generator": [
+        "Log section ID and prompt preview",
+        "Log API endpoint and request payload",
+        "Log response status and body",
+        "Log output file details"
+      ],
+      "flask_app": [
+        "Enable DEBUG level logging",
+        "Log pipeline phase start/end",
+        "Log input data preview for each phase"
+      ]
+    },
+    "isolated_tests": {
+      "test_manim_spec": "Verify Gemini 2.5 Pro generates valid manim_scene_spec",
+      "test_manim_code": "Verify Claude 4.5 generates valid Python code",
+      "test_manim_render": "Verify Manim v0.19.0 can render test code",
+      "test_wan_api": "Verify WAN video API is accessible"
+    }
+  },
+  "action_items": [
+    {
+      "item": "Add debug logging to manim_code_generator.py",
+      "status": "in_progress",
+      "assignee": "AI Agent"
+    },
+    {
+      "item": "Add debug logging to renderer_executor.py",
+      "status": "pending",
+      "assignee": "AI Agent"
+    },
+    {
+      "item": "Create isolated test scripts",
+      "status": "pending",
+      "assignee": "AI Agent"
+    },
+    {
+      "item": "Get job ID and inspect presentation.json",
+      "status": "pending",
+      "assignee": "User"
+    },
+    {
+      "item": "Run isolated tests to identify failure",
+      "status": "pending",
+      "assignee": "AI Agent"
+    }
+  ],
+  "references": {
+    "debugging_plan_artifact": "C:\\Users\\email\\.gemini\\antigravity\\brain\\59317b87-39fd-4bdb-8570-da81099fd495\\debugging_plan.md",
+    "previous_issue": "ISS-301 (Manim dependencies)",
+    "related_files": [
+      "core/agents/manim_code_generator.py",
+      "core/renderer_executor.py",
+      "core/prompts/manim_v_19_system_prompt.txt",
+      "core/prompts/manim_user_template.txt"
+    ]
+  }
+}

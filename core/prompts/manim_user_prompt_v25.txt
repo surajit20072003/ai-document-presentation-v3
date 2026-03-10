@@ -1,0 +1,41 @@
+Generate a complete, executable Manim script for the following section.
+
+**Section Title**: {section_title}
+
+=== NARRATION SCHEDULE (Use strictly for timing) ===
+{narration_segments}
+
+=== VISUAL SCENE DESCRIPTION (MATCH THIS CLOSELY) ===
+{visual_description}
+
+You MUST include the key visual elements described above.
+- If the description mentions "labeled", add Text/MathTex labels
+- If the description mentions "highlight" or "glow", use Indicate() or SurroundingRectangle
+- If the description mentions "animation" or "movement", use .animate or Transform
+
+=== MATHEMATICAL CONTENT ===
+- Main formulas: {formulas}
+- Key terms: {key_terms}
+
+=== MANDATORY SKELETON (Copy this structure EXACTLY) ===
+You must output the code following this exact pattern. Do not change the class name.
+
+from manim import *
+
+class MainScene(Scene):
+    def construct(self):
+        # Segment 1 (X.Xs)
+        # ... your code here ...
+        self.play(FadeOut(*self.mobjects), run_time=0.5)
+        
+        # Segment 2 (X.Xs)
+        # ... your code here ...
+        self.play(FadeOut(*self.mobjects), run_time=0.5)
+
+=== GENERATION CONSTRAINTS ===
+1. **Timing**: Handled automatically. Focus on visual content.
+2. **Max Wait**: Single self.wait() MUST NOT exceed 5 seconds. Fill long segments with Indicate/Circumscribe.
+3. **Text Labels**: All text must remain horizontal. NEVER use .rotate() on Text objects.
+4. **Anti-Overlap**: Use `FadeOut(*self.mobjects)` at end of EVERY segment.
+5. **Encoding**: Use ASCII text only. NO Unicode symbols.
+6. **Output**: Return PURE PYTHON CODE ONLY. No markdown, no explanations.

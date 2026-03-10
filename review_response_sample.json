@@ -1,0 +1,427 @@
+{
+  "job_id": "3407350e",
+  "sections": [
+    {
+      "content": {
+        "bullet_items": [],
+        "explanation_plan": "",
+        "flashcards": [],
+        "images": [],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "[Teacher Welcome]"
+          }
+        ]
+      },
+      "narration_text": "Hello, and welcome! Have you ever wondered why your hair stands on end after taking off a woolen cap, or why you sometimes get a small shock from a doorknob? This is the world of electrostatics, the study of stationary electric charges. Let's explore the invisible forces that shape our world.",
+      "section_id": 1,
+      "section_type": "intro",
+      "title": "Introduction"
+    },
+    {
+      "content": {
+        "bullet_items": [
+          "Differentiate between positive and negative charges"
+        ],
+        "explanation_plan": "",
+        "flashcards": [],
+        "images": [],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "Differentiate between positive and negative charges"
+          },
+          {
+            "description": "Explain the atomic nature of electricity"
+          },
+          {
+            "description": "Distinguish between conductors and insulators"
+          },
+          {
+            "description": "Apply Coulomb's Law to calculate electrostatic force"
+          },
+          {
+            "description": "Describe electric fields and Gauss's Law"
+          }
+        ]
+      },
+      "narration_text": "By the end of this lesson, you will be able to: Differentiate between positive and negative charges. Explain the atomic nature of electricity. Distinguish between conductors and insulators. Apply Coulomb's Law to calculate electrostatic force. And finally, describe electric fields and Gauss's Law.",
+      "section_id": 2,
+      "section_type": "summary",
+      "title": "Learning Objectives"
+    },
+    {
+      "content": {
+        "bullet_items": [
+          "- **Electrostatics** (electric charges at rest, standing hair)\n- **Electric currents & circuits** (moving electric charges)\n- **Magnetism** (permanent magnets, magnetic effects due to electric currents)\n- **Electromagnetism & Electrodynamics** (time-dependent phenomena in electrical machines, electromagnetic waves)"
+        ],
+        "explanation_plan": "{\n  \"visual_beats\": [\n    {\n      \"beat_id\": \"beat_1\",\n      \"segment_id\": \"seg_1\",\n      \"visual_type\": \"bullet_list\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"**Electricity & Magnetism** includes a vast variety\",\n        \"end_phrase\": \"in electrical machines, electromagnetic waves)\"\n      },\n      \"display_text\": \"- **Electrostatics** (electric charges at rest, standing hair)\\n- **Electric currents & circuits** (moving electric charges)\\n- **Magnetism** (permanent magnets, magnetic effects due to electric currents)\\n- **Electromagnetism & Electrodynamics** (time-dependent phenomena in electrical machines, electromagnetic waves)\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_3_beat_0.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_2\",\n      \"segment_id\": \"seg_2\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Electricity (and less Magnetism) penetrates modern\",\n        \"end_phrase\": \"the beginning of the investigation of electricity.\"\n      },\n      \"display_text\": \"Electricity (and less Magnetism) penetrates modern life, whereas in the past people could only observe a few electrostatic phenomena such as sparks. That was the beginning of the investigation of electricity.\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_3_beat_1.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_3\",\n      \"segment_id\": \"seg_3\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"## First experiments on electrostatics ![Diagram\",\n        \"end_phrase\": \"representing an uncharged object. Diagram of\"\n      },\n      \"display_text\": \"A diagram illustrating an early electrostatic experiment involving charged and uncharged objects.\",\n      \"latex_content\": null,\n      \"image_id\": \"c803f6f6e2c49429d2951832bd0f208d_img.jpg\",\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_3_beat_2.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_4\",\n      \"segment_id\": \"seg_4\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"electrostatic repulsion experiment Observations show that\",\n        \"end_phrase\": \"called \\u201cpositive\\u201d and \\u201cnegative\\u201d.\"\n      },\n      \"display_text\": \"Objects charged in the same way repel from each other. Objects charged in different ways may attract each other. Thus one can speak of two kinds of electric charges that can be arbitrarily called \\u201cpositive\\u201d and \\u201cnegative\\u201d.\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_3_beat_3.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_5\",\n      \"segment_id\": \"seg_5\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"![Portrait of Benjamin Franklin](317e0525ef1b2458976c246876f4a948_img.jpg) A\",\n        \"end_phrase\": \"makes it charged \\u201cnegatively\\u201d.\"\n      },\n      \"display_text\": \"Benjamin Franklin (1706-1790)\\nProposed single-fluid model of electrostatics... Surplus of the electric fluid makes the object charged \\u201cpositively\\u201d while shortage of this fluid makes it charged \\u201cnegatively\\u201d.\",\n      \"latex_content\": null,\n      \"image_id\": \"317e0525ef1b2458976c246876f4a948_img.jpg\",\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_3_beat_4.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_6\",\n      \"segment_id\": \"seg_6\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Now we know that Franklin\\u2019s \\u201celectric\",\n        \"end_phrase\": \"<sup>2</sup> object to the other\"\n      },\n      \"display_text\": \"Now we know that Franklin\\u2019s \\u201celectric fluid\\u201d is nothing else than electrons that have assigned negative charge and can be transferred from one object to the other\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_7\",\n      \"segment_id\": \"seg_7\",\n      \"visual_type\": \"diagram\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"## Atomic nature of electricity Atom\",\n        \"end_phrase\": \"$$a \\\\sim 0.5 \\\\times 10^{-10} \\\\text{ m}$$\"\n      },\n      \"display_text\": \"Diagram of an atom showing a central core with a positive charge (+) and an electron with a negative charge (-) orbiting it.\",\n      \"latex_content\": null,\n      \"image_id\": \"7e2f2d03a5dda38b038fd4884629a2b4_img.jpg\",\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_8\",\n      \"segment_id\": \"seg_8\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Electron is a small and light\",\n        \"end_phrase\": \"by rubbing or otherwise\"\n      },\n      \"display_text\": \"Electron is a small and light negatively charged particle that rotates around the core. Typical atom contains many electrons... Those further from the core are loosely bound and they can be removed by rubbing or otherwise\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_9\",\n      \"segment_id\": \"seg_9\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Atom's core contains practically the whole\",\n        \"end_phrase\": \"$q_p = -e = 1.60 \\\\times 10^{-19} \\\\text{ C}$ .\"\n      },\n      \"display_text\": \"Atom's core contains practically the whole mass of the atom. It consists of protons and neutrons... Neutron is not charged. Proton is charged positively,  $q_p = -e = 1.60 \\\\times 10^{-19} \\\\text{ C}$ .\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_10\",\n      \"segment_id\": \"seg_10\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Normally atoms are not charged as\",\n        \"end_phrase\": \"other can cause sparks.\"\n      },\n      \"display_text\": \"Normally atoms are not charged as the charge of their electrons balances the charge of their core. Removing electrons creates a positively charged ion, and placing additional electrons on the atom creates a negatively charged ion. Jumping of electrons from one body to the other can cause sparks.\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_11\",\n      \"segment_id\": \"seg_11\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Positively charged material: Some electrons are\",\n        \"end_phrase\": \"have extra electrons.](b48d146cf1d6e0a01791f52572be6767_img.jpg) Atoms\"\n      },\n      \"display_text\": \"Diagrams of positively charged material (missing electrons) and negatively charged material (excessive electrons).\",\n      \"latex_content\": null,\n      \"image_id\": \"1517552d07f4a8b389be86af8aff6424_img.jpg\",\n      \"answer_revealed\": false\n    }\n  ]\n}",
+        "flashcards": [],
+        "images": [
+          {
+            "description": "A diagram illustrating an early electrostatic experiment involving charged and uncharged objects.",
+            "image_id": "c803f6f6e2c49429d2951832bd0f208d_img.jpg"
+          },
+          {
+            "description": "Benjamin Franklin (1706-1790)\nProposed single-fluid model of electrostatics... Surplus of the electric fluid makes the object charged \u201cpositively\u201d while shortage of this fluid makes it charged \u201cnegatively\u201d.",
+            "image_id": "317e0525ef1b2458976c246876f4a948_img.jpg"
+          },
+          {
+            "description": "Diagram of an atom showing a central core with a positive charge (+) and an electron with a negative charge (-) orbiting it.",
+            "image_id": "7e2f2d03a5dda38b038fd4884629a2b4_img.jpg"
+          },
+          {
+            "description": "Diagrams of positively charged material (missing electrons) and negatively charged material (excessive electrons).",
+            "image_id": "1517552d07f4a8b389be86af8aff6424_img.jpg"
+          }
+        ],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "- **Electrostatics** (electric charges at rest, standing hair)\n- **Electric currents & circuits** (moving electric charges)\n- **Magnetism** (permanent magnets, magnetic effects due to electric currents)\n- **Electromagnetism & Electrodynamics** (time-dependent phenomena in electrical machines, electromagnetic waves)",
+            "video_asset": "videos/topic_3_beat_0.mp4"
+          },
+          {
+            "description": "Electricity (and less Magnetism) penetrates modern life, whereas in the past people could only observe a few electrostatic phenomena such as sparks. That was the beginning of the investigation of electricity.",
+            "video_asset": "videos/topic_3_beat_1.mp4"
+          },
+          {
+            "description": "A diagram illustrating an early electrostatic experiment involving charged and uncharged objects.",
+            "video_asset": "videos/topic_3_beat_2.mp4"
+          },
+          {
+            "description": "Objects charged in the same way repel from each other. Objects charged in different ways may attract each other. Thus one can speak of two kinds of electric charges that can be arbitrarily called \u201cpositive\u201d and \u201cnegative\u201d.",
+            "video_asset": "videos/topic_3_beat_3.mp4"
+          },
+          {
+            "description": "Benjamin Franklin (1706-1790)\nProposed single-fluid model of electrostatics... Surplus of the electric fluid makes the object charged \u201cpositively\u201d while shortage of this fluid makes it charged \u201cnegatively\u201d.",
+            "video_asset": "videos/topic_3_beat_4.mp4"
+          },
+          {
+            "description": "Now we know that Franklin\u2019s \u201celectric fluid\u201d is nothing else than electrons that have assigned negative charge and can be transferred from one object to the other"
+          },
+          {
+            "description": "Diagram of an atom showing a central core with a positive charge (+) and an electron with a negative charge (-) orbiting it."
+          },
+          {
+            "description": "Electron is a small and light negatively charged particle that rotates around the core. Typical atom contains many electrons... Those further from the core are loosely bound and they can be removed by rubbing or otherwise"
+          },
+          {
+            "description": "Atom's core contains practically the whole mass of the atom. It consists of protons and neutrons... Neutron is not charged. Proton is charged positively,  $q_p = -e = 1.60 \\times 10^{-19} \\text{ C}$ ."
+          },
+          {
+            "description": "Normally atoms are not charged as the charge of their electrons balances the charge of their core. Removing electrons creates a positively charged ion, and placing additional electrons on the atom creates a negatively charged ion. Jumping of electrons from one body to the other can cause sparks."
+          },
+          {
+            "description": "Diagrams of positively charged material (missing electrons) and negatively charged material (excessive electrons)."
+          }
+        ]
+      },
+      "narration_text": "Namaste! Today we begin our journey into the fascinating world of Electricity and Magnetism. This vast subject can be broken down into four main areas. We have Electrostatics, which deals with charges at rest\u2014think of how a comb can make your hair stand up! Then there are Electric currents and circuits, which is all about moving charges. We also have Magnetism, from simple fridge magnets to the magnetic effects of currents. Finally, there's Electromagnetism and Electrodynamics, which covers more complex things like electrical machines and waves. Electricity is everywhere in our modern lives, isn't it? From the lights in our homes to the phones in our pockets. But in the old days, people only saw small hints of it, like tiny sparks when rubbing certain objects. These simple observations were the very beginning of our understanding of electricity. Let's look at some of the first experiments. This diagram shows a classic setup. You can see how charged objects can affect each other. Early observations showed that we can 'charge' objects by rubbing them, or just by touching a charged object to an uncharged one. Imagine rubbing a plastic scale on your sleeve and then seeing it pick up tiny bits of paper! It was found that objects charged in the same way push each other away, they repel. But, if they are charged in different ways, they pull towards each other, they attract. This led scientists to say there must be two kinds of electric charges, which we now call 'positive' and 'negative'. The great scientist and thinker, Benjamin Franklin, gave us one of the first useful models. He imagined electricity as a kind of invisible fluid. He proposed that having too much of this 'electric fluid' makes an object positively charged, while having too little of it makes an object negatively charged. It was a brilliant idea for its time! We now know that Franklin\u2019s 'electric fluid' is actually made of tiny particles called electrons. These electrons have a negative charge and can be moved from one object to another, just as he imagined. So, what is everything really made of? Let's dive into the atomic nature of electricity. Everything, including you and me, is made of tiny atoms. Here is a simple picture of an atom. You can see a central core, and a particle called an electron orbiting it. The electron is an incredibly small and light particle with a negative charge, that goes around the atom's core. A typical atom has many such electrons. The ones farther from the core are not held very tightly and can be knocked off, for example, by rubbing. The atom's core, or nucleus, contains almost all its mass. It's made of protons, which are positively charged, and neutrons, which have no charge. Protons and neutrons are much, much heavier than electrons. An atom is normally electrically neutral, because the positive charge of the protons in its core perfectly balances the negative charge of its electrons. But if we remove some electrons, the atom becomes a positively charged ion. If we add extra electrons, it becomes a negatively charged ion. This jumping of electrons from one body to another is what can cause sparks. Just think of the beautiful sparks from a firecracker during Diwali! It's a similar idea, a rapid transfer of energy that we can see as light. So, when we say a material is positively charged, it means some of its atoms have lost their electrons. And when a material is negatively charged, it has an excess of electrons. This is the fundamental secret of all electricity, happening at a scale we can't even see!",
+      "section_id": 3,
+      "section_type": "content",
+      "title": "Introduction to Electrostatics and Atomic Nature of Electricity"
+    },
+    {
+      "content": {
+        "bullet_items": [],
+        "explanation_plan": "{\n  \"visual_beats\": [\n    {\n      \"beat_id\": \"beat_1\",\n      \"segment_id\": \"seg_1\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"In insulators (also called dielectrics) particular\",\n        \"end_phrase\": \"these are rare events. Charges put\"\n      },\n      \"display_text\": \"In insulators (also called dielectrics) particular electrons are bound to particular atomic cores. Sometimes they jump between atoms but these are rare events.\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_4_beat_0.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_2\",\n      \"segment_id\": \"seg_3\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"In conductors (these are mostly metals)\",\n        \"end_phrase\": \"to the whole specimen.\"\n      },\n      \"display_text\": \"In conductors (these are mostly metals) electrons that are far from the cores can freely move from one atom to the other and thus over the whole body, so that they belong not to particular atoms but to the whole specimen.\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_4_beat_1.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_3\",\n      \"segment_id\": \"seg_5\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"There are materials intermediate between conductors\",\n        \"end_phrase\": \"charged by induction:\"\n      },\n      \"display_text\": \"There are materials intermediate between conductors and insulators such as semiconductors, water, moist materials, etc. Water cannot be used in applications as conductor (unlike metals) but, on the other hand, it does not prevent charges from moving (unlike good insulators). Conductors and bad insulators can be charged by induction:\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_4_beat_2.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_4\",\n      \"segment_id\": \"seg_6\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"![Diagram illustrating the process of charging\",\n        \"end_phrase\": \"this metal stab is removed\"\n      },\n      \"display_text\": \"Diagram showing charging by induction. A negatively charged rod is brought near a neutral metal sphere, causing positive charges to gather on the near side and electrons to be repelled to the far side.\",\n      \"latex_content\": null,\n      \"image_id\": \"af8b95b7fc833cebe89ba6c8ed839984_img.jpg\",\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_5\",\n      \"segment_id\": \"seg_7\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"or, in the microscopic language, electrons,\",\n        \"end_phrase\": \"from the metal sphere.\"\n      },\n      \"display_text\": \"or, in the microscopic language, electrons, repelled by the negative charges of the stab, flow to the right away from the metal sphere.\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false\n    }\n  ]\n}",
+        "flashcards": [],
+        "images": [
+          {
+            "description": "Diagram showing charging by induction. A negatively charged rod is brought near a neutral metal sphere, causing positive charges to gather on the near side and electrons to be repelled to the far side.",
+            "image_id": "af8b95b7fc833cebe89ba6c8ed839984_img.jpg"
+          }
+        ],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "In insulators (also called dielectrics) particular electrons are bound to particular atomic cores. Sometimes they jump between atoms but these are rare events.",
+            "video_asset": "videos/topic_4_beat_0.mp4"
+          },
+          {
+            "description": "In conductors (these are mostly metals) electrons that are far from the cores can freely move from one atom to the other and thus over the whole body, so that they belong not to particular atoms but to the whole specimen.",
+            "video_asset": "videos/topic_4_beat_1.mp4"
+          },
+          {
+            "description": "There are materials intermediate between conductors and insulators such as semiconductors, water, moist materials, etc. Water cannot be used in applications as conductor (unlike metals) but, on the other hand, it does not prevent charges from moving (unlike good insulators). Conductors and bad insulators can be charged by induction:",
+            "video_asset": "videos/topic_4_beat_2.mp4"
+          },
+          {
+            "description": "Diagram showing charging by induction. A negatively charged rod is brought near a neutral metal sphere, causing positive charges to gather on the near side and electrons to be repelled to the far side."
+          },
+          {
+            "description": "or, in the microscopic language, electrons, repelled by the negative charges of the stab, flow to the right away from the metal sphere."
+          }
+        ]
+      },
+      "narration_text": "Let's talk about how different materials handle electric charges. First up, we have insulators. Think of a traditional joint family home, where everyone has their own room and mostly stays there. In insulators, or dielectrics, electrons are tightly bound to their specific atoms. They don't just wander off. So if you place a charge on a piece of plastic, which is an insulator, it pretty much stays right where you put it. Now, let's see what this looks like. Notice how the electrons are stuck to their atoms. Even when an external charge comes near, they hold their ground. They don't move freely. Now, on the other hand, we have conductors, which are mostly metals. Picture the chaos of Bangalore's Silk Board junction during peak hours \u2013 that's a conductor for you! The outermost electrons are not tied to any single atom; they form a 'sea' of electrons that can move freely throughout the entire metal. Let's watch. See this sea of electrons? They are not bound to any one atom and can zip across the material. This free movement is what makes metals so good at conducting electricity. Then you have materials in between, like semiconductors, or even the water from the Kerala backwaters. It's not a perfect conductor like copper, but it's definitely not an insulator like dry wood. Charges can move, but with some difficulty. This property of conductors allows us to charge them through a method called induction. Let's see how it works. When we bring a negatively charged rod near a neutral metal sphere, the free electrons in the sphere are repelled. It's like they are running away to the farthest side of the sphere. This leaves the side of the sphere closer to the rod with a net positive charge. If we then provide a path for these repelled electrons to escape, say by connecting it to the earth, the sphere is left with an overall positive charge even after we remove the rod. So, in simple terms, the electrons are pushed away by the rod's negative charge, leaving the sphere positively charged.",
+      "section_id": 4,
+      "section_type": "content",
+      "title": "Insulators and Conductors"
+    },
+    {
+      "content": {
+        "bullet_items": [],
+        "explanation_plan": "{\n  \"visual_beats\": [\n    {\n      \"beat_id\": \"beat_1\",\n      \"segment_id\": \"seg_1\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"![Diagram of a charged stab near an insulator.]\",\n        \"end_phrase\": \"representing individual atoms with their internal charges.\"\n      },\n      \"display_text\": \"Diagram of a charged stab near an insulator, showing the internal atoms polarized.\",\n      \"latex_content\": null,\n      \"image_id\": \"edd10d3006553f0a7a5a7f844ed8cd01_img.jpg\",\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_5_beat_0.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_2\",\n      \"segment_id\": \"seg_3\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"![Diagram of atoms in an insulator.]\",\n        \"end_phrase\": \"of the insulator\"\n      },\n      \"display_text\": \"A close-up view of polarized atoms in an insulator.\",\n      \"latex_content\": null,\n      \"image_id\": \"17a042ee648d9fdaddb609aead503980_img.jpg\",\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_5_beat_1.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_3\",\n      \"segment_id\": \"seg_3\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Individual atoms are polarized by the\",\n        \"end_phrase\": \"This effect is small\"\n      },\n      \"display_text\": \"Individual atoms are polarized by the external charge (stab). As a result the polarized piece of the insulator attracts to the charged stab because its positive charges are closer to the stab than its negative charges. This effect is small\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_5_beat_2.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_4\",\n      \"segment_id\": \"seg_5\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"![Diagram of a charged stab near a conductor.]\",\n        \"end_phrase\": \"accumulation on that side.\"\n      },\n      \"display_text\": \"Diagram of a charged stab near a conductor, showing a large accumulation of positive charge on the side near the stab.\",\n      \"latex_content\": null,\n      \"image_id\": \"764bb8d7c93b090e205d908e1a8cade4_img.jpg\",\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_5\",\n      \"segment_id\": \"seg_6\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Conductors in this example polarize via\",\n        \"end_phrase\": \"This effect is big.\"\n      },\n      \"display_text\": \"Conductors in this example polarize via travelling of positive charges to the left and negative charges to the right. In the atomic language, electrons move to the right thus creating uncompensated positive charge of atomic cores on the left side. There is attraction between the charged stab and the polarized piece of conductor, similarly to the insulator. This effect is big.\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false\n    }\n  ]\n}",
+        "flashcards": [],
+        "images": [
+          {
+            "description": "Diagram of a charged stab near an insulator, showing the internal atoms polarized.",
+            "image_id": "edd10d3006553f0a7a5a7f844ed8cd01_img.jpg"
+          },
+          {
+            "description": "A close-up view of polarized atoms in an insulator.",
+            "image_id": "17a042ee648d9fdaddb609aead503980_img.jpg"
+          },
+          {
+            "description": "Diagram of a charged stab near a conductor, showing a large accumulation of positive charge on the side near the stab.",
+            "image_id": "764bb8d7c93b090e205d908e1a8cade4_img.jpg"
+          }
+        ],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "Diagram of a charged stab near an insulator, showing the internal atoms polarized.",
+            "video_asset": "videos/topic_5_beat_0.mp4"
+          },
+          {
+            "description": "A close-up view of polarized atoms in an insulator.",
+            "video_asset": "videos/topic_5_beat_1.mp4"
+          },
+          {
+            "description": "Individual atoms are polarized by the external charge (stab). As a result the polarized piece of the insulator attracts to the charged stab because its positive charges are closer to the stab than its negative charges. This effect is small",
+            "video_asset": "videos/topic_5_beat_2.mp4"
+          },
+          {
+            "description": "Diagram of a charged stab near a conductor, showing a large accumulation of positive charge on the side near the stab."
+          },
+          {
+            "description": "Conductors in this example polarize via travelling of positive charges to the left and negative charges to the right. In the atomic language, electrons move to the right thus creating uncompensated positive charge of atomic cores on the left side. There is attraction between the charged stab and the polarized piece of conductor, similarly to the insulator. This effect is big."
+          }
+        ]
+      },
+      "narration_text": "So what happens when you bring a charged object near a neutral one? Let's start with insulators. When a charged stab comes close to an insulator, the electrons can't leave their atoms. But the atoms themselves can react. Let's watch this. The atoms inside the insulator get 'polarized'. This means the electron clouds shift slightly. The positive nucleus is pulled toward the negative stab, and the negative electrons are pushed away. Each atom becomes a tiny dipole, with a positive and negative end. And what is the result? The side of the insulator closer to the stab becomes slightly positive, and the side farther away becomes slightly negative. Because the positive charges are closer to the stab, there's a net attractive force. It's a bit like a weak magnetic attraction, but it's purely electrical. This effect is usually quite small. Now, let's see what happens with conductors. It's a much more dramatic story. You see, in a conductor, the free electrons are massively repelled by the charged stab and they move to the far side of the material. This is not a small shift like in an insulator; it's a large-scale migration of charge. This leaves the near side with a large amount of uncompensated positive charge from the atomic cores. As you can imagine, this creates a very strong attraction between the charged stab and the conductor. The separation of charge is much greater, so the force is much bigger.",
+      "section_id": 5,
+      "section_type": "content",
+      "title": "Polarization of Insulators and Conductors"
+    },
+    {
+      "content": {
+        "bullet_items": [],
+        "explanation_plan": "{\n  \"visual_beats\": [\n    {\n      \"beat_id\": \"beat_1\",\n      \"segment_id\": \"seg_1\",\n      \"visual_type\": \"equation\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"## Coulomb's law\\n\\n$$F_{12} = k\",\n        \"end_phrase\": \"\\\\frac{q_1 q_2}{r^2}$$\"\n      },\n      \"display_text\": \"$$F_{12} = k \\\\frac{q_1 q_2}{r^2}$$\",\n      \"latex_content\": \"F_{12} = k \\\\frac{q_1 q_2}{r^2}\",\n      \"image_id\": null,\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_2\",\n      \"segment_id\": \"seg_3\",\n      \"visual_type\": \"equation\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"In SI the unit of charge\",\n        \"end_phrase\": \"in SI.\"\n      },\n      \"display_text\": \"In SI the unit of charge is Coulomb (C) and the Coulomb constant k is given by\\n$$k = \\\\frac{1}{4\\\\pi\\\\varepsilon_0} = 0.9 \\\\times 10^{10} \\\\text{ N m}^2 / \\\\text{C}^2$$\\nwhere the so-called vacuum permittivity  $\\\\varepsilon_0$  has the value  $\\\\varepsilon_0 = 0.885 \\\\times 10^{-11}$  in SI.\",\n      \"latex_content\": \"k = \\\\frac{1}{4\\\\pi\\\\varepsilon_0} = 0.9 \\\\times 10^{10} \\\\text{ N m}^2 / \\\\text{C}^2\",\n      \"image_id\": null,\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_3\",\n      \"segment_id\": \"seg_4\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"![Diagram showing two positive charges q1\",\n        \"end_phrase\": \"between the charges.\"\n      },\n      \"display_text\": \"Diagram showing two positive charges q1 and q2 repelling each other.\",\n      \"latex_content\": null,\n      \"image_id\": \"5549f7bbf28f047575f40f7da371a217_img.jpg\",\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_4\",\n      \"segment_id\": \"seg_5\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"![Schematic diagram of a Coulomb's torsion\",\n        \"end_phrase\": \"Charles Coulomb (1736-1806)\"\n      },\n      \"display_text\": \"Schematic of Coulomb's torsion balance and a portrait of Charles Coulomb.\",\n      \"latex_content\": null,\n      \"image_id\": \"130ce5fbe21d11939cd4419d3e7ff044_img.jpg\",\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_5\",\n      \"segment_id\": \"seg_7\",\n      \"visual_type\": \"image\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"If there are several charges, the\",\n        \"end_phrase\": \"the diagram.\"\n      },\n      \"display_text\": \"If there are several charges, the force acting on each charge is the sum of all Coulomb forces acting on the charge from the other charges.\",\n      \"latex_content\": null,\n      \"image_id\": \"1956f44611abd5c3c41049836aa78ad8_img.jpg\",\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_6\",\n      \"segment_id\": \"seg_9\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"**Example:** An electron and a proton\",\n        \"end_phrase\": \"attraction or repulsion?\"\n      },\n      \"display_text\": \"**Example:** An electron and a proton have charges of an equal magnitude but opposite sign of  $1.6 \\\\times 10^{-19} \\\\text{ C}$ . If the electron and proton in a hydrogen atom are separated by a distance of  $0.5 \\\\times 10^{-10} \\\\text{ m}$ , what is the electrostatic force exerted on the electron by the proton? Is it attraction or repulsion?\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_7\",\n      \"segment_id\": \"seg_10\",\n      \"visual_type\": \"equation\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"**Solution:** Use the Coulomb's law:\\n\\n$$F_{12}\",\n        \"end_phrase\": \"attracting each other\"\n      },\n      \"display_text\": \"**Solution:** Use the Coulomb's law:\\n\\n$$F_{12} = k \\\\frac{q_1 q_2}{r^2} = -k \\\\frac{e^2}{r^2} = -0.9 \\\\times 10^{10} \\\\left( \\\\frac{1.6 \\\\times 10^{-19}}{5 \\\\times 10^{-11}} \\\\right)^2 = -0.92 \\\\times 10^{-9} \\\\text{ N}$$\\n\\nThe result is negative, and this means the charges are attracting each other\",\n      \"latex_content\": \"F_{12} = k \\\\frac{q_1 q_2}{r^2} = -k \\\\frac{e^2}{r^2} = -0.9 \\\\times 10^{10} \\\\left( \\\\frac{1.6 \\\\times 10^{-19}}{5 \\\\times 10^{-11}} \\\\right)^2 = -0.92 \\\\times 10^{-9} \\\\text{ N}\",\n      \"image_id\": null,\n      \"answer_revealed\": false\n    }\n  ]\n}",
+        "flashcards": [],
+        "images": [
+          {
+            "description": "Diagram showing two positive charges q1 and q2 repelling each other.",
+            "image_id": "5549f7bbf28f047575f40f7da371a217_img.jpg"
+          },
+          {
+            "description": "Schematic of Coulomb's torsion balance and a portrait of Charles Coulomb.",
+            "image_id": "130ce5fbe21d11939cd4419d3e7ff044_img.jpg"
+          },
+          {
+            "description": "If there are several charges, the force acting on each charge is the sum of all Coulomb forces acting on the charge from the other charges.",
+            "image_id": "1956f44611abd5c3c41049836aa78ad8_img.jpg"
+          }
+        ],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "$$F_{12} = k \\frac{q_1 q_2}{r^2}$$"
+          },
+          {
+            "description": "In SI the unit of charge is Coulomb (C) and the Coulomb constant k is given by\n$$k = \\frac{1}{4\\pi\\varepsilon_0} = 0.9 \\times 10^{10} \\text{ N m}^2 / \\text{C}^2$$\nwhere the so-called vacuum permittivity  $\\varepsilon_0$  has the value  $\\varepsilon_0 = 0.885 \\times 10^{-11}$  in SI."
+          },
+          {
+            "description": "Diagram showing two positive charges q1 and q2 repelling each other."
+          },
+          {
+            "description": "Schematic of Coulomb's torsion balance and a portrait of Charles Coulomb."
+          },
+          {
+            "description": "If there are several charges, the force acting on each charge is the sum of all Coulomb forces acting on the charge from the other charges."
+          },
+          {
+            "description": "**Example:** An electron and a proton have charges of an equal magnitude but opposite sign of  $1.6 \\times 10^{-19} \\text{ C}$ . If the electron and proton in a hydrogen atom are separated by a distance of  $0.5 \\times 10^{-10} \\text{ m}$ , what is the electrostatic force exerted on the electron by the proton? Is it attraction or repulsion?"
+          },
+          {
+            "description": "**Solution:** Use the Coulomb's law:\n\n$$F_{12} = k \\frac{q_1 q_2}{r^2} = -k \\frac{e^2}{r^2} = -0.9 \\times 10^{10} \\left( \\frac{1.6 \\times 10^{-19}}{5 \\times 10^{-11}} \\right)^2 = -0.92 \\times 10^{-9} \\text{ N}$$\n\nThe result is negative, and this means the charges are attracting each other"
+          }
+        ]
+      },
+      "narration_text": "Now, how can we calculate the force between charges? For this, we use a fundamental principle discovered by Charles Coulomb, known as Coulomb's Law. It's the master formula for electrostatics. The law states that the force between two point charges is proportional to the product of the charges and inversely proportional to the square of the distance between them. Let's break this down. Watch as we change the distance 'r' between the two charges. As they move farther apart, the force, represented by these arrows, gets weaker. And if we increase the amount of charge, the force gets stronger. This relationship is captured perfectly in the equation. In our standard SI units, we measure charge in Coulombs, and 'k' is the Coulomb constant, a very large number. This tells you that electric forces can be very strong! This formula gives us the size of the force, but what about its direction? It's simple: if the force value is positive, which happens when you multiply two positive or two negative charges, the charges repel each other. Think of it as two people who can't stand each other pushing apart. If the force is negative, from multiplying a positive and a negative charge, they attract. They pull towards each other. This law was experimentally verified by Charles Coulomb using a clever device called a torsion balance. Here he is. The balance could measure extremely tiny forces by observing the twisting of a thin fiber, allowing him to precisely determine the relationship between force, charge, and distance. What if you have more than two charges? It's like a group of people at a Diwali party, everyone is interacting with everyone else. The total force on any one charge is simply the vector sum of the forces from all the other individual charges. This is called the principle of superposition. Let's see it in action. Here is charge q1. Charge q2 exerts a force F12 on it. Now we add charge q3, which exerts its own force, F13. The total force on q1 is the sum of these two vectors. Let's try an example. An electron and a proton have charges of equal size but opposite sign. If they are separated by the typical distance in a hydrogen atom, what's the force between them? We'll use Coulomb's law. We plug in the values: the Coulomb constant k, the charge of the proton, the charge of the electron (which is negative), and the distance squared. Watch the calculation. After doing the math, we get a force of about minus 0.92 into 10 to the power of minus 9 Newtons. And because the result is negative, what does that mean? It means the force is one of attraction. The proton is pulling the electron towards it, holding the atom together.",
+      "section_id": 6,
+      "section_type": "content",
+      "title": "Coulomb's Law"
+    },
+    {
+      "content": {
+        "bullet_items": [],
+        "explanation_plan": "{\n  \"visual_beats\": [\n    {\n      \"beat_id\": \"beat_1\",\n      \"segment_id\": \"seg_1\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"## Electric field\\n\\nIf there are many\",\n        \"end_phrase\": \"force  $\\\\mathbf{F} = q_0\\\\mathbf{E}(\\\\mathbf{r})$  is acting on it.\"\n      },\n      \"display_text\": \"If there are many electric charges in space,  $q_1$ ,  $q_2$ , etc. then the Coulomb force acting on a charge  $q_0$  at any point  $\\\\mathbf{r}$  is the (vector!) sum of all Coulomb forces... If we divide this force by  $q_0$  we obtain the electric field  $\\\\mathbf{E}(\\\\mathbf{r}) = \\\\mathbf{F}/q_0$  that characterizes the distribution of charges in space and is independent of the \\u201etest\\u201c charge  $q_0$ .\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_7_beat_0.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_2\",\n      \"segment_id\": \"seg_3\",\n      \"visual_type\": \"equation\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Electric field of a point charge\",\n        \"end_phrase\": \"point charge for  $q < 0$ .\"\n      },\n      \"display_text\": \"Electric field of a point charge q follows from the Coulomb's law and it is given by\\n$$E = k \\\\frac{q}{r^2}$$\",\n      \"latex_content\": \"E = k \\\\frac{q}{r^2}\",\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_7_beat_1.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_3\",\n      \"segment_id\": \"seg_5\",\n      \"visual_type\": \"diagram\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Full vector form of the electric\",\n        \"end_phrase\": \"observation point is at  $\\\\mathbf{r}$ .\"\n      },\n      \"display_text\": \"Diagram showing the vector relationship for calculating the electric field.\",\n      \"latex_content\": null,\n      \"image_id\": \"21b9db8e7a7551e861d09646401903e4_img.jpg\",\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_7_beat_2.mp4\"\n    }\n  ]\n}",
+        "flashcards": [],
+        "images": [
+          {
+            "description": "Diagram showing the vector relationship for calculating the electric field.",
+            "image_id": "21b9db8e7a7551e861d09646401903e4_img.jpg"
+          }
+        ],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "If there are many electric charges in space,  $q_1$ ,  $q_2$ , etc. then the Coulomb force acting on a charge  $q_0$  at any point  $\\mathbf{r}$  is the (vector!) sum of all Coulomb forces... If we divide this force by  $q_0$  we obtain the electric field  $\\mathbf{E}(\\mathbf{r}) = \\mathbf{F}/q_0$  that characterizes the distribution of charges in space and is independent of the \u201etest\u201c charge  $q_0$ .",
+            "video_asset": "videos/topic_7_beat_0.mp4"
+          },
+          {
+            "description": "Electric field of a point charge q follows from the Coulomb's law and it is given by\n$$E = k \\frac{q}{r^2}$$",
+            "video_asset": "videos/topic_7_beat_1.mp4"
+          },
+          {
+            "description": "Diagram showing the vector relationship for calculating the electric field.",
+            "video_asset": "videos/topic_7_beat_2.mp4"
+          }
+        ]
+      },
+      "narration_text": "Let's explore the concept of an electric field. Think of it like the traffic in Bangalore during peak hours. Each car influences the space around it, creating a 'field' of movement that other cars must navigate. Similarly, electric charges create an invisible field in space. When we place a small 'test' charge, q0, into this field, it experiences a force. The electric field, E, is simply this force divided by the test charge. This means the field exists everywhere, even if there's no test charge to feel it. Now, let's see how this works. An array of charges appears, creating a complex force field. A small test charge, q0, is introduced, and a force vector, F, acts on it. The equation E = F/q0 materializes. As q0 fades away, the electric field vector E remains, demonstrating that the field is an independent property of the source charges, modifying the space around them. For a single point charge, the formula is much simpler. The field strength E is determined by the charge q and the square of the distance r. Watch this. A central positive charge, q, appears. We see concentric circles marking increasing distance, r. An electric field vector, E, is shown, and as it moves along a radial line outwards, its length decreases, visually representing the inverse square law. The arrow points away from the positive charge. Then, the charge flips to negative, and the vector arrow reverses, now pointing inward. To be truly precise, we use vectors. The full vector form tells us not just the strength, but also the direction of the field. This second formula is even more general, allowing us to calculate the field at any point in space, r, caused by a charge located at position r1. Let's visualize this general case. A coordinate system appears with an origin O. A charge q1 is placed at position r1. The observation point is marked at position r. A vector is drawn from q1 to the observation point, labeled r - r1. Finally, the electric field vector E appears, aligned with this direction, showing how the field extends from the source charge to the point of interest.",
+      "section_id": 7,
+      "section_type": "content",
+      "title": "Electric Field"
+    },
+    {
+      "content": {
+        "bullet_items": [],
+        "explanation_plan": "{\n  \"visual_beats\": [\n    {\n      \"beat_id\": \"beat_1\",\n      \"segment_id\": \"seg_1\",\n      \"visual_type\": \"text\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"### Electric field lines\\n\\nElectric field is\",\n        \"end_phrase\": \"vector  $\\\\mathbf{E}$  at any point.\"\n      },\n      \"display_text\": \"Electric field lines are lines drawn in such a way that they go parallel to the vector  $\\\\mathbf{E}$  at any point.\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_8_beat_0.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_2\",\n      \"segment_id\": \"seg_2\",\n      \"visual_type\": \"diagram\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Examples of the electric field lines\",\n        \"end_phrase\": \"sinks of  $\\\\mathbf{E}$ .\"\n      },\n      \"display_text\": \"Examples of electric field lines for a single positive charge and for a dipole.\",\n      \"latex_content\": null,\n      \"image_id\": \"a86610f7a0e579fec9f34dea52fa088b_img.jpg\",\n      \"answer_revealed\": false\n    }\n  ]\n}",
+        "flashcards": [],
+        "images": [
+          {
+            "description": "Examples of electric field lines for a single positive charge and for a dipole.",
+            "image_id": "a86610f7a0e579fec9f34dea52fa088b_img.jpg"
+          }
+        ],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "Electric field lines are lines drawn in such a way that they go parallel to the vector  $\\mathbf{E}$  at any point.",
+            "video_asset": "videos/topic_8_beat_0.mp4"
+          },
+          {
+            "description": "Examples of electric field lines for a single positive charge and for a dipole."
+          }
+        ]
+      },
+      "narration_text": "To better understand these invisible fields, we use a tool called electric field lines. Think of them like the currents in the serene Kerala backwaters. You can't see the water moving everywhere, but the path of a small leaf shows you the direction of the flow. Electric field lines do the same for the electric field. They are drawn to be parallel to the field vector at every single point. Let's see what they look like. For a single positive charge, the field lines radiate straight outwards, like rays from the sun. The arrows show the direction of the force on a positive test charge. Now, let's add a negative charge to create a dipole. The field lines now curve beautifully, originating from the positive charge and terminating on the negative one. This shows us that positive charges are the 'sources' of the field, and negative charges are the 'sinks', where the field lines end.",
+      "section_id": 8,
+      "section_type": "content",
+      "title": "Electric Field Lines"
+    },
+    {
+      "content": {
+        "bullet_items": [],
+        "explanation_plan": "{\n  \"visual_beats\": [\n    {\n      \"beat_id\": \"beat_1\",\n      \"segment_id\": \"seg_1\",\n      \"visual_type\": \"diagram\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"## Electric flux and Gauss law\\n\\nElectric\",\n        \"end_phrase\": \"cross-section of a pipe.)\"\n      },\n      \"display_text\": \"Electric flux through a small surface S is defined by \\u03a6 = E \\u22c5 nS = E\\u22a5S = ES cos \\u03b8\",\n      \"latex_content\": null,\n      \"image_id\": \"e9b30aeb317ed964fa6de36804acf24c_img.jpg\",\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_2\",\n      \"segment_id\": \"seg_3\",\n      \"visual_type\": \"equation\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"Calculating electric flux through a large\",\n        \"end_phrase\": \"center on the charge:\"\n      },\n      \"display_text\": \"Calculating electric flux through a large surface requires calculus, in general. One has to split up the surface into many small surfaces \\u0394S and sum the fluxes over them all: \\u03a6 = \\u03a3 E\\u22a5\\u0394S\",\n      \"latex_content\": \"\\\\Phi = \\\\sum_{\\\\text{Surface}} E_{\\\\perp} \\\\Delta S\",\n      \"image_id\": null,\n      \"answer_revealed\": false\n    },\n    {\n      \"beat_id\": \"beat_3\",\n      \"segment_id\": \"seg_5\",\n      \"visual_type\": \"equation\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"$$\\\\Phi = ES = k \\\\frac{Q}{R^2}\",\n        \"end_phrase\": \"charge within the surface\"\n      },\n      \"display_text\": \"This is the Gauss law: The electric flux through a closed surface is proportional to the total charge within the surface\",\n      \"latex_content\": \"\\\\Phi = \\\\sum_{\\\\text{Closed Surface}} E_{\\\\perp} \\\\Delta S = \\\\frac{1}{\\\\epsilon_0} \\\\sum_{\\\\text{Inside the surface}} Q\",\n      \"image_id\": null,\n      \"answer_revealed\": false\n    }\n  ]\n}",
+        "flashcards": [],
+        "images": [
+          {
+            "description": "Electric flux through a small surface S is defined by \u03a6 = E \u22c5 nS = E\u22a5S = ES cos \u03b8",
+            "image_id": "e9b30aeb317ed964fa6de36804acf24c_img.jpg"
+          }
+        ],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "Electric flux through a small surface S is defined by \u03a6 = E \u22c5 nS = E\u22a5S = ES cos \u03b8"
+          },
+          {
+            "description": "Calculating electric flux through a large surface requires calculus, in general. One has to split up the surface into many small surfaces \u0394S and sum the fluxes over them all: \u03a6 = \u03a3 E\u22a5\u0394S"
+          },
+          {
+            "description": "This is the Gauss law: The electric flux through a closed surface is proportional to the total charge within the surface"
+          }
+        ]
+      },
+      "narration_text": "Next, we have electric flux. Imagine it's Diwali night, and you are looking at a row of diyas through a small window. The amount of light passing through the window is the 'flux' of light. Electric flux is similar; it measures how much of the electric field passes through a given surface. It depends on the field strength E, the surface area S, and the angle between them. Let's see this in action. A flat surface 'S' appears in a uniform electric field 'E', represented by parallel lines. A normal vector 'n' is drawn perpendicular to the surface. As the surface rotates, the angle 'theta' between E and n changes. We see a counter showing 'Flux' value. When the surface is perpendicular to the field (theta=0), the flux is maximum. As it rotates to be parallel (theta=90), the flux drops to zero, as no field lines pass through it. For large or curved surfaces, we simply add up the flux through many tiny pieces. A key result comes when we calculate the flux from a charge Q through a sphere surrounding it. The flux turns out to be simply the total charge inside, divided by a constant, epsilon-nought. Watch this. A charge Q is at the center of a sphere. Field lines pierce the surface perpendicularly. The equation for flux appears, and variables like radius R cancel out, leaving \u03a6 = Q/\u03b5\u2080. Now, the magic of Gauss's Law. The sphere morphs into a lumpy, potato-like shape, but the charge Q remains inside. The number of field lines piercing the surface doesn't change! The flux remains the same. This leads to the powerful statement of Gauss's Law: the total electric flux out of any closed surface is equal to the total charge enclosed within that surface, divided by epsilon-nought. It's a fundamental law of our universe.",
+      "section_id": 9,
+      "section_type": "content",
+      "title": "Electric Flux and Gauss Law"
+    },
+    {
+      "content": {
+        "bullet_items": [
+          "1. Electric field everywhere inside a charged conductor at equilibrium is zero\n2. Electric field at the outside surface of a conductor is perpendicular to the surface\n3. There is no charges inside the conductor; all charges are on the surface\n4. Electric field at the outside surface of a conductor is related to the surface density of charges: E = \u03c3/\u03b5\u2080"
+        ],
+        "explanation_plan": "{\n  \"visual_beats\": [\n    {\n      \"beat_id\": \"beat_1\",\n      \"segment_id\": \"seg_1\",\n      \"visual_type\": \"bullet_list\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"## Charges and electric field in conductors\\n\\n1.\",\n        \"end_phrase\": \"density of charges:  $E = \\\\sigma/\\\\varepsilon_0$\"\n      },\n      \"display_text\": \"1. Electric field everywhere inside a charged conductor at equilibrium is zero\\n2. Electric field at the outside surface of a conductor is perpendicular to the surface\\n3. There is no charges inside the conductor; all charges are on the surface\\n4. Electric field at the outside surface of a conductor is related to the surface density of charges: E = \\u03c3/\\u03b5\\u2080\",\n      \"latex_content\": null,\n      \"image_id\": null,\n      \"answer_revealed\": false,\n      \"video_asset\": \"videos/topic_10_beat_0.mp4\"\n    },\n    {\n      \"beat_id\": \"beat_2\",\n      \"segment_id\": \"seg_2\",\n      \"visual_type\": \"diagram\",\n      \"markdown_pointer\": {\n        \"start_phrase\": \"From the Gauss law follows:\\n\\n$$\\\\Phi =\",\n        \"end_phrase\": \"for  $\\\\sigma > 0$\"\n      },\n      \"display_text\": \"Diagram of a conductor with surface charges and an electric field.\",\n      \"latex_content\": null,\n      \"image_id\": \"2de51a31da9b0ffd9d017f035d498997_img.jpg\",\n      \"answer_revealed\": false\n    }\n  ]\n}",
+        "flashcards": [],
+        "images": [
+          {
+            "description": "Diagram of a conductor with surface charges and an electric field.",
+            "image_id": "2de51a31da9b0ffd9d017f035d498997_img.jpg"
+          }
+        ],
+        "quiz_data": null,
+        "visual_beats": [
+          {
+            "description": "1. Electric field everywhere inside a charged conductor at equilibrium is zero\n2. Electric field at the outside surface of a conductor is perpendicular to the surface\n3. There is no charges inside the conductor; all charges are on the surface\n4. Electric field at the outside surface of a conductor is related to the surface density of charges: E = \u03c3/\u03b5\u2080",
+            "video_asset": "videos/topic_10_beat_0.mp4"
+          },
+          {
+            "description": "Diagram of a conductor with surface charges and an electric field."
+          }
+        ]
+      },
+      "narration_text": "Finally, let's see how fields and charges behave in conductors, like metals. There are four key rules at equilibrium. First, the electric field inside the conductor is always zero. Second, any electric field at the surface must be perpendicular to it. Third, all excess charge resides only on the surface, never inside. And fourth, the strength of the surface electric field is directly proportional to the local surface charge density. Let's watch these rules in action. We start with a solid, neutral conductor. A group of positive charges are injected into its center. Instantly, they repel each other and race to the outer surface, distributing themselves. A probe scanning the interior shows 'E = 0' everywhere inside. At the surface, electric field vectors appear, all pointing perfectly perpendicular to the surface. We zoom in on a small patch of the surface with charge density sigma. A small, cylindrical 'Gaussian surface' like a puck is drawn half-in, half-out of the conductor. Applying Gauss's law to this surface visually derives the result E = sigma / epsilon-nought.",
+      "section_id": 10,
+      "section_type": "content",
+      "title": "Charges and Electric Field in Conductors"
+    },
+    {
+      "content": {
+        "bullet_items": [],
+        "explanation_plan": "",
+        "flashcards": [
+          {
+            "back": "Think 'P' for 'Positive' and 'Proton'. Electrons are the other ones, which are negative. Neutrons are neutral\u2014they have no charge.",
+            "front": "What's an easy way to remember which subatomic particle has which charge?"
+          },
+          {
+            "back": "Conductors let charges 'course' through them freely, like water in a river. Insulators 'interrupt' the flow of charge, holding it in place.",
+            "front": "How can I remember the difference between conductors and insulators?"
+          },
+          {
+            "back": "Like charges repel, opposite charges attract. The force gets much weaker as the distance increases (an inverse square relationship).",
+            "front": "What is the core idea of Coulomb's Law?"
+          },
+          {
+            "back": "Think of positive charges as 'sources' and negative charges as 'sinks'. Field lines always flow away from positive and towards negative.",
+            "front": "What is the direction of electric field lines?"
+          },
+          {
+            "back": "The total electric flux out of a closed surface depends only on the total charge *inside* that surface. What's outside doesn't count for the total flux.",
+            "front": "What's the main point of Gauss's Law?"
+          }
+        ],
+        "images": [],
+        "quiz_data": null,
+        "visual_beats": []
+      },
+      "narration_text": "Let's lock in these concepts with some memory aids. First up: How do you remember which particle has which charge? Think 'P' for 'Positive' and 'Proton'. Electrons are negative, and neutrons are neutral. Next, distinguishing conductors from insulators. Conductors let charges 'course' through, while insulators 'interrupt' the flow. Now for Coulomb's Law. Just remember: like charges repel, opposites attract, and the force weakens rapidly with distance. What about electric field direction? Field lines flow away from positive charges and toward negative charges, like a river. Finally, Gauss's Law. It's simple: the total electric flux depends only on the charge enclosed within a surface.",
+      "section_id": 11,
+      "section_type": "memory",
+      "title": "Key Concepts"
+    },
+    {
+      "content": {
+        "bullet_items": [],
+        "explanation_plan": "",
+        "flashcards": [],
+        "images": [],
+        "quiz_data": null,
+        "visual_beats": []
+      },
+      "narration_text": "We began with a simple observation: the surprising attraction from rubbing objects together. This spark of curiosity led us to the fundamental concept of charge. We learned that this phenomenon isn't magic, but a property of atoms, where tiny electrons can be transferred, creating positive and negative imbalances. We then explored how materials react to this charge. In conductors, electrons move freely, creating a sea of charge, while in insulators, they are held tightly in place. This difference is crucial for controlling electricity. Understanding these interactions became quantitative with Coulomb's Law, a powerful formula that allows us to calculate the precise force between any two charges, revealing the elegant mathematical order hidden within the electrostatic world. Finally, we visualized these forces through the concept of the electric field, an invisible influence permeating space. With Gauss's Law, we found a profound way to relate the distribution of charges to the shape of their collective field, completing our foundational journey into electrostatics. From a simple spark to the laws governing fields, we've seen how electrostatics provides the foundation for understanding electricity. This knowledge is the first step towards mastering the forces that power our modern lives, connecting the smallest particles to the largest technologies.",
+      "section_id": 12,
+      "section_type": "recap",
+      "title": "Lesson Recap"
+    }
+  ],
+  "title": ""
+}

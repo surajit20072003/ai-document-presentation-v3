@@ -1,0 +1,30 @@
+Analyze this {subject} educational content and extract logical topic blocks with content density analysis.
+
+The content has been marked with [BLOCK N] tags to identify paragraph boundaries.
+
+## Source Content
+{markdown_content}
+
+## Your Task
+1. COUNT all concepts, formulas, tables, images, Q&A pairs in the content
+2. CALCULATE recommended_content_sections based on density (see rules in system prompt)
+3. EXTRACT 3-10 logical topics from this content
+4. For each topic, determine:
+   - A clear, specific title
+   - The concept type (process/definition/example/formula/theory/fact)
+   - Which source blocks it uses
+   - Key vocabulary terms
+   - Whether it contains mathematical formulas
+   - The best renderer (manim/video/none)
+   - Complexity rating (light/medium/heavy)
+   - concept_count (number of distinct concepts)
+5. CREATE topic_grouping_hints showing which topics should be combined into each content section
+
+## Density Analysis Required
+- total_concepts: Count every bullet point, definition, fact, concept
+- formula_count: Count $...$ and $$...$$ blocks
+- table_count: Count markdown tables
+- image_count: Count ![...] image references
+- qa_pair_count: Count question-answer pairs
+
+Output valid JSON only. No explanations.

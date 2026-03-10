@@ -1,0 +1,19 @@
+Create a Manim animation specification for this section:
+
+## SECTION INFO:
+Section ID: {section_id}
+
+## VISUAL BEATS (what to animate):
+{visual_beats}
+
+## NARRATION SUMMARY:
+{narration_summary}
+
+## INSTRUCTIONS:
+
+1. Create objects for each visual element needed
+2. Design animation sequence that aligns with narration segments
+3. Use appropriate Manim types for content (MathTex for formulas, Text for labels, etc.)
+4. Time animations to match the visual beats
+
+Output ONLY the JSON structure with your Manim specification.

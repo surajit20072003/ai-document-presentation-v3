@@ -1,0 +1,48 @@
+Create a complete teaching plan from the following chunks.
+
+INPUT:
+- Subject metadata (subject, grade, chapter)
+- Chunked textbook content (JSON)
+
+TASK:
+- Design the lesson flow.
+- Create sections with:
+  - section_type (intro, content, example, quiz, memory, recap)
+  - narration
+  - narration_segments with duration
+  - visual_beats (descriptive, no code)
+  - renderer choice + reasoning
+  - layout
+  - gesture hints
+
+RESPONSE FORMAT (use EXACTLY this structure):
+{
+  "title": "Chapter or Lesson Title",
+  "sections": [
+    {
+      "section_id": "intro_01",
+      "section_type": "intro",
+      "section_title": "Introduction to Topic",
+      "layout": "avatar_center",
+      "renderer": "none",
+      "renderer_reasoning": "Text-only intro section",
+      "narration": "Full narration text here...",
+      "narration_segments": [
+        {"start_time": 0, "end_time": 10, "text": "...", "gesture": "idle"}
+      ],
+      "visual_beats": [
+        {"time": 0, "description": "Specific visual description"}
+      ]
+    }
+  ]
+}
+
+CRITICAL: The top-level key MUST be "sections". Not "plan", "topics", or "lesson_plan".
+Output JSON only. No extra text.
+
+SUBJECT: {subject}
+GRADE: {grade}
+CHAPTER: {chapter}
+
+CHUNKS:
+{chunks_json}

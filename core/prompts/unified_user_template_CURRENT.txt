@@ -1,0 +1,11 @@
+## Document Details
+Subject: {subject}
+Grade Level: {grade}
+Available Images: {images_list}
+
+## Source Document (Markdown)
+```markdown
+[MARKDOWN CONTENT HERE]
+```
+
+Generate the complete presentation JSON following the schema exactly. Include all section types in order: intro, summary, content, example (if applicable), quiz, memory, recap.

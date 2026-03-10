@@ -1,0 +1,171 @@
+# HeyGem Chatterbox API Documentation
+
+**Base URL:** `http://69.197.145.4:5004`
+
+Complete API reference for AI-powered video generation with voice cloning and multi-language support.
+
+---
+
+## 📋 Quick Reference
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/generate` | POST | Generate video |
+| `/api/library/upload` | POST | Upload avatar |
+| `/api/library/list` | GET | List avatars |
+| `/api/library/delete/<id>` | DELETE | Delete avatar |
+| `/library/<id>/<file>` | GET | Get avatar file |
+| `/api/queue` | GET | Queue status |
+| `/api/status/<task_id>` | GET | Task status |
+| `/api/history` | GET | Task history |
+
+---
+
+## 🎬 Video Generation
+
+### Generate Video
+
+**Endpoint:** `POST /api/generate`
+
+**Parameters:**
+- `text` (required): Text to speak
+- `language` (optional): Language code (default: `english`)
+- `speaker` (optional): Voice ID for Indian languages
+- `avatar_id` (conditional): Avatar from library
+- `video` (conditional): Upload new video
+- `audio` (optional): Custom reference audio
+
+**Example:**
+```bash
+curl -X POST http://69.197.145.4:5004/api/generate \
+  -F "text=Hello, welcome!" \
+  -F "language=hindi" \
+  -F "speaker=vidya" \
+  -F "avatar_id=avatar_65ba8e90"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "task_id": "task_1769688913_d668a7fd"
+}
+```
+
+---
+
+## � Avatar Library
+
+### Upload Avatar
+```bash
+curl -X POST http://69.197.145.4:5004/api/library/upload \
+  -F "name=My Avatar" \
+  -F "video=@avatar.mp4"
+```
+
+### List Avatars
+```bash
+curl http://69.197.145.4:5004/api/library/list
+```
+
+### Delete Avatar
+```bash
+curl -X DELETE http://69.197.145.4:5004/api/library/delete/avatar_abc123
+```
+
+---
+
+## 🌐 Multi-Language Support
+
+### Supported Languages (12)
+
+| Language | Code | Script | Example |
+|----------|------|--------|---------|
+| English | `english` | Latin | Default (voice cloning) |
+| Kannada | `kannada` | ಕನ್ನಡ | `language=kannada` |
+| Hindi | `hindi` | हिंदी | `language=hindi` |
+| Bengali | `bengali` | বাংলা | `language=bengali` |
+| Tamil | `tamil` | தமிழ் | `language=tamil` |
+| Telugu | `telugu` | తెలుగు | `language=telugu` |
+| Malayalam | `malayalam` | മലയാളം | `language=malayalam` |
+| Marathi | `marathi` | मराठी | `language=marathi` |
+| Gujarati | `gujarati` | ગુજરાતી | `language=gujarati` |
+| Punjabi | `punjabi` | ਪੰਜਾਬੀ | `language=punjabi` |
+| Odia | `odia` | ଓଡ଼ିଆ | `language=odia` |
+| Assamese | `assamese` | অসমীয়া | `language=assamese` |
+
+### Available Voices (7)
+
+**For Indian Languages Only** (Sarvam.ai bulbul:v2)
+
+**Male Voices (3):**
+- `abhilash` (default) - Clear, professional
+- `karun` - Warm, friendly
+- `hitesh` - Energetic, youthful
+
+**Female Voices (4):**
+- `anushka` - Soft, gentle
+- `manisha` - Professional, clear
+- `vidya` - Warm, expressive
+- `arya` - Young, energetic
+
+### Usage Examples
+
+**Hindi with Male Voice:**
+```bash
+curl -X POST http://69.197.145.4:5004/api/generate \
+  -F "text=Hello everyone" \
+  -F "language=hindi" \
+  -F "speaker=abhilash" \
+  -F "avatar_id=avatar_65ba8e90"
+```
+
+**Bengali with Female Voice:**
+```bash
+curl -X POST http://69.197.145.4:5004/api/generate \
+  -F "text=Welcome to our service" \
+  -F "language=bengali" \
+  -F "speaker=vidya" \
+  -F "avatar_id=avatar_65ba8e90"
+```
+
+**Tamil with Different Voice:**
+```bash
+curl -X POST http://69.197.145.4:5004/api/generate \
+  -F "text=Thank you very much" \
+  -F "language=tamil" \
+  -F "speaker=karun" \
+  -F "avatar_id=avatar_65ba8e90"
+```
+
+**Note:** For English, `speaker` parameter is ignored (uses Chatterbox voice cloning)
+
+---
+
+## 📊 Status & Monitoring
+
+### Check Queue
+```bash
+curl http://69.197.145.4:5004/api/queue
+```
+
+### Check Task Status
+```bash
+curl http://69.197.145.4:5004/api/status/task_xyz789
+```
+
+### Get History
+```bash
+curl http://69.197.145.4:5004/api/history
+```
+
+---
+
+## 🔗 Frontend
+
+**Web Interface:** `http://69.197.145.4:5004/`
+
+---
+
+For complete documentation, see [API_README.md](./API_README.md)
+

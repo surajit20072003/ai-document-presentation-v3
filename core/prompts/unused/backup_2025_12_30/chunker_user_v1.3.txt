@@ -1,0 +1,18 @@
+Split the following markdown content into teachable chunks.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MARKDOWN CONTENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{markdown_content}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TASK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Identify natural topic boundaries
+2. Split into logical chunks
+3. Preserve all math formulas and examples
+4. Tag each chunk with type and metadata
+
+Return ONLY valid JSON with a "chunks" array.

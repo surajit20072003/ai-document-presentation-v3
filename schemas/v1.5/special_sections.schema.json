@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "special_sections.schema.json",
+  "title": "SpecialSections",
+  "description": "Combined output from SpecialSectionsAgent - Memory + Recap in single call",
+  "type": "object",
+  "properties": {
+    "memory_section": {
+      "type": "object",
+      "properties": {
+        "section_id": {
+          "type": "string",
+          "const": "memory"
+        },
+        "section_type": {
+          "type": "string",
+          "const": "memory"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title for memory section (e.g., '3 Keys to Remember')"
+        },
+        "flashcards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "flashcard_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              },
+              "front": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 150,
+                "description": "Question or term"
+              },
+              "back": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 250,
+                "description": "Answer with mnemonic"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["definition", "formula", "process", "concept"]
+              }
+            },
+            "required": ["flashcard_id", "front", "back", "category"]
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "narration": {
+          "type": "object",
+          "properties": {
+            "full_text": {
+              "type": "string",
+              "minLength": 30,
+              "description": "Complete narration text (concatenation of segments)"
+            },
+            "segments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "segment_id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "duration_seconds": {
+                    "type": "number",
+                    "minimum": 1
+                  },
+                  "gesture_hint": {
+                    "type": "string"
+                  }
+                },
+                "required": ["segment_id", "text", "duration_seconds"]
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": ["full_text", "segments"]
+        }
+      },
+      "required": ["section_id", "section_type", "title", "flashcards", "narration"]
+    },
+    "recap_section": {
+      "type": "object",
+      "properties": {
+        "section_id": {
+          "type": "string",
+          "const": "recap"
+        },
+        "section_type": {
+          "type": "string",
+          "const": "recap"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title for recap section (e.g., 'Mental Movie: Cell Division')"
+        },
+        "video_prompts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prompt_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "prompt": {
+                "type": "string",
+                "minLength": 200,
+                "maxLength": 800,
+                "description": "Video generation prompt (80-150 words)"
+              },
+              "duration_seconds": {
+                "type": "number",
+                "minimum": 5,
+                "maximum": 15
+              },
+              "style": {
+                "type": "string",
+                "enum": ["documentary", "animated", "cinematic", "explainer"]
+              }
+            },
+            "required": ["prompt_id", "prompt", "duration_seconds", "style"]
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "narration": {
+          "type": "object",
+          "properties": {
+            "full_text": {
+              "type": "string",
+              "minLength": 150,
+              "description": "Complete narration text (concatenation of segments)"
+            },
+            "segments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "segment_id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "duration_seconds": {
+                    "type": "number",
+                    "minimum": 1
+                  },
+                  "gesture_hint": {
+                    "type": "string"
+                  }
+                },
+                "required": ["segment_id", "text", "duration_seconds"]
+              },
+              "minItems": 5,
+              "maxItems": 5
+            }
+          },
+          "required": ["full_text", "segments"]
+        }
+      },
+      "required": ["section_id", "section_type", "title", "video_prompts", "narration"]
+    }
+  },
+  "required": ["memory_section", "recap_section"]
+}

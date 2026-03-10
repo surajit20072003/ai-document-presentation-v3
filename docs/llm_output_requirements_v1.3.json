@@ -1,0 +1,369 @@
+{
+  "spec_version": "v1.3",
+  "description": "Deterministic Educational Film Engine - LLM Output Contract",
+  "last_updated": "2025-12-20",
+
+  "pipeline_architecture": {
+    "pass_0_chunker": {
+      "model": "Gemini 2.5 Flash",
+      "role": "Convert Markdown to clean chunks",
+      "outputs": "chunked JSON",
+      "restrictions": ["no narration", "no visuals", "no pedagogy decisions"]
+    },
+    "pass_1_director": {
+      "model": "Gemini 2.5 Pro",
+      "role": "Direct the teaching film",
+      "outputs": "presentation.json matching v1.3 schema",
+      "prompts": ["director_system_v1.3.txt", "director_user_v1.3.txt"],
+      "validation_required": true,
+      "hard_fail_conditions": [
+        "missing intro section",
+        "missing summary section",
+        "content narration < 150 words",
+        "missing display_directives on any segment",
+        "manim section without manim_scene_spec"
+      ]
+    },
+    "pass_2_renderers": {
+      "role": "Deterministic rendering - NO creative LLM decisions",
+      "manim": "Code generator from manim_scene_spec",
+      "video": "WAN prompt template from visual_beats",
+      "outputs": "One MP4 per visual beat"
+    },
+    "pass_3_player": {
+      "role": "DUMB execution layer",
+      "follows": ["display_directives", "layout instructions", "timing"],
+      "restrictions": ["no layout decisions", "no timing decisions", "no pedagogy decisions"]
+    }
+  },
+
+  "core_principles": {
+    "player_is_dumb": true,
+    "one_primary_attention_layer_at_a_time": true,
+    "teach_then_show": true,
+    "everything_is_timed": true,
+    "dense_text_and_complex_visuals_never_simultaneous": true
+  },
+
+  "mandatory_section_order": [
+    "intro",
+    "summary",
+    "content",
+    "example",
+    "memory",
+    "recap"
+  ],
+
+  "section_types": {
+    "intro": {
+      "required": true,
+      "hard_fail_if_missing": true,
+      "renderer": "none",
+      "avatar": {
+        "visibility": "visible",
+        "position": "center_or_overlay",
+        "width_percent_min": 50
+      }
+    },
+    "summary": {
+      "required": true,
+      "hard_fail_if_missing": true,
+      "renderer": "none",
+      "avatar": {
+        "visibility": "visible",
+        "position": "center_or_side",
+        "width_percent_min": 35
+      }
+    },
+    "content": {
+      "required": true,
+      "minimum_narration_words": 150,
+      "maximum_narration_words": 250,
+      "renderer_options": ["manim", "video", "remotion"],
+      "avatar": {
+        "visibility": "visible",
+        "position": "side",
+        "width_percent_min": 30,
+        "width_percent_max": 40
+      }
+    },
+    "example": {
+      "required_if_present_in_source": true,
+      "minimum_narration_words": 100,
+      "must_be_visualized_step_by_step": true,
+      "renderer_options": ["manim", "video"],
+      "avatar": {
+        "visibility": "side_small_or_gesture_only",
+        "width_percent_max": 30
+      }
+    },
+    "quiz": {
+      "required": false,
+      "avatar": {
+        "visibility": "hidden_or_minimal"
+      }
+    },
+    "memory": {
+      "required": true,
+      "flashcard_count": 5,
+      "avatar": {
+        "visibility": "optional"
+      }
+    },
+    "recap": {
+      "required": true,
+      "scene_count": 5,
+      "per_scene_words_min": 60,
+      "per_scene_words_max": 100,
+      "total_narration_words_min": 300,
+      "total_narration_words_max": 500,
+      "renderer": "video",
+      "avatar": {
+        "visibility": "hidden"
+      }
+    }
+  },
+
+  "presentation_structure": {
+    "top_level_required_fields": [
+      "spec_version",
+      "title",
+      "subject",
+      "grade",
+      "sections"
+    ],
+    "section_required_fields": [
+      "section_id",
+      "section_type",
+      "title",
+      "renderer",
+      "renderer_reasoning",
+      "layout",
+      "narration",
+      "narration_segments",
+      "visual_beats"
+    ]
+  },
+
+  "display_directives": {
+    "description": "CRITICAL v1.3 ADDITION - Required for EVERY narration segment",
+    "required": true,
+    "hard_fail_if_missing": true,
+    "structure": {
+      "text_layer": {
+        "action": ["show", "hide", "swap"],
+        "animation": ["fade_in", "fade_out", "cut", "slide"]
+      },
+      "visual_layer": {
+        "action": ["show", "hide", "replace"],
+        "animation": ["fade_in", "fade_out", "cut", "morph"]
+      },
+      "avatar_layer": {
+        "action": ["show", "hide", "gesture_only"]
+      }
+    },
+    "rule": "Text MUST hide BEFORE complex visuals appear"
+  },
+
+  "narration_segment_structure": {
+    "required_fields": [
+      "segment_id",
+      "text",
+      "duration_seconds",
+      "display_directives"
+    ],
+    "optional_fields": [
+      "gesture_hint",
+      "word_count",
+      "visual_content"
+    ],
+    "field_definitions": {
+      "text": "Narration for TTS audio ONLY - NOT displayed on screen",
+      "visual_content": {
+        "purpose": "Structured displayable content from source document - shown on screen when text_layer=show",
+        "structure": {
+          "bullet_points": [
+            { "level": 1, "text": "Main point from document (max 80 chars)" },
+            { "level": 2, "text": "Sub-point from document (max 80 chars)" }
+          ],
+          "formula": "Optional LaTeX formula",
+          "labels": ["Optional", "label", "array"]
+        },
+        "rules": [
+          "Content comes from source document - NOT rewritten",
+          "Bullet hierarchy preserved from input",
+          "Attached per segment for progressive reveal",
+          "Player renders visual_content when text_layer=show",
+          "Player NEVER renders narration text on screen"
+        ]
+      }
+    },
+    "two_channel_separation": {
+      "narration_channel": {
+        "field": "text",
+        "purpose": "Audio narration via TTS",
+        "display": "NEVER shown on screen"
+      },
+      "display_channel": {
+        "field": "visual_content",
+        "purpose": "Structured content for screen display",
+        "source": "Extracted from input document"
+      }
+    }
+  },
+
+  "visual_beat_structure": {
+    "required_fields": [
+      "time",
+      "description"
+    ],
+    "conditional_fields": {
+      "if_renderer_manim": {
+        "required": ["manim_scene_spec"],
+        "manim_scene_spec_structure": {
+          "required_fields": ["objects", "animation_sequence", "total_duration_seconds"],
+          "objects_structure": {
+            "required_fields": ["id", "type", "content", "position"]
+          },
+          "animation_structure": {
+            "required_fields": ["action", "target", "duration"]
+          }
+        }
+      },
+      "if_renderer_video": {
+        "required": ["video_prompt"]
+      }
+    }
+  },
+
+  "layout_structure": {
+    "required_fields": ["content_zone", "avatar_zone"],
+    "content_zone": {
+      "position": ["left", "right", "center", "full"],
+      "width_percent": "integer 0-100"
+    },
+    "avatar_zone": {
+      "mode": ["side", "overlay", "hidden"],
+      "position": ["left", "right", "center"],
+      "width_percent": "integer 0-100"
+    }
+  },
+
+  "avatar_rules_by_section_type": {
+    "intro": {
+      "mode": "overlay_or_center",
+      "position": "center",
+      "width_percent_min": 50,
+      "visibility": "visible"
+    },
+    "summary": {
+      "mode": "side_or_overlay",
+      "position": "right_or_center",
+      "width_percent_min": 35,
+      "visibility": "visible"
+    },
+    "content": {
+      "mode": "side",
+      "position": "right",
+      "width_percent_min": 30,
+      "width_percent_max": 40,
+      "visibility": "visible"
+    },
+    "example": {
+      "mode": "side_small_or_gesture_only",
+      "width_percent_max": 30,
+      "visibility": "side_small_or_gesture_only"
+    },
+    "quiz": {
+      "mode": "hidden_or_minimal",
+      "visibility": "hidden_or_minimal"
+    },
+    "memory": {
+      "mode": "optional",
+      "visibility": "optional"
+    },
+    "recap": {
+      "mode": "hidden",
+      "visibility": "hidden"
+    }
+  },
+
+  "renderer_decision_rules": {
+    "manim": {
+      "use_for": ["formulas", "equations", "graphs", "vectors", "geometry", "numeric physics examples"],
+      "hard_rule": "EVERY visual beat MUST include manim_scene_spec",
+      "prose_only_beats": "HARD FAILURE"
+    },
+    "video": {
+      "use_for": ["biology processes", "chemistry reactions", "physical phenomena", "recap storytelling"]
+    },
+    "remotion": {
+      "use_for": ["motion graphics", "intro animations", "summary animations", "quiz displays"]
+    }
+  },
+
+  "banned_phrases_in_visual_beats": [
+    "appropriate animation",
+    "suitable visual",
+    "relevant content",
+    "necessary elements",
+    "various objects",
+    "etc",
+    "and so on",
+    "properly animated",
+    "correctly displayed",
+    "accordingly",
+    "as needed",
+    "as required",
+    "generic visual",
+    "typical animation",
+    "standard display",
+    "some kind of",
+    "some sort of",
+    "a type of",
+    "appropriate visual",
+    "suitable animation",
+    "relevant visual",
+    "clear diagram"
+  ],
+
+  "gesture_hints": {
+    "allowed_values": [
+      "point_left",
+      "point_right",
+      "point_center",
+      "open_palms",
+      "nod",
+      "emphasize",
+      "idle"
+    ]
+  },
+
+  "hard_fail_validation_rules": {
+    "structure_checks": [
+      {"rule": "intro section missing", "action": "FAIL"},
+      {"rule": "summary section missing", "action": "FAIL"},
+      {"rule": "recap section missing", "action": "FAIL"},
+      {"rule": "memory section missing", "action": "FAIL"}
+    ],
+    "narration_checks": [
+      {"rule": "content narration < 150 words", "action": "FAIL"},
+      {"rule": "example narration without step-by-step visuals", "action": "FAIL"},
+      {"rule": "recap total narration < 300 words", "action": "FAIL"},
+      {"rule": "recap total narration > 500 words", "action": "FAIL"}
+    ],
+    "display_directive_checks": [
+      {"rule": "narration segment missing display_directives", "action": "FAIL"},
+      {"rule": "text and complex visuals shown simultaneously", "action": "FAIL"}
+    ],
+    "renderer_checks": [
+      {"rule": "manim section without manim_scene_spec", "action": "FAIL"},
+      {"rule": "visual beat contains banned vague phrase", "action": "FAIL"}
+    ],
+    "avatar_checks": [
+      {"rule": "intro avatar not visible or < 50% width", "action": "FAIL"},
+      {"rule": "content avatar not side position", "action": "FAIL"},
+      {"rule": "recap avatar visible", "action": "FAIL"}
+    ]
+  }
+}

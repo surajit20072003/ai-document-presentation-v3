@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>V2.5 Job Validator (1fe6c6bb)</title>
+    <style>
+        .hidden {
+            display: none !important;
+        }
+
+        .reveal-hidden {
+            opacity: 0;
+        }
+
+        .reveal-visible {
+            opacity: 1;
+        }
+
+        .quiz-hidden {
+            display: none;
+        }
+
+        .flipped {
+            transform: rotateY(180deg);
+        }
+
+        .memory-visible {
+            opacity: 1;
+        }
+
+        .video-mode {
+            background: black;
+        }
+
+        #player-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+        }
+
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #video-layer {
+            z-index: 10;
+        }
+
+        #content-layer {
+            z-index: 20;
+            color: white;
+            font-family: sans-serif;
+        }
+
+        #avatar-layer {
+            z-index: 30;
+        }
+
+        /* Mock CSS needed for visuals to appear */
+        .quiz-card {
+            background: white;
+            color: black;
+            padding: 20px;
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
+        }
+
+        .quiz-choice {
+            border: 1px solid #ccc;
+            margin: 10px;
+            padding: 10px;
+        }
+
+        .quiz-choice.correct {
+            background: lightgreen;
+        }
+
+        .summary-bullet {
+            margin: 10px;
+            font-size: 24px;
+        }
+    </style>
+
+    <!-- LOAD REAL JOB DATA -->
+    <script src="job_1fe6c6bb_data.js"></script>
+
+    <script>
+        // --- MOCK ENV ---
+
+        // Mock Fetch (returns the loaded data)
+        window.fetch = async (url) => {
+            if (url.includes('presentation.json')) {
+                return { ok: true, json: async () => window.JOB_DATA };
+            }
+            return { ok: true }; // Allow media checks
+        };
+
+        // Mock Utils - Point to local job folder
+        const JOB_DIR = "jobs/1fe6c6bb/";
+        window.resolveMediaPath = (p) => {
+            if (!p) return "";
+            if (p.startsWith("http")) return p;
+            return JOB_DIR + p;
+        };
+        window.sanitizeMarkdown = (t) => t;
+
+        // Logging
+        function log(msg, status = "INFO") {
+            const box = document.getElementById('log-box');
+            if (box) box.innerText += `[${status}] ${msg}\n`;
+            console.log(`[${status}] ${msg}`);
+        }
+    </script>
+</head>
+
+<body>
+    <div id="player-container">
+        <div id="video-layer" class="layer hidden"><video id="content-video"></video></div>
+        <div id="content-layer" class="layer hidden">
+            <div id="content-box"></div>
+        </div>
+        <div id="avatar-layer" class="layer hidden"><video id="avatar-video"></video></div>
+        <audio id="narration-audio"></audio>
+        <!-- Required mock canvases -->
+        <canvas id="video-canvas" style="display:none"></canvas>
+        <canvas id="output-canvas" style="display:none"></canvas>
+    </div>
+
+    <div id="dev-panel" style="display:none"></div>
+
+    <div id="log-box"
+        style="position:fixed; bottom:0; left:0; width:100%; height:200px; background:#fff; color:#000; overflow:scroll; z-index:1000; border-top:2px solid red; white-space: pre-wrap;">
+    </div>
+
+    <script src="player_v2.js"></script>
+
+    <script>
+        window.onload = async () => {
+            log("Running V2.5 Validator on Job 1fe6c6bb...");
+
+            // Player Init
+            if (typeof init === 'function') {
+                try {
+                    await init();
+                    log("Player Initialized. Slides: " + slides.length);
+                    setTimeout(runValidation, 1000);
+                } catch (e) {
+                    log("Init Failed: " + e, "FATAL");
+                }
+            }
+        };
+
+        async function runValidation() {
+            log("\n--- STARTING VALIDATION SUITE ---\n");
+
+            let quizFound = false;
+
+            for (let i = 0; i < slides.length; i++) {
+                const s = slides[i];
+                log(`Slide ${i}: Type=[${s.section_type}]`);
+
+                await loadSlide(i);
+                await wait(200);
+
+                if (s.section_type === 'quiz') {
+                    quizFound = true;
+                    await validateQuiz(s, i);
+                }
+
+                // Add checks for other sections as needed (Intro, Summary, etc)
+                if (s.section_type === 'summary') {
+                    // Check bullets exist
+                    if (s.visual_beats && s.visual_beats.length > 0) {
+                        log(`  > Summary has ${s.visual_beats.length} bullets.`);
+                    }
+                }
+            }
+
+            if (!quizFound) log("WARNING: No Quiz Section found in this job.", "WARN");
+
+            log("\n--- VALIDATION COMPLETE ---");
+        }
+
+        async function validateQuiz(slide, index) {
+            log(`  > Validating Quiz (Slide ${index})`);
+
+            const qCount = slide.quiz_questions ? slide.quiz_questions.length : 0;
+            const segCount = slide.narration.segments.length;
+
+            log(`    > Questions: ${qCount}, Segments: ${segCount}`);
+
+            // Check 1: Segment Count = 3 * Q
+            if (segCount >= qCount * 3) {
+                log(`    > PASS: Segment Count (${segCount}) satisfies 3*Q (${qCount * 3})`, "PASS");
+            } else {
+                log(`    > FAIL: Not enough segments! Expected ${qCount * 3}, Got ${segCount}`, "FAIL");
+            }
+
+            // Check 2: 3-Step Dance Mock Execution
+            // We assume standard structure: Intro -> Pause -> Reveal
+
+            for (let q = 0; q < qCount; q++) {
+                const baseSeg = q * 3;
+                log(`    > Testing Q${q + 1} (Segments ${baseSeg}-${baseSeg + 2})...`);
+
+                // Step 1: Intro
+                updateQuizProgressiveReveal(baseSeg);
+                const qCard = document.getElementById(`quiz-${q}`);
+                if (qCard && !qCard.classList.contains('quiz-hidden')) {
+                    log(`      > PASS: Beat 1 (Intro) - Card Visible`, "PASS");
+                } else {
+                    log(`      > FAIL: Beat 1 (Intro) - Card Hidden`, "FAIL");
+                }
+
+                // Step 2: Pause (Answer still hidden)
+                updateQuizProgressiveReveal(baseSeg + 1);
+                // Optional: Check pause state (same visual usually)
+
+                // Step 3: Reveal
+                updateQuizProgressiveReveal(baseSeg + 2);
+                const opts = qCard ? qCard.querySelectorAll('.quiz-choice') : [];
+                // Check if correct option has .correct class
+                // We need to know correct index... 
+                // But simplified check: see if ANY option is marked correct?
+                // Or check specific index if we knew it?
+                // Visual check: just look for 'correct' class.
+                let revealed = false;
+                opts.forEach(o => { if (o.classList.contains('correct')) revealed = true; });
+
+                if (revealed) {
+                    log(`      > PASS: Beat 3 (Reveal) - Answer Revealed`, "PASS");
+                } else {
+                    log(`      > FAIL: Beat 3 (Reveal) - Answer NOT Revealed`, "FAIL");
+                }
+            }
+        }
+
+        function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        // Polyfill loadSlide if strictly needed or wrap it
+        // The real loadSlide is in player_v2.js, so we should be good.
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,56 @@
+You are in RETRY MODE.
+
+Your previous output FAILED strict JSON Schema validation.
+
+Your task is NOT to redesign the lesson.
+Your task is to FIX STRUCTURE ONLY.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Do NOT change narration text unless required to attach missing structure.
+- Do NOT change section order.
+- Do NOT add or remove sections.
+- Do NOT rewrite pedagogy.
+- Do NOT invent new concepts.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOU MUST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Preserve all existing narration text verbatim.
+- Preserve all existing section titles and types.
+- Preserve all existing timing values.
+- ONLY add or repair missing required fields so the output matches the v1.3 schema.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WHAT TO FIX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Missing required fields (renderer, visual_beats, display_directives, avatar_layout).
+- Incorrect nesting of fields.
+- Missing linkage via segment_id.
+- Invalid enum values.
+- Missing top-level fields (spec_version, presentation_id, avatar_global).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WHAT NOT TO FIX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Teaching quality
+- Word count
+- Visual creativity
+- Gesture style
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Output ONLY valid JSON.
+- Output MUST fully conform to presentation_v1.3.schema.json.
+- Do NOT include explanations or comments.
+
+If information is missing, infer the MINIMAL valid value required to satisfy the schema.
+
+Remember the CANONICAL OUTPUT STRUCTURE EXAMPLE shown previously.

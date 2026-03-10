@@ -1,0 +1,172 @@
+Create a complete Presentation Plan JSON for the given chapter.
+
+INPUT:
+- Subject: {subject}
+- Grade: {grade}
+- Language: English (Indian)
+- Chapter Content (Markdown):
+{markdown_content}
+
+------------------------------------------------
+REQUIREMENTS
+------------------------------------------------
+
+You MUST generate sections in this exact order:
+1. Intro
+2. Summary
+3. Content Topics (multiple)
+4. Memory
+5. Recap
+
+For EACH section include:
+- section_type: intro | summary | content | memory | recap
+- title
+- renderer decision
+- visual explanation plan
+- layout and avatar placement
+- narration text
+- subtitle segments with timing
+- gesture hints for avatar
+
+------------------------------------------------
+CONTENT SECTION RULE (CRITICAL)
+------------------------------------------------
+
+Each CONTENT section narration must be:
+- Minimum 150 words
+- Preferably 180–250 words
+- Include:
+  * real-world example
+  * intuitive explanation
+  * cause-effect reasoning
+  * why the concept is important
+
+Do NOT compress content.
+
+------------------------------------------------
+MEMORY SECTION
+------------------------------------------------
+
+- Create exactly 3 flashcards or mnemonics
+- Keep narration minimal
+- Focus on recall
+
+------------------------------------------------
+RECAP SECTION
+------------------------------------------------
+
+- Create a story-based recap
+- Use 5 visual scenes
+- Use physical or cultural analogy
+- Make it emotionally memorable
+
+------------------------------------------------
+OUTPUT SCHEMA
+------------------------------------------------
+
+{{
+  "chapter_title": "string",
+  "subject": "{subject}",
+  "grade": "{grade}",
+  "language": "en-IN",
+  "sections": [
+    {{
+      "section_type": "intro",
+      "id": 1,
+      "title": "Welcome to Chapter Name",
+      "renderer": "wan_video",
+      "explanation_plan": {{
+        "wan_prompt": "Warm welcoming visual..."
+      }},
+      "layout": {{
+        "content_zone": {{ "position": "center", "width_percent": 100 }},
+        "avatar_zone": {{ "mode": "overlay", "position": "bottom_center", "width_percent": 30 }}
+      }},
+      "narration": "60-100 words intro...",
+      "segments": [
+        {{ "start": 0.0, "duration": 3.0, "text": "First segment..." }}
+      ],
+      "gesture_hints": [
+        {{ "time": 1.0, "action": "welcome" }}
+      ]
+    }},
+    {{
+      "section_type": "summary",
+      "id": 2,
+      "title": "Learning Objectives",
+      "renderer": "wan_video",
+      "explanation_plan": {{
+        "wan_prompt": "Visual overview of topics..."
+      }},
+      "layout": {{
+        "content_zone": {{ "position": "left", "width_percent": 65 }},
+        "avatar_zone": {{ "mode": "side", "position": "right", "width_percent": 35 }}
+      }},
+      "narration": "Summary of what students will learn...",
+      "segments": [...],
+      "gesture_hints": [...]
+    }},
+    {{
+      "section_type": "content",
+      "id": 3,
+      "title": "Topic Title",
+      "renderer": "wan_video",
+      "explanation_plan": {{
+        "wan_prompt": "Detailed visual description..."
+      }},
+      "layout": {{
+        "content_zone": {{ "position": "left", "width_percent": 65 }},
+        "avatar_zone": {{ "mode": "side", "position": "right", "width_percent": 35 }}
+      }},
+      "narration": "150-250 words with real-world example...",
+      "segments": [...],
+      "gesture_hints": [...]
+    }},
+    {{
+      "section_type": "memory",
+      "id": 10,
+      "title": "Quick Recall",
+      "renderer": "wan_video",
+      "explanation_plan": {{
+        "wan_prompt": "Flashcard style visuals..."
+      }},
+      "flashcards": [
+        {{ "question": "What is X?", "answer": "Y" }},
+        {{ "question": "What is A?", "answer": "B" }},
+        {{ "question": "What is C?", "answer": "D" }}
+      ],
+      "layout": {{
+        "content_zone": {{ "position": "center", "width_percent": 80 }},
+        "avatar_zone": {{ "mode": "overlay", "position": "bottom_right", "width_percent": 25 }}
+      }},
+      "narration": "Short recall narration...",
+      "segments": [...],
+      "gesture_hints": [...]
+    }},
+    {{
+      "section_type": "recap",
+      "id": 11,
+      "title": "Mental Movie",
+      "renderer": "wan_video",
+      "explanation_plan": {{
+        "wan_prompt": "Story-based visual journey..."
+      }},
+      "recap_scenes": [
+        {{ "scene": 1, "description": "Scene 1 visual..." }},
+        {{ "scene": 2, "description": "Scene 2 visual..." }},
+        {{ "scene": 3, "description": "Scene 3 visual..." }},
+        {{ "scene": 4, "description": "Scene 4 visual..." }},
+        {{ "scene": 5, "description": "Scene 5 visual..." }}
+      ],
+      "layout": {{
+        "content_zone": {{ "position": "center", "width_percent": 100 }},
+        "avatar_zone": {{ "mode": "overlay", "position": "bottom_center", "width_percent": 30 }}
+      }},
+      "narration": "Story-based recap with analogy...",
+      "segments": [...],
+      "gesture_hints": [...]
+    }}
+  ]
+}}
+
+Return ONLY valid JSON. No markdown code blocks. No explanations.

@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Animated Education - V4 Player</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    /* Markdown Table Styling */
+    .md-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 1.2rem;
+      color: #e0e0e0;
+      background: rgba(10, 15, 20, 0.5);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .md-table th,
+    .md-table td {
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      padding: 12px 16px;
+      text-align: left;
+    }
+
+    .md-table th {
+      background: rgba(0, 212, 255, 0.15);
+      color: #00d4ff;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .md-table tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .md-table tr:hover {
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    body {
+      margin: 0;
+      background: #000;
+      color: #f0f0e8;
+      font-family: 'Lato', sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #stage-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #000;
+    }
+
+    #stage {
+      width: 1280px;
+      max-width: 100%;
+      min-height: 720px;
+      height: auto;
+      max-height: 90vh;
+      background: #0a0a0a;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.8);
+      perspective: 1000px;
+      border: 1px solid rgba(0, 212, 255, 0.15);
+    }
+
+    #bg-image-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      z-index: 0;
+    }
+
+    #scene-label {
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 15px 25px;
+      border-left: 5px solid #00ff88;
+      border-radius: 0 10px 10px 0;
+      font-size: 1.5rem;
+      color: #f0f0e8;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 2;
+      box-shadow: 0 5px 20px rgba(0, 255, 136, 0.15);
+    }
+
+    #content-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      padding-left: 60px;
+      transition: all 0.6s ease;
+    }
+
+    #content-box {
+      width: 55%;
+      background: rgba(0, 0, 0, 0.75);
+      padding: 40px;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 212, 255, 0.05);
+      transform-origin: center left;
+      transition: transform 0.2s ease-out;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #content-box.example-section {
+      border: 2px solid #00ff88;
+      background: rgba(0, 255, 136, 0.08);
+      position: relative;
+    }
+
+    #content-box.example-section::before {
+      content: "WORKED EXAMPLE";
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: #00ff88;
+      color: #000;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    #content-box.example-section h1 {
+      color: #00ff88;
+    }
+
+    #slide-image-container {
+      margin-bottom: 20px;
+      text-align: center;
+      display: none;
+    }
+
+    #slide-image-container img {
+      max-height: 250px;
+      max-width: 100%;
+      border-radius: 8px;
+      border: 2px solid rgba(0, 255, 136, 0.4);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      margin: 0 0 25px 0;
+      color: #00ff88;
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+      line-height: 1.1;
+      font-family: 'Caveat', cursive;
+      font-weight: 700;
+    }
+
+    .segment-item {
+      font-size: 1.5rem;
+      margin-bottom: 18px;
+      padding: 12px 20px;
+      background: rgba(20, 20, 20, 0.8);
+      border-radius: 8px;
+      border-left: 4px solid transparent;
+      opacity: 0.75;
+      transform: translateX(0);
+      transition: all 0.4s ease;
+      color: #f0f0e8;
+    }
+
+    .segment-item.active {
+      opacity: 1;
+      transform: translateX(0);
+      border-left-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.12);
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+    }
+
+    .segment-item.read {
+      opacity: 0.7;
+      transform: translateX(0);
+      color: #a0a0a0;
+    }
+
+    .segment-item.bullet-level-1 {
+      font-weight: 600;
+      border-left-color: #00ff88;
+    }
+
+    .segment-item.bullet-level-2 {
+      margin-left: 30px;
+      font-size: 1.3rem;
+      border-left-color: #00d4ff;
+      opacity: 0.85;
+    }
+
+    /* ISS-160: Paragraph content - prose display */
+    .segment-item.paragraph-content {
+      font-size: 1.4rem;
+      line-height: 1.7;
+      text-align: justify;
+      border-left: none;
+      padding: 16px 24px;
+      background: rgba(10, 10, 10, 0.85);
+      max-width: 100%;
+    }
+
+    /* ISS-160: Ordered list items - numbered markers */
+    .segment-item.ordered-list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      border-left-color: #ff9800;
+    }
+
+    .segment-item.ordered-list-item .list-number {
+      font-weight: 700;
+      color: #ff9800;
+      min-width: 28px;
+      text-align: right;
+    }
+
+    /* ISS-160: Formula content - centered LaTeX */
+    .segment-item.formula-content {
+      font-size: 1.6rem;
+      text-align: center;
+      border-left: none;
+      padding: 20px;
+      background: rgba(0, 50, 100, 0.3);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+    }
+
+    /* ========================================
+       ISS-180: Enhanced Content Display Styles
+       ======================================== */
+
+    /* Formatted Content Block - wraps all visual content */
+    .formatted-content-block {
+      background: rgba(15, 15, 20, 0.9);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 10px 0;
+      backdrop-filter: blur(8px);
+    }
+
+    /* ISS-182: Summary block with learning objectives styling */
+    .formatted-content-block.summary-block {
+      background: linear-gradient(135deg, rgba(0, 50, 80, 0.9) 0%, rgba(0, 30, 50, 0.95) 100%);
+      border-left: 4px solid #00d4ff;
+    }
+
+    .summary-block .bullet-marker {
+      color: #00ff88 !important;
+      font-weight: bold;
+    }
+
+    /* Paragraph Block */
+    .formatted-paragraph {
+      font-size: 1.3rem;
+      line-height: 1.8;
+      color: #e8e8e0;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .formatted-paragraph:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Bullet List Styling */
+    .formatted-bullet-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .formatted-bullet-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      font-size: 1.25rem;
+      line-height: 1.6;
+      color: #e8e8e0;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+    }
+
+    .formatted-bullet-item:last-child {
+      border-bottom: none;
+    }
+
+    .formatted-bullet-item .bullet-marker {
+      color: #00ff88;
+      font-size: 1.4rem;
+      font-weight: bold;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .formatted-bullet-item.level-2 {
+      margin-left: 30px;
+      font-size: 1.15rem;
+    }
+
+    .formatted-bullet-item.level-2 .bullet-marker {
+      color: #00d4ff;
+      font-size: 1.2rem;
+    }
+
+    /* Divider between paragraph and bullets */
+    .content-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.4), transparent);
+      margin: 16px 0;
+    }
+
+    /* ========================================
+       Quiz Card Styling
+       ======================================== */
+    .quiz-card {
+      background: rgba(15, 15, 25, 0.95);
+      border: 2px solid rgba(0, 212, 255, 0.3);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 10px 0;
+    }
+
+    .quiz-question-text {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #00d4ff;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .quiz-question-text::before {
+      content: "❓ ";
+    }
+
+    .quiz-choices-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .quiz-choice-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      background: rgba(30, 30, 40, 0.8);
+      border: 1px solid rgba(100, 100, 120, 0.3);
+      border-radius: 10px;
+      font-size: 1.2rem;
+      color: #e8e8e0;
+      transition: all 0.3s ease;
+    }
+
+    .quiz-choice-item:hover {
+      background: rgba(0, 212, 255, 0.1);
+      border-color: rgba(0, 212, 255, 0.4);
+    }
+
+    .quiz-choice-item.correct {
+      background: rgba(0, 255, 136, 0.15);
+      border-color: #00ff88;
+    }
+
+    .quiz-choice-item.correct .choice-letter {
+      background: #00ff88;
+      color: #000;
+    }
+
+    .quiz-choice-item .choice-letter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: rgba(0, 212, 255, 0.2);
+      border: 1px solid #00d4ff;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #00d4ff;
+      flex-shrink: 0;
+    }
+
+    .quiz-choice-item .choice-text {
+      flex: 1;
+    }
+
+    /* ========================================
+       Memory/Flashcard Key Concept Styling
+       ======================================== */
+    .memory-concept-card {
+      background: linear-gradient(135deg, rgba(0, 100, 80, 0.3) 0%, rgba(0, 60, 100, 0.3) 100%);
+      border: 2px solid rgba(0, 255, 136, 0.4);
+      border-radius: 16px;
+      padding: 28px;
+      margin: 10px 0;
+      text-align: center;
+      position: relative;
+    }
+
+    .memory-concept-card::before {
+      content: "💡 KEY CONCEPT";
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00ff88;
+      color: #000;
+      padding: 4px 16px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .memory-concept-text {
+      font-size: 1.5rem;
+      line-height: 1.7;
+      color: #f0f0e8;
+      font-style: italic;
+      padding-top: 10px;
+    }
+
+    .memory-concept-text::before {
+      content: "" ";
+ font-size: 2.5rem;
+      color: #00ff88;
+      opacity: 0.5;
+      position: relative;
+      top: 8px;
+      margin-right: 5px;
+    }
+
+    .memory-concept-text::after {
+      content: "" ";
+ font-size: 2.5rem;
+      color: #00ff88;
+      opacity: 0.5;
+      position: relative;
+      top: 8px;
+      margin-left: 5px;
+    }
+
+    .flashcard-container {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .flashcard {
+      background: rgba(10, 10, 10, 0.9);
+      padding: 15px;
+      border-radius: 12px;
+      flex: 1;
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      text-align: center;
+      opacity: 0.7;
+      transform: scale(0.98);
+      transition: all 0.5s ease;
+    }
+
+    .flashcard.active {
+      opacity: 1;
+      transform: scale(1.05);
+      background: rgba(0, 212, 255, 0.1);
+      border-color: #00d4ff;
+      box-shadow: 0 0 25px rgba(0, 212, 255, 0.25);
+    }
+
+    .flashcard.read {
+      opacity: 0.8;
+      transform: scale(1);
+    }
+
+    /* ISS-063 FIX: Flip card animation for flashcards */
+    .flip-card {
+      perspective: 1000px;
+      cursor: pointer;
+      min-height: 150px;
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+
+    .flip-card.flipped .flip-card-inner,
+    .flip-card.active .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-front,
+    .flip-card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      box-sizing: border-box;
+    }
+
+    .flip-card-front {
+      background: rgba(0, 100, 150, 0.3);
+      border-radius: 12px;
+    }
+
+    .flip-card-back {
+      background: rgba(0, 150, 100, 0.3);
+      border-radius: 12px;
+      transform: rotateY(180deg);
+    }
+
+    .fc-label {
+      font-size: 0.8rem;
+      color: #00d4ff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .fc-letter {
+      font-size: 2.5rem;
+      color: #00d4ff;
+      font-weight: 700;
+      margin-bottom: 5px;
+      font-family: 'Caveat', cursive;
+    }
+
+    .fc-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #f0f0e8;
+    }
+
+    .fc-desc {
+      font-size: 0.9rem;
+      color: #a0a0a0;
+      line-height: 1.3;
+    }
+
+    .fc-mnemonic {
+      font-size: 1rem;
+      color: #ffff00;
+      font-style: italic;
+      margin-bottom: 8px;
+      padding: 8px;
+      background: rgba(255, 255, 0, 0.08);
+      border-radius: 6px;
+    }
+
+    .quiz-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .quiz-question {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #f0f0e8;
+      padding: 15px;
+      background: rgba(10, 10, 10, 0.9);
+      border-radius: 12px;
+      border-left: 4px solid #ffff00;
+    }
+
+    .quiz-q-mark {
+      color: #ffff00;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    .quiz-choices {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .quiz-choice {
+      background: rgba(15, 15, 15, 0.9);
+      padding: 12px 15px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      opacity: 0.7;
+      transition: all 0.4s ease;
+      cursor: default;
+      color: #f0f0e8;
+    }
+
+    .quiz-choice.active {
+      opacity: 1;
+      border-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.12);
+    }
+
+    .quiz-choice.correct {
+      border-color: #00ff88;
+      background: rgba(0, 255, 136, 0.15);
+    }
+
+    .quiz-choice.incorrect {
+      opacity: 0.4;
+      border-color: rgba(255, 107, 53, 0.4);
+    }
+
+    .choice-letter {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      line-height: 28px;
+      text-align: center;
+      background: rgba(0, 212, 255, 0.25);
+      border-radius: 50%;
+      margin-right: 10px;
+      font-weight: 700;
+      color: #00d4ff;
+    }
+
+    .quiz-reveal-steps {
+      margin-top: 15px;
+    }
+
+    .quiz-reveal-step {
+      padding: 10px 15px;
+      background: rgba(10, 10, 10, 0.9);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      opacity: 0.3;
+      transition: all 0.4s ease;
+    }
+
+    .quiz-reveal-step.active {
+      opacity: 1;
+      background: rgba(0, 212, 255, 0.08);
+      border-left: 3px solid #00d4ff;
+    }
+
+    .fc-question {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f0f0e8;
+      margin-bottom: 10px;
+    }
+
+    .fc-answer {
+      font-size: 0.95rem;
+      color: #00ff88;
+    }
+
+    /* ========================================
+       AVATAR: ALL positioning controlled by JavaScript applyAvatarLayout()
+       CSS only provides minimal base styles - NO position/width/left/right
+       ======================================== */
+    #avatar-canvas {
+      /* Base styles only - position/width set by JS with !important */
+      pointer-events: none;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+
+    .mode-intro #content-wrapper {
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    .mode-center #content-wrapper {
+      opacity: 1;
+      transform: translateY(0);
+      z-index: 10;
+      display: flex;
+      justify-content: flex-start;
+      padding-left: 5%;
+      text-align: left;
+    }
+
+    .mode-center #content-box {
+      width: auto;
+      max-width: 65%;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(8px);
+      align-items: flex-start;
+    }
+
+    .mode-center #scene-label {
+      opacity: 0;
+    }
+
+    /* Avatar positioning: ALL controlled by JavaScript - no CSS rules here */
+
+    .mode-side #content-wrapper {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .mode-side #scene-label {
+      opacity: 0;
+    }
+
+    /* Avatar positioning: ALL controlled by JavaScript - no CSS rules here */
+
+    .mode-image #content-wrapper {
+      opacity: 0;
+    }
+
+    .mode-image #bg-image-layer {
+      opacity: 1;
+    }
+
+    .mode-image #scene-label {
+      opacity: 1;
+    }
+
+    .khan-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+      transition: opacity 0.5s ease;
+    }
+
+    .mode-khan #content-wrapper {
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    .mode-khan #scene-video {
+      opacity: 1 !important;
+    }
+
+    /* Avatar positioning: ALL controlled by JavaScript - no CSS rules here */
+
+    .mode-content-video #content-wrapper {
+      opacity: 1;
+      z-index: 25;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 20px 40px;
+      gap: 20px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .mode-content-video #content-box {
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      flex: 1;
+      min-width: 0;
+      max-width: 0;
+      opacity: 0;
+      padding: 0;
+      overflow: hidden;
+      transition: all 0.5s ease;
+    }
+
+    .mode-content-video #video-box {
+      display: block;
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 42%;
+      max-width: 42%;
+      height: auto;
+      max-height: 80vh;
+      background: rgba(0, 0, 0, 0.9);
+      border-radius: 16px;
+      overflow: visible;
+      border: 2px solid rgba(0, 212, 255, 0.25);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 212, 255, 0.1);
+      transition: all 0.5s ease;
+      opacity: 0;
+      z-index: 30;
+    }
+
+    .mode-content-video #video-box.video-ready {
+      opacity: 1;
+    }
+
+    /* Avatar positioning: ALL controlled by JavaScript - no CSS rules here */
+
+    .mode-content-video.text-visible #content-box {
+      min-width: 40%;
+      max-width: 55%;
+      opacity: 1;
+      padding: 20px;
+    }
+
+    .mode-content-video.text-visible #video-box {
+      min-width: 35%;
+      max-width: 50%;
+    }
+
+    .mode-content-video #video-box video {
+      width: 100%;
+      height: auto;
+      max-height: 80vh;
+      display: block;
+      object-fit: contain;
+      object-position: center center;
+    }
+
+    .mode-content-video #video-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mode-content-video #scene-video {
+      opacity: 0 !important;
+    }
+
+    .mode-content-video.video-swap #content-wrapper {
+      flex-direction: row-reverse;
+    }
+
+    .mode-content-video.video-swap #content-box {
+      max-width: 40%;
+      opacity: 0.15;
+      transform: scale(0.85);
+      pointer-events: none;
+    }
+
+    .mode-content-video.video-swap #video-box {
+      max-width: 70%;
+      min-width: 65%;
+    }
+
+    .mode-content-video #content-box {
+      transition: opacity 0.4s ease, max-width 0.4s ease, min-width 0.4s ease;
+    }
+
+    .mode-content-video.video-focus #content-box {
+      opacity: 0;
+      max-width: 0;
+      min-width: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .mode-content-video.video-focus #video-box {
+      max-width: 85%;
+      min-width: 80%;
+    }
+
+    /* ISS-183: Ensure avatar ALWAYS visible during video mode (Manim, etc) */
+    .mode-content-video #avatar-canvas,
+    .mode-content-video.video-focus #avatar-canvas,
+    .mode-content-video.video-swap #avatar-canvas {
+      opacity: 1 !important;
+      visibility: visible !important;
+      display: block !important;
+      z-index: 60 !important;
+    }
+
+
+    .mode-content-video #content-wrapper {
+      max-width: 45%;
+      margin-right: 55%;
+    }
+
+    #video-box {
+      display: none;
+      height: fit-content;
+    }
+
+    .mode-side #video-box {
+      display: none;
+    }
+
+    .mode-center #video-box {
+      display: none;
+    }
+
+    #controls-bar {
+      height: 60px;
+      background: #0a0a0a;
+      border-top: 1px solid rgba(0, 212, 255, 0.15);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 15px;
+      z-index: 100;
+    }
+
+    button {
+      background: #1a1a1a;
+      color: #f0f0e8;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background: #252525;
+      border-color: #00d4ff;
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+    }
+
+    .progress-container {
+      flex: 1;
+      height: 6px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .progress-filled {
+      height: 100%;
+      background: linear-gradient(90deg, #00d4ff, #00ff88);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .slide-list-container {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      max-width: 400px;
+      scrollbar-width: thin;
+      scrollbar-color: #333 #0a0a0a;
+    }
+
+    .slide-thumb {
+      min-width: 60px;
+      padding: 5px 10px;
+      background: #151515;
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 11px;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .slide-thumb:hover {
+      background: #252525;
+    }
+
+    .slide-thumb.active {
+      border-color: #00d4ff;
+      background: #1a1a1a;
+    }
+
+    .slide-thumb .num {
+      color: #00d4ff;
+      font-weight: bold;
+    }
+
+    .slide-thumb .type {
+      color: #666;
+      text-transform: uppercase;
+      font-size: 9px;
+    }
+
+    #image-display-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide-image {
+      max-width: 45%;
+      max-height: 70%;
+      object-fit: contain;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.3s ease;
+      border-radius: 12px;
+      pointer-events: auto;
+    }
+
+    .slide-image.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .slide-image:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .mode-content-video #image-display-layer {
+      left: 0;
+      width: 50%;
+    }
+
+    .mode-side #image-display-layer {
+      left: 0;
+      width: 60%;
+    }
+
+    .mode-center #image-display-layer {
+      display: none;
+    }
+
+    #dev-panel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 280px;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(5px);
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      font-size: 13px;
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #dev-panel.show {
+      display: flex;
+    }
+
+    .dev-header {
+      color: #00ff88;
+      font-weight: bold;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+      padding-bottom: 5px;
+    }
+
+    .slider-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    input[type=range] {
+      flex: 1;
+      margin-right: 10px;
+    }
+
+    .keyboard-hint {
+      font-size: 11px;
+      color: #666;
+      margin-left: auto;
+    }
+
+    .upload-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 5000;
+    }
+
+    .upload-overlay.hidden {
+      display: none;
+    }
+
+    .upload-box {
+      background: #0a0a0a;
+      border: 2px dashed rgba(0, 212, 255, 0.3);
+      border-radius: 16px;
+      padding: 60px;
+      text-align: center;
+      max-width: 500px;
+    }
+
+    .upload-box h2 {
+      margin-bottom: 20px;
+      color: #00ff88;
+      font-family: 'Caveat', cursive;
+      font-size: 2.5rem;
+    }
+
+    .upload-box p {
+      color: #888;
+      margin-bottom: 30px;
+    }
+
+    .upload-btn {
+      background: #00d4ff;
+      color: #000;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 10px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    .upload-btn:hover {
+      background: #00ff88;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+
+    .upload-selects {
+      margin-top: 20px;
+    }
+
+    .upload-selects select {
+      padding: 10px;
+      background: #1a1a1a;
+      color: #f0f0e8;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 4px;
+      margin: 5px;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #1a1a1a;
+      border-top-color: #00d4ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .progress-container {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00d4ff, #00ff88);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      color: #888;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+
+    .step-indicator {
+      color: #00ff88;
+      font-size: 0.85rem;
+      margin-top: 5px;
+    }
+
+    #dev-stats-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid #00ff88;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #00ff88;
+      z-index: 1000;
+      pointer-events: none;
+      display: none;
+      min-width: 280px;
+      box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
+    }
+
+    #dev-stats-overlay.visible {
+      display: block;
+    }
+
+    #dev-stats-overlay h4 {
+      margin: 0 0 8px 0;
+      color: #00d4ff;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+      padding-bottom: 4px;
+    }
+
+    #dev-stats-overlay .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 3px 0;
+    }
+
+    #dev-stats-overlay .stat-label {
+      color: #888;
+    }
+
+    #dev-stats-overlay .stat-value {
+      color: #f0f0e8;
+    }
+
+    #dev-stats-overlay .stat-section {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="upload-overlay hidden" id="upload-overlay">
+    <div class="upload-box" id="upload-box">
+      <h2>AI Animated Education</h2>
+      <p>Upload PDF or Markdown file to generate educational videos</p>
+      <input type="file" id="fileInput" accept=".pdf,.md,.markdown,.txt" style="display:none">
+      <div style="margin-bottom: 15px;">
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Upload PDF or
+          Markdown</button>
+      </div>
+      <button class="upload-btn" style="background:#333" onclick="useSampleContent()">Try Sample Content</button>
+      <div class="upload-selects">
+        <select id="subjectSelect">
+          <option value="General Science">General Science</option>
+          <option value="Mathematics">Mathematics</option>
+          <option value="Physics">Physics</option>
+          <option value="Chemistry">Chemistry</option>
+          <option value="Biology">Biology</option>
+        </select>
+        <select id="gradeSelect">
+          <option value="8">Grade 8</option>
+          <option value="9" selected>Grade 9</option>
+          <option value="10">Grade 10</option>
+        </select>
+      </div>
+      <p style="color:#666; font-size:0.8rem; margin-top:15px;">Supports: .pdf, .md, .markdown, .txt files</p>
+    </div>
+  </div>
+
+  <div id="stage-container">
+    <div id="stage" class="mode-side">
+      <video id="scene-video" class="khan-video" loop muted playsinline style="opacity:0"></video>
+      <img id="bg-image-layer" src="">
+
+      <div id="scene-label">Scene Title</div>
+
+      <div id="image-display-layer"></div>
+
+      <div id="content-wrapper">
+        <div id="content-box">
+          <h1 id="slide-title">Loading...</h1>
+          <div id="slide-image-container"></div>
+          <div id="segments-list"></div>
+        </div>
+        <div id="video-box">
+          <video id="inline-video" muted playsinline></video>
+          <video id="inline-video-preload" muted playsinline
+            style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;pointer-events:none;"></video>
+        </div>
+      </div>
+
+      <canvas id="avatar-canvas"></canvas>
+
+      <div id="dev-stats-overlay">
+        <div class="stat-section">
+          <h4>LAYOUT MODE</h4>
+          <div class="stat-row"><span class="stat-label">Mode:</span><span class="stat-value" id="stat-mode">-</span>
+          </div>
+          <div class="stat-row"><span class="stat-label">Section:</span><span class="stat-value"
+              id="stat-section">-</span></div>
+        </div>
+        <div class="stat-section">
+          <h4>AVATAR</h4>
+          <div class="stat-row"><span class="stat-label">Position:</span><span class="stat-value"
+              id="stat-avatar-pos">-</span></div>
+          <div class="stat-row"><span class="stat-label">Size:</span><span class="stat-value"
+              id="stat-avatar-size">-</span></div>
+          <div class="stat-row"><span class="stat-label">Aspect:</span><span class="stat-value"
+              id="stat-avatar-aspect">-</span></div>
+        </div>
+        <div class="stat-section">
+          <h4>CONTENT</h4>
+          <div class="stat-row"><span class="stat-label">Position:</span><span class="stat-value"
+              id="stat-content-pos">-</span></div>
+          <div class="stat-row"><span class="stat-label">Size:</span><span class="stat-value"
+              id="stat-content-size">-</span></div>
+        </div>
+        <div class="stat-section">
+          <h4>VIDEO BOX</h4>
+          <div class="stat-row"><span class="stat-label">Size:</span><span class="stat-value"
+              id="stat-video-size">-</span></div>
+          <div class="stat-row"><span class="stat-label">Visible:</span><span class="stat-value"
+              id="stat-video-visible">-</span></div>
+        </div>
+      </div>
+
+      <video id="raw-avatar-video" loop muted playsinline style="display:none"></video>
+      <audio id="main-audio"></audio>
+    </div>
+  </div>
+
+  <div id="controls-bar">
+    <button id="btn-new" title="Upload New Content" style="background:#00ff88; color:#000;">+ New</button>
+    <button id="btn-play">Play</button>
+    <button id="btn-prev">Prev</button>
+    <button id="btn-next">Next</button>
+    <span id="time-display">0:00</span>
+    <div class="progress-container" id="progress-container">
+      <div class="progress-filled" id="timeline-fill"></div>
+    </div>
+    <div class="slide-list-container" id="slide-list"></div>
+    <button id="btn-dev" title="Toggle Dev Panel">Dev</button>
+    <span class="keyboard-hint">Space: Play | Arrows: Navigate | D: Dev Panel</span>
+    <button id="btn-fullscreen" title="Fullscreen">FS</button>
+  </div>
+
+  <div id="dev-panel">
+    <div class="dev-header">DIRECTOR CONTROLS</div>
+
+    <label>Avatar Size</label>
+    <div class="slider-row"><input type="range" id="av-scale" min="0.5" max="1.8" step="0.05" value="1.0"
+        oninput="updateVisuals()"></div>
+
+    <label>Avatar Offset (Left/Right)</label>
+    <div class="slider-row"><input type="range" id="av-x" min="-200" max="200" step="10" value="0"
+        oninput="updateVisuals()"></div>
+
+    <label>Content Size</label>
+    <div class="slider-row"><input type="range" id="con-scale" min="0.5" max="1.5" step="0.05" value="1.0"
+        oninput="updateVisuals()"></div>
+
+    <label>Green Screen Cutoff</label>
+    <div class="slider-row"><input type="range" id="av-green" min="0" max="200" step="1" value="60"></div>
+  </div>
+
+  <script src="player.js?v=20251227-ISS187"></script>
+</body>
+
+</html>

@@ -1,0 +1,16 @@
+services:
+  api:
+    build: .
+    ports:
+      - "5006:5000"
+    volumes:
+      - .:/app
+      - ./player/jobs:/app/player/jobs
+      - ./player/assets:/app/player/assets
+    env_file:
+      - .env
+    restart: always
+
+networks:
+  default:
+    name: ai-presentation-network

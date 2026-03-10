@@ -1,0 +1,176 @@
+{
+  "title": "Arithmetic Progressions (Parallel Demo)",
+  "sections": [
+    {
+      "section_type": "intro",
+      "text": "Welcome to the lesson on Arithmetic Progressions."
+    },
+    {
+      "section_type": "content",
+      "title": "Introduction to AP",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Introduction to AP..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Introduction to AP",
+        "end": "End of Introduction to AP"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Common Difference",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Common Difference..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Common Difference",
+        "end": "End of Common Difference"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Nth Term Formula",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Nth Term Formula..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Nth Term Formula",
+        "end": "End of Nth Term Formula"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Sum of First N Terms",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Sum of First N Terms..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Sum of First N Terms",
+        "end": "End of Sum of First N Terms"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Example Problem 1",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Example Problem 1..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Example Problem 1",
+        "end": "End of Example Problem 1"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Example Problem 2",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Example Problem 2..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Example Problem 2",
+        "end": "End of Example Problem 2"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Real World Application",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Real World Application..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Real World Application",
+        "end": "End of Real World Application"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Practice Questions",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Practice Questions..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Practice Questions",
+        "end": "End of Practice Questions"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Advanced Problem",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Advanced Problem..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Advanced Problem",
+        "end": "End of Advanced Problem"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Conclusion",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narrating Conclusion..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Start of Conclusion",
+        "end": "End of Conclusion"
+      }
+    },
+    {
+      "section_type": "summary",
+      "bullets": [
+        "Understand terms",
+        "Calculate sum of N terms"
+      ]
+    }
+  ]
+}

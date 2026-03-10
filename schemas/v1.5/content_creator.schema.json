@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "content_creator.schema.json",
+  "title": "ContentCreator",
+  "description": "Combined output from ContentCreator agent - narration + visual specs in single call",
+  "type": "object",
+  "properties": {
+    "section_id": {
+      "type": "string",
+      "description": "References the section this content belongs to"
+    },
+    "narration": {
+      "type": "object",
+      "properties": {
+        "full_text": {
+          "type": "string",
+          "minLength": 30,
+          "description": "Complete narration text for TTS (concatenation of segment texts)"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "segment_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Sequential segment identifier"
+              },
+              "text": {
+                "type": "string",
+                "minLength": 10,
+                "description": "Segment text for TTS (audio only, not screen display)"
+              },
+              "duration_seconds": {
+                "type": "number",
+                "minimum": 1,
+                "description": "Estimated duration based on word count / 130 * 60"
+              },
+              "gesture_hint": {
+                "type": "string",
+                "description": "Optional avatar gesture cue"
+              }
+            },
+            "required": ["segment_id", "text", "duration_seconds"]
+          },
+          "minItems": 1
+        }
+      },
+      "required": ["full_text", "segments"]
+    },
+    "visual_beats": {
+      "type": "array",
+      "description": "Visual elements synchronized to narration segments",
+      "items": {
+        "type": "object",
+        "properties": {
+          "beat_id": {
+            "type": "string",
+            "pattern": "^beat_[0-9]+$",
+            "description": "Unique beat identifier (e.g., beat_1)"
+          },
+          "segment_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "References narration segment_id"
+          },
+          "visual_beat_type": {
+            "type": "string",
+            "enum": ["diagram", "formula", "process", "video_clip", "text_only", "animation", "flashcard"],
+            "description": "Type of visual to render"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Brief description of the visual"
+          },
+          "source_block_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "References to source content block IDs"
+          }
+        },
+        "required": ["beat_id", "segment_id", "visual_beat_type", "description"]
+      },
+      "minItems": 1
+    },
+    "segment_enrichments": {
+      "type": "array",
+      "description": "Visual content and display directives per segment",
+      "items": {
+        "type": "object",
+        "properties": {
+          "segment_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Must match a narration segment_id"
+          },
+          "source_block_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "References to source content block IDs"
+          },
+          "visual_content": {
+            "type": "object",
+            "properties": {
+              "content_type": {
+                "type": "string",
+                "enum": ["paragraph", "bullet_list", "ordered_list", "formula", "flashcard", "quiz", "example_steps", "image"],
+                "description": "Type of content display"
+              },
+              "display_format": {
+                "type": ["string", "null"],
+                "enum": ["flashcard", null],
+                "description": "Special display format for Q&A pairs"
+              },
+              "verbatim_content": {
+                "type": ["string", "null"],
+                "description": "Exact source text (never modified)"
+              },
+              "items": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "List items or bullet points"
+              },
+              "question": {
+                "type": "string",
+                "description": "Question text for flashcard display"
+              },
+              "answer": {
+                "type": "string",
+                "description": "Answer text for flashcard display"
+              },
+              "formula": {
+                "type": "string",
+                "description": "LaTeX formula"
+              },
+              "image_id": {
+                "type": "string",
+                "description": "Reference to source image"
+              }
+            }
+          },
+          "display_directives": {
+            "type": "object",
+            "properties": {
+              "text_layer": {
+                "type": "string",
+                "enum": ["show", "hide", "swap"]
+              },
+              "visual_layer": {
+                "type": "string",
+                "enum": ["show", "hide", "replace"]
+              },
+              "avatar_layer": {
+                "type": "string",
+                "enum": ["show", "gesture_only"],
+                "description": "Avatar always visible - 'hide' not allowed"
+              },
+              "flip_timing_sec": {
+                "type": ["number", "null"],
+                "description": "Seconds into segment when to flip from text to video"
+              }
+            },
+            "required": ["text_layer", "visual_layer", "avatar_layer"]
+          }
+        },
+        "required": ["segment_id", "visual_content", "display_directives"]
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["section_id", "narration", "visual_beats", "segment_enrichments"]
+}

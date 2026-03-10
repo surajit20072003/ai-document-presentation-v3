@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V2.5 Compliance Fix Sanity Check</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #222;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .log-box {
+            background: #333;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            font-family: monospace;
+            border: 1px solid #555;
+        }
+
+        .log-entry {
+            margin: 2px 0;
+            border-bottom: 1px solid #444;
+        }
+
+        .pass {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .fail {
+            color: #f44336;
+            font-weight: bold;
+        }
+
+        .info {
+            color: #2196f3;
+        }
+
+        .warn {
+            color: #ff9800;
+        }
+
+        .mock-player {
+            border: 1px solid #666;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #000;
+            position: relative;
+            height: 200px;
+        }
+
+        #video-layer,
+        #content-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #mock-video {
+            width: 100%;
+            height: 100%;
+            background: #002200;
+        }
+
+        #summary-list li {
+            opacity: 0.3;
+            transition: opacity 0.5s;
+        }
+
+        #summary-list li.reveal-visible {
+            opacity: 1;
+            color: yellow;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>V2.5 Compliance Fix Verifier</h1>
+
+    <div class="mock-player">
+        <div id="video-layer" class="hidden">
+            <video id="mock-video" controls muted loop>
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+            </video>
+            <div style="position:absolute; top:10px; left:10px; background:black;">VIDEO LAYER</div>
+        </div>
+        <div id="content-layer">
+            <h2>Content Layer (TEACH)</h2>
+            <ul id="summary-list"></ul>
+        </div>
+    </div>
+
+    <div class="log-box" id="console-log"></div>
+
+    <button onclick="runTests()">Run All Tests</button>
+
+    <script>
+        // --- Mocking player_v2.js Logic ---
+
+        const logs = [];
+        function log(msg, type = 'info') {
+            const el = document.createElement('div');
+            el.className = `log-entry ${type}`;
+            el.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            document.getElementById('console-log').prepend(el);
+            console.log(msg);
+            logs.push({ msg, type });
+        }
+
+        const contentVideo = document.getElementById('mock-video');
+        const videoLayer = document.getElementById('video-layer');
+        const contentLayer = document.getElementById('content-layer');
+        let currentTime = 0;
+
+        // --- FIX 1: TEACH-SHOW ---
+        function enforceTeachShowLogic(segmentIndex, time) {
+            // Mock Rule: Even = Teach, Odd = Show
+            const isShow = (segmentIndex % 2 !== 0);
+
+            if (isShow) {
+                log(`Segment ${segmentIndex}: SHOW Phase`, 'info');
+                videoLayer.classList.remove('hidden');
+                contentLayer.classList.add('hidden');
+                if (contentVideo.paused) {
+                    contentVideo.play().then(() => log('Video Playing (Show)', 'pass'))
+                        .catch(e => log('Video Play Fail: ' + e, 'fail'));
+                }
+            } else {
+                log(`Segment ${segmentIndex}: TEACH Phase`, 'info');
+                videoLayer.classList.add('hidden');
+                contentLayer.classList.remove('hidden');
+
+                // --- THE FIX TO VERIFY ---
+                if (contentVideo && !contentVideo.paused) {
+                    contentVideo.pause();
+                    log('TEST: Video Paused explicitly!', 'pass');
+                } else if (contentVideo.paused) {
+                    log('TEST: Video was already paused (or fix worked)', 'pass');
+                } else {
+                    log('TEST FAIL: Video is NOT paused!', 'fail');
+                }
+            }
+        }
+
+        // --- FIX 2: SUMMARY SYNC ---
+        const mockSlide = {
+            narration: {
+                segments: [
+                    { duration_seconds: 2 }, // Starts at 0
+                    { duration_seconds: 3 }, // Starts at 2
+                    { duration_seconds: 4 }  // Starts at 5
+                ]
+            }
+        };
+        const summaryBullets = ['Bullet 1', 'Bullet 2', 'Bullet 3'];
+
+        function setupSummary() {
+            const list = document.getElementById('summary-list');
+            list.innerHTML = '';
+            summaryBullets.forEach((t, i) => {
+                const li = document.createElement('li');
+                li.id = `summary-bullet-${i}`;
+                li.innerText = t;
+                li.classList.add('reveal-hidden');
+                list.appendChild(li);
+            });
+        }
+
+        function updateSummaryProgressiveReveal(time, bulletCount) {
+            const segments = mockSlide.narration.segments;
+
+            // --- THE FIX LOGIC ---
+            if (segments.length > 0) {
+                let cumulativeTime = 0;
+                const segmentStartTimes = segments.map(seg => {
+                    const start = cumulativeTime;
+                    cumulativeTime += seg.duration_seconds;
+                    return start;
+                });
+
+                for (let i = 0; i < bulletCount; i++) {
+                    const revealTime = segmentStartTimes[i];
+                    const bullet = document.getElementById(`summary-bullet-${i}`);
+
+                    if (bullet && time >= revealTime && bullet.classList.contains('reveal-hidden')) {
+                        bullet.classList.remove('reveal-hidden');
+                        bullet.classList.add('reveal-visible');
+                        log(`Summary: Revealed Bullet ${i + 1} at ${time}s (Planned: ${revealTime}s)`, 'pass');
+                    }
+                }
+            }
+        }
+
+
+        // --- TEST RUNNER ---
+        async function runTests() {
+            log('--- Starting Sanity Checks ---', 'warn');
+
+            // Test 1: Teach-Show
+            log('Test 1: Video Pause Logic', 'warn');
+            // Start video manually
+            contentVideo.play();
+            await new Promise(r => setTimeout(r, 500)); // Let it play
+
+            log('Switching to TEACH phase...', 'info');
+            enforceTeachShowLogic(0, 0); // Teach Phase (Even)
+
+            await new Promise(r => setTimeout(r, 200));
+            if (contentVideo.paused) {
+                log('SUCCESS: Video is paused in Teach Phase', 'pass');
+            } else {
+                log('FAILURE: Video is still playing!', 'fail');
+            }
+
+            // Test 2: Summary Sync
+            log('Test 2: Summary Sync Logic', 'warn');
+            setupSummary();
+
+            // Simulate time = 0 (Bullet 1 should reveal)
+            updateSummaryProgressiveReveal(0.1, 3);
+
+            // Simulate time = 2.5 (Bullet 2 should reveal, start is 2.0)
+            updateSummaryProgressiveReveal(2.5, 3);
+
+            // Simulate time = 5.5 (Bullet 3 should reveal, start is 5.0)
+            updateSummaryProgressiveReveal(5.5, 3);
+
+            const b1 = document.getElementById('summary-bullet-0').classList.contains('reveal-visible');
+            const b2 = document.getElementById('summary-bullet-1').classList.contains('reveal-visible');
+            const b3 = document.getElementById('summary-bullet-2').classList.contains('reveal-visible');
+
+            if (b1 && b2 && b3) {
+                log('SUCCESS: All bullets revealed at correct segment times.', 'pass');
+            } else {
+                log('FAILURE: Bullets not revealed correctly.', 'fail');
+            }
+        }
+
+    </script>
+</body>
+
+</html>

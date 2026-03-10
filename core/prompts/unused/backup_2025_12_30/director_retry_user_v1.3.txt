@@ -1,0 +1,24 @@
+Your previous output failed validation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHEMA ERRORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{schema_errors}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FAILED OUTPUT (DO NOT REWRITE, ONLY FIX STRUCTURE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{failed_json}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TASK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Repair the JSON so it passes schema validation.
+- Preserve narration and pedagogy.
+- Do NOT redesign content.
+- Do NOT omit any existing sections.
+
+Return ONLY corrected JSON.

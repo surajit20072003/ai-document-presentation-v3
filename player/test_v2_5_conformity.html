@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>V2.5 Director Bible Compliance Test</title>
+    <!-- Mock Styles -->
+    <style>
+        .hidden {
+            display: none;
+        }
+
+        .reveal-hidden {
+            opacity: 0;
+        }
+
+        .reveal-visible {
+            opacity: 1;
+        }
+
+        .quiz-hidden {
+            display: none;
+        }
+
+        .flipped {
+            transform: rotateY(180deg);
+        }
+
+        .memory-visible {
+            opacity: 1;
+        }
+
+        .segment-active {
+            border: 2px solid green;
+        }
+
+        .video-mode {
+            background: black;
+        }
+
+        /* Mock Player Structure */
+        #player-container {
+            display: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #video-layer,
+        #content-layer,
+        #avatar-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #content-box {
+            position: relative;
+        }
+    </style>
+    <!-- PRE-LOAD MOCKS -->
+    <script>
+        // Prevent auto-init
+        window._originalAddEventListener = window.addEventListener;
+        window.addEventListener = (evt, fn) => {
+            if (evt === 'DOMContentLoaded' || evt === 'load') {
+                console.log('Blocked auto-init for testing');
+                window._blockedInit = fn;
+            } else {
+                window._originalAddEventListener(evt, fn);
+            }
+        };
+
+        // Mock Utils
+        window.resolveMediaPath = (p) => p;
+        window.sanitizeMarkdown = (t) => t;
+        window.getTime = () => window._mockTime || 0;
+        window.getDuration = () => window._mockDuration || 60;
+
+        // Mock DOM Elements
+        const elementMocks = {};
+        window.document.getElementById = (id) => {
+            if (!elementMocks[id]) {
+                const el = document.createElement('div');
+                el.id = id;
+                elementMocks[id] = el;
+                // Add default container to body if not exist
+                if (id === 'video-layer' || id === 'content-layer' || id === 'avatar-layer' || id === 'content-box') {
+                    document.body.appendChild(el);
+                }
+            }
+            return elementMocks[id];
+        };
+    </script>
+    <!-- LOAD SUT -->
+    <script src="player_v2.js"></script>
+</head>
+
+<body>
+    <h1>V2.5 Compliance Test Suite</h1>
+    <div id="log-box" style="white-space: pre; font-family: monospace; background: #eee; padding: 10px;"></div>
+
+    <script>
+        // --- TEST HARNESS ---
+        function log(msg, status = 'INFO') {
+            const el = document.getElementById('log-box');
+            el.innerHTML += `[${status}] ${msg}\n`;
+            console.log(`[${status}] ${msg}`);
+            if (status === 'FAIL') window._hasFailures = true;
+        }
+
+        async function runComplianceTests() {
+            log('Starting Comprehensive V2.5 Bible Compliance Check...');
+
+            // --- TEST 1: INTRO (Avatar Only) ---
+            log('\n--- TEST 1: INTRO (Bible: Text HIDE, Avatar SHOW) ---');
+            const introSlide = { section_type: 'intro', avatar_video: 'intro.mp4' };
+            renderIntro(introSlide);
+            const vLayer = document.getElementById('video-layer');
+            const cLayer = document.getElementById('content-layer');
+            const aLayer = document.getElementById('avatar-layer');
+
+            if (vLayer.classList.contains('hidden') && cLayer.classList.contains('hidden')) {
+                log('PASS: Video and Content layers hidden.', 'PASS');
+            } else {
+                log(`FAIL: Layers not hidden (V: ${vLayer.className}, C: ${cLayer.className})`, 'FAIL');
+            }
+            if (!aLayer.classList.contains('hidden')) {
+                log('PASS: Avatar layer visible.', 'PASS');
+            } else {
+                log('FAIL: Avatar layer hidden.', 'FAIL');
+            }
+
+            // --- TEST 2: SUMMARY (Sync) ---
+            log('\n--- TEST 2: SUMMARY (Bible: Concise List, Synced) ---');
+            const summarySlide = {
+                section_type: 'summary',
+                visual_beats: [{ visual_beat_type: 'bullet_list' }, { visual_beat_type: 'bullet_list' }],
+                narration: { segments: [{ duration_seconds: 5 }, { duration_seconds: 5 }] }
+            };
+            // Setup DOM
+            window.slides = [summarySlide];
+            window.currentSlideIndex = 0;
+            renderSummary(summarySlide);
+            // Simulate Time 0.1s (Bullet 1)
+            window._mockTime = 0.1;
+            updateSummaryProgressiveReveal(0.1, 2);
+            if (document.getElementById('summary-bullet-0').classList.contains('reveal-visible')) log('PASS: Bullet 1 Revealed at 0.1s', 'PASS');
+            else log('FAIL: Bullet 1 NOT Revealed', 'FAIL');
+
+            // Simulate Time 5.1s (Bullet 2 - Linked to Segment 1 start which is 5s)
+            // Wait, calc: Start(0) = 0, Start(1) = 5.
+            window._mockTime = 5.1;
+            updateSummaryProgressiveReveal(5.1, 2);
+            if (document.getElementById('summary-bullet-1').classList.contains('reveal-visible')) log('PASS: Bullet 2 Revealed at 5.1s (Sync Logic Works)', 'PASS');
+            else log('FAIL: Bullet 2 NOT Revealed', 'FAIL');
+
+            // --- TEST 3: CONTENT (Teach-Show Video Control) ---
+            log('\n--- TEST 3: CONTENT (Bible: Teach=Text, Show=Video) ---');
+            const contentSlide = { section_type: 'content' };
+            const segments = [{ purpose: 'teach' }, { purpose: 'show' }];
+
+            // Mock Video Object for Pause/Play check
+            const mockVid = { paused: false, pause: () => { mockVid.paused = true; }, play: () => { mockVid.paused = false; return Promise.resolve(); } };
+            // Overwrite global contentVideo if accessible or mock getElement
+            elementMocks['content-video'] = mockVid;
+            window.contentVideo = mockVid; // Need to ensure SUT uses this
+
+            // Segment 0 (Teach)
+            log('Testing Segment 0 (Teach)...');
+            enforceTeachShowLogic(contentSlide, segments[0], 0, 0, 0);
+            if (mockVid.paused === true) log('PASS: Video Paused in Teach Phase.', 'PASS');
+            else log('FAIL: Video NOT Paused in Teach Phase.', 'FAIL');
+
+            // Segment 1 (Show)
+            log('Testing Segment 1 (Show)...');
+            enforceTeachShowLogic(contentSlide, segments[1], 1, 10, 10);
+            if (mockVid.paused === false) log('PASS: Video Playing in Show Phase.', 'PASS');
+            else log('FAIL: Video NOT Playing in Show Phase.', 'FAIL');
+
+            // --- TEST 4: QUIZ (3-Step Dance) ---
+            log('\n--- TEST 4: QUIZ (Bible: Introduce -> Pause -> Reveal) ---');
+            // Mock structure: Q1 (Seg 0, 1, 2)
+            const quizSlide = {
+                section_type: 'quiz',
+                quiz_questions: [{ question: 'Q1', options: ['A', 'B'], correct_index: 1 }],
+                narration: {
+                    segments: [
+                        { purpose: 'introduce' }, // Seg 0
+                        { purpose: 'pause' },     // Seg 1
+                        { purpose: 'explain' }    // Seg 2
+                    ]
+                }
+            };
+            window.slides = [quizSlide];
+            renderQuiz(quizSlide);
+            const qCard = document.getElementById('quiz-0');
+
+            // Seg 0: Introduce (Show Card, Answer Hidden)
+            updateQuizProgressiveReveal(0);
+            if (!qCard.classList.contains('quiz-hidden')) log('PASS: Card shown at Step 1.', 'PASS');
+            else log('FAIL: Card hidden at Step 1.', 'FAIL');
+            const optB = qCard.querySelectorAll('.quiz-choice')[1];
+            if (!optB.classList.contains('correct')) log('PASS: Answer hidden at Step 1.', 'PASS');
+            else log('FAIL: Answer prematurely revealed.', 'FAIL');
+
+            // Seg 2: Explain (Reveal Answer)
+            updateQuizProgressiveReveal(2);
+            if (optB.classList.contains('correct')) log('PASS: Answer revealed at Step 3.', 'PASS');
+            else log('FAIL: Answer NOT revealed at Step 3.', 'FAIL');
+
+            // --- TEST 5: MEMORY (Flashcards) ---
+            log('\n--- TEST 5: MEMORY (Bible: Front -> Pause -> Back) ---');
+            const memSlide = { section_type: 'memory', flashcards: [{ front: 'F', back: 'B' }] };
+            window.slides = [memSlide];
+            renderMemory(memSlide);
+            const card = document.getElementById('flashcard-0');
+
+            window._mockDuration = 20; // 1 card, 20s
+            // Time 0 (Show Front)
+            window._mockTime = 1;
+            updateMemoryFlip();
+            if (card.classList.contains('memory-visible') && !card.classList.contains('flipped'))
+                log('PASS: Front visible initially.', 'PASS');
+            else log('FAIL: Initial state incorrect.', 'FAIL');
+
+            // Time 15 (Show Back - Flip Delay is 50% = 10s)
+            window._mockTime = 15;
+            updateMemoryFlip();
+            if (card.classList.contains('flipped')) log('PASS: Card flipped after delay.', 'PASS');
+            else log('FAIL: Card did NOT flip.', 'FAIL');
+
+            // --- TEST 6: RECAP (Full Screen Video) ---
+            log('\n--- TEST 6: RECAP (Bible: Full Screen Video, Text Hidden) ---');
+            const recapSlide = { section_type: 'recap', recap_video_paths: ['v1.mp4'] };
+            renderRecap(recapSlide);
+            if (vLayer.classList.contains('hidden') === false) log('PASS: Video Layer Visible.', 'PASS');
+            else log('FAIL: Video Layer Hidden.', 'FAIL');
+            if (cLayer.classList.contains('video-mode')) log('PASS: Content Layer set to video-mode.', 'PASS');
+            else log('FAIL: Content Layer missing video-mode class.', 'FAIL');
+
+            log('\n--- COMPLIANCE CHECK COMPLETE ---');
+        }
+
+        // Run automatically
+        setTimeout(runComplianceTests, 500); 
+    </script>
+</body>
+
+</html>

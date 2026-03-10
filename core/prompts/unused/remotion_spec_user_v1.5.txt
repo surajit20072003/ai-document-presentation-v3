@@ -1,0 +1,15 @@
+Create a 60-second educational video about: {topic}
+
+Key Concept to Explain:
+{key_concepts}
+
+Visual Style:
+{visual_style}
+Use 2D animations to visualize the concepts.
+
+Requirements:
+Total Duration: 60 Seconds
+Resolution: Vertical (1080x1920)
+Use standard Remotion hooks (spring, interpolate).
+Make it visually dense and fast-paced for social media.
+Output ONLY the TSX code.

@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SmartChunkerOutput",
+  "description": "Schema for Pass 0: Smart Chunker output - logical topic extraction from markdown",
+  "type": "object",
+  "properties": {
+    "source_topic": {
+      "type": "string",
+      "description": "The main subject matter of the provided text"
+    },
+    "topics": {
+      "type": "array",
+      "description": "List of logical sub-topics extracted from the text",
+      "items": {
+        "type": "object",
+        "properties": {
+          "topic_id": {
+            "type": "string",
+            "description": "Unique identifier for this topic (e.g., t1, t2)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of this sub-topic"
+          },
+          "concept_type": {
+            "type": "string",
+            "enum": ["process", "definition", "example", "formula", "theory", "fact"],
+            "description": "The primary nature of this chunk"
+          },
+          "source_blocks": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "The IDs of the raw markdown blocks used for this chunk"
+          },
+          "key_terms": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Key vocabulary terms in this topic"
+          },
+          "has_formula": {
+            "type": "boolean",
+            "description": "Whether this topic contains mathematical formulas"
+          },
+          "suggested_renderer": {
+            "type": "string",
+            "enum": ["remotion", "manim", "video"],
+            "description": "remotion=text/simple images, manim=math/physics/complex logic, video=biological/real-world processes"
+          }
+        },
+        "required": ["topic_id", "title", "concept_type", "source_blocks", "suggested_renderer"]
+      }
+    }
+  },
+  "required": ["source_topic", "topics"]
+}

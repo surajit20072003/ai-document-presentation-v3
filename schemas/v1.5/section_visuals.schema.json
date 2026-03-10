@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "section_visuals.schema.json",
+  "title": "SectionVisuals",
+  "description": "Output from VisualSpecArtist agent - visual beats and segment enrichments",
+  "type": "object",
+  "properties": {
+    "section_id": {
+      "type": "string",
+      "description": "References the section"
+    },
+    "visual_beats": {
+      "type": "array",
+      "description": "Visual elements synchronized to narration segments",
+      "items": {
+        "type": "object",
+        "properties": {
+          "beat_id": {
+            "type": "string",
+            "pattern": "^beat_[0-9]+$",
+            "description": "Unique beat identifier (e.g., beat_1)"
+          },
+          "segment_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "References narration segment_id"
+          },
+          "visual_beat_type": {
+            "type": "string",
+            "enum": ["diagram", "formula", "process", "video_clip", "text_only", "animation"],
+            "description": "Type of visual to render"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Brief description of the visual"
+          },
+          "symbolic_overlay": {
+            "type": "object",
+            "properties": {
+              "enabled": {"type": "boolean"},
+              "content": {
+                "type": "array",
+                "items": {"type": "string"},
+                "maxItems": 4
+              },
+              "max_words": {
+                "type": "integer",
+                "maximum": 4
+              }
+            },
+            "required": ["enabled"]
+          }
+        },
+        "required": ["beat_id", "segment_id", "visual_beat_type", "description"],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "segment_enrichments": {
+      "type": "array",
+      "description": "Visual content and display directives per segment - merged into narration.segments",
+      "items": {
+        "type": "object",
+        "properties": {
+          "segment_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Must match a narration segment_id"
+          },
+          "source_block_ids": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "description": "ISS-160: References to source content block IDs this segment covers"
+          },
+          "visual_content": {
+            "type": "object",
+            "properties": {
+              "content_type": {
+                "type": "string",
+                "enum": ["paragraph", "bullet_list", "ordered_list", "formula", "flashcard", "quiz", "example_steps"],
+                "description": "ISS-160: Type of content display (must match source format)"
+              },
+              "verbatim_text": {
+                "type": "string",
+                "description": "ISS-160: Exact source text for paragraphs (never modified)"
+              },
+              "bullet_points": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "level": {"type": "integer", "minimum": 1, "maximum": 3},
+                    "text": {"type": "string", "maxLength": 80}
+                  },
+                  "required": ["level", "text"]
+                }
+              },
+              "ordered_list": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "ISS-160: Numbered list items in order"
+              },
+              "formula": {
+                "type": "string",
+                "description": "LaTeX formula (optional)"
+              },
+              "formulas": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "ISS-160: Multiple LaTeX formulas from source"
+              },
+              "labels": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            }
+          },
+          "display_directives": {
+            "type": "object",
+            "properties": {
+              "text_layer": {
+                "type": "string",
+                "enum": ["show", "hide", "swap"]
+              },
+              "visual_layer": {
+                "type": "string",
+                "enum": ["show", "hide", "replace"]
+              },
+              "avatar_layer": {
+                "type": "string",
+                "enum": ["show", "hide", "gesture_only"]
+              },
+              "flip_timing_sec": {
+                "type": ["number", "null"],
+                "description": "ISS-160: Seconds into segment when to flip from text to video. null = no flip"
+              }
+            },
+            "required": ["text_layer", "visual_layer", "avatar_layer"]
+          }
+        },
+        "required": ["segment_id", "visual_content", "display_directives"],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["section_id", "visual_beats", "segment_enrichments"],
+  "additionalProperties": false
+}

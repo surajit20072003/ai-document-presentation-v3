@@ -1,0 +1,41 @@
+Design the visual elements for this section:
+
+## SECTION BLUEPRINT:
+{section_blueprint}
+
+## NARRATION (already written):
+{narration}
+
+## SOURCE CONTENT:
+{source_markdown}
+
+## CONTENT BLOCKS (with block_id for reference):
+{content_blocks}
+
+## INSTRUCTIONS:
+
+1. Review the narration segments - create one visual_beat per segment
+2. Extract bullet points, formulas, and labels from the source content
+3. **CRITICAL - FORMULA PRESERVATION**: 
+   - Copy ALL LaTeX formulas EXACTLY as they appear in source (including $...$ delimiters)
+   - Do NOT paraphrase, simplify, or skip any formulas
+   - If source contains "$\frac{d}{dx}[x^n] = nx^{n-1}$", copy it exactly
+4. Set appropriate visual_beat_type based on content
+5. Configure display_directives following the mutual exclusion rule
+6. Ensure segment_enrichments cover ALL segment_ids from the narration
+7. **ISS-160: Source Block Mapping**:
+   - Each segment_enrichment MUST include "source_block_ids" array
+   - Reference the block_id(s) from CONTENT BLOCKS that this segment covers
+   - Multiple segments can reference the SAME block_id (for multi-beat explanations)
+   - Example: If segments 3, 4, 5 all explain the ordered list (block_id: 2), all should have "source_block_ids": [2]
+8. **ISS-160: Content Type Mapping** (analyze source_markdown structure):
+   - If source has prose paragraphs → content_type: "paragraph", verbatim_text: exact text
+   - If source has bullet lists (- or *) → content_type: "bullet_list", bullet_points: as-is  
+   - If source has numbered lists (1. 2.) → content_type: "ordered_list", ordered_list: [items]
+   - If source has standalone formulas → content_type: "formula", formula: LaTeX string
+   - If source has inline $...$ math → keep as paragraph with has_inline_latex: true
+
+Remember: visual_content is what appears ON SCREEN - it must be different from the spoken narration.
+CRITICAL: Preserve ALL mathematical content from source. Nothing omitted, nothing modified.
+
+Output ONLY the JSON structure with your visual specifications.

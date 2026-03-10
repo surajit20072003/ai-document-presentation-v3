@@ -1,0 +1,19 @@
+## Source Document
+Subject: {subject}
+Grade: {grade}
+
+---
+{markdown_content}
+---
+
+## TASK
+Act as the Director. Create a JSON presentation structure for the content above.
+1. Identify key logical sections.
+2. For each section, create narration segments.
+3. For each segment, find the **exact text** in the source to display and create a `markdown_pointer`.
+4. Generate 80+ word unique video/manim prompts where complex concepts need visualization.
+
+Remember:
+- Use `markdown_pointer` for all display text.
+- Verify `start_phrase` and `end_phrase` are 100% identical to source. (Copy-paste them).
+- Follow the JSON schema exactly.

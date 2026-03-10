@@ -1,0 +1,85 @@
+Create a COMPLETE Educational Film Plan in JSON.
+
+INPUT:
+- Subject: {subject}
+- Grade: {grade}
+- Markdown Content:
+{markdown_content}
+
+Your output MUST follow spec_version "v1.3".
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL CHECKLIST (VERIFY BEFORE OUTPUT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Intro section present
+□ Summary section present
+□ Content sections ≥150 words each
+□ Example sections visualized step-by-step
+□ Memory section has EXACTLY 5 flashcards
+□ Recap has EXACTLY 5 scenes
+□ Recap narration total 300–500 words
+□ Each narration segment has duration_seconds
+□ Each visual beat has display directives
+□ Avatar rules respected per section type
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONTENT EXPECTATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Split content into teachable micro-topics
+• One idea per section
+• Worked problems MUST become example sections
+• Do NOT merge examples into content narration
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TWO-CHANNEL SEPARATION (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Narration = audio only (TTS). Visual_content = screen display.
+
+For segments with text_layer=show, include visual_content with bullet_points from the source document:
+
+{
+  "segment_id": 1,
+  "text": "Narration for audio...",
+  "visual_content": {
+    "bullet_points": [
+      { "level": 1, "text": "Main point from document" },
+      { "level": 2, "text": "Sub-point from document" }
+    ]
+  },
+  "display_directives": {
+    "text_layer": "show",
+    "visual_layer": "hide",
+    "avatar_layer": "show"
+  }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DISPLAY DIRECTION (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For EVERY narration segment, include display_directives (flat strings):
+
+{
+  "segment_id": 2,
+  "text": "...",
+  "display_directives": {
+    "text_layer": "hide",
+    "visual_layer": "show",
+    "avatar_layer": "gesture_only"
+  }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITY SELF-CHECK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before outputting:
+• Ensure text disappears before visuals
+• Ensure examples are VISUAL, not verbal
+• Ensure no vague phrases like "clear diagram"
+• Ensure Manim sections include manim_scene_spec
+
+Return ONLY valid JSON.

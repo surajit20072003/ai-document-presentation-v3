@@ -1,0 +1,25 @@
+Generate video prompts for the following section.
+
+INPUT:
+- Narration text
+- Visual beat descriptions
+- Target duration
+
+SECTION DATA:
+{section_json}
+
+RESPONSE FORMAT (use EXACTLY this structure):
+{
+  "section_id": "recap_01",
+  "video_prompts": [
+    {
+      "beat_id": 1,
+      "prompt": "Detailed cinematographic description: subject, action, colors, camera movement, timing...",
+      "duration_seconds": 8,
+      "style": "animated"
+    }
+  ]
+}
+
+CRITICAL: Use exactly "video_prompts" as the key. Not "prompts", "wan_prompts", or "scenes".
+Output JSON only. No extra text.

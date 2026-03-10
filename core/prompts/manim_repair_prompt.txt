@@ -1,0 +1,25 @@
+You are an expert Manim Community (v0.19.0) troubleshooter.
+The following Python code for a Manim animation produced an error during execution.
+
+### BROKEN CODE
+```python
+{code}
+```
+
+### ERROR TRACEBACK
+```text
+{error_log}
+```
+
+### YOUR TASK
+1. Identify the syntax error, invalid attribute, or logical flaw (e.g., chaining `.play().next_to()`, missing `self`, or v0.19.0 incompatibility).
+   - NOTE: ValueError 'The lines are parallel' in RightAngle(L1, L2) means L1 and L2 are collinear. Shift one line to ensure they are at 90 degrees.
+2. Fix the code to ensure it runs without errors.
+3. Maintain the original structure and timing as much as possible.
+4. **CRITCAL**: Ensure the code length remains concise (max 80 lines).
+
+### OUTPUT
+Return ONLY the corrected Python code for the `construct(self)` method body.
+Do NOT include explanations or markdown formatting outside the code block.
+Start with `def construct(self):` if replacing the whole method, or just the body if that's what was provided.
+(Actually, just return the body code as per original prompt requirements).

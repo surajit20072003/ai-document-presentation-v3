@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "section_narration.schema.json",
+  "title": "SectionNarration",
+  "description": "Output from NarrationWriter agent - TTS text segmented for timing",
+  "type": "object",
+  "properties": {
+    "section_id": {
+      "type": "string",
+      "description": "References the section this narration belongs to"
+    },
+    "narration": {
+      "type": "object",
+      "properties": {
+        "full_text": {
+          "type": "string",
+          "minLength": 50,
+          "description": "Complete narration text for TTS"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "segment_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Sequential segment identifier"
+              },
+              "text": {
+                "type": "string",
+                "minLength": 10,
+                "description": "Segment text for TTS (audio only, not screen display)"
+              },
+              "duration_seconds": {
+                "type": "number",
+                "minimum": 1,
+                "description": "Estimated duration based on word count / 130 * 60"
+              },
+              "gesture_hint": {
+                "type": "string",
+                "description": "Optional avatar gesture cue"
+              },
+              "question_index": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "For quiz sections: index of the question this segment relates to (0-based)"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": ["introduce", "explain", "emphasize", "transition", "conclude"],
+                "description": "Purpose of this segment for progressive reveal in quiz sections"
+              }
+            },
+            "required": ["segment_id", "text", "duration_seconds"],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        }
+      },
+      "required": ["full_text", "segments"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["section_id", "narration"],
+  "additionalProperties": false
+}

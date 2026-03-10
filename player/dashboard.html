@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Education - Job Dashboard</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #00d4ff;
+            font-size: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card h2 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .form-group input[type="file"] {
+            cursor: pointer;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            color: #ccc;
+        }
+
+        .checkbox-item.checked label {
+            color: #00d4ff;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: #000;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .status-area {
+            display: none;
+        }
+
+        .status-area.visible {
+            display: block;
+        }
+
+        .job-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .job-id {
+            font-family: monospace;
+            background: rgba(0, 212, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 6px;
+            color: #00d4ff;
+        }
+
+        .job-status {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .job-status.processing {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .job-status.completed {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .job-status.failed {
+            background: rgba(255, 82, 82, 0.2);
+            color: #ff5252;
+        }
+
+        .job-status.pending {
+            background: rgba(255, 255, 255, 0.1);
+            color: #aaa;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-bar .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .current-step {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .step-details {
+            display: flex;
+            justify-content: space-between;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .error-message {
+            background: rgba(255, 82, 82, 0.1);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            color: #ff5252;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .file-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #00d4ff;
+            text-decoration: none;
+            padding: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .file-link:hover {
+            text-decoration: underline;
+        }
+
+        .files-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .files-section h3 {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .option-description {
+            font-size: 0.8rem;
+            color: #888;
+            margin-left: 26px;
+            margin-top: 2px;
+        }
+
+        .timestamp {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* NEW: WAN Progress and Repair Button Styles */
+        .wan-progress-container {
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            padding: 8px;
+            display: none;
+        }
+
+        .wan-progress-bar {
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .wan-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #9c27b0, #00d4ff);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .wan-progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 0.7rem;
+            line-height: 12px;
+            color: #fff;
+            text-shadow: 0 0 2px #000;
+        }
+
+        .btn-repair {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            transition: background 0.2s;
+        }
+
+        .btn-repair:hover {
+            background: #218838;
+        }
+
+        .btn-repair:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>AI Education Job Dashboard</h1>
+
+        <div class="card">
+            <h2>Submit New Job</h2>
+            <form id="submitForm">
+                <div class="form-group">
+                    <label for="file">Upload File (PDF, Word, or Markdown)</label>
+                    <input type="file" id="file" name="file" accept=".pdf,.doc,.docx,.odt,.md,.markdown,.txt" required>
+                </div>
+
+                <input type="hidden" id="subject" name="subject" value="General Science">
+                <input type="hidden" id="grade" name="grade" value="12">
+
+                <!-- Hidden TTS Provider (Default to Our TTS) -->
+                <input type="hidden" id="tts_provider" name="tts_provider" value="our_tts">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pipeline_version">Pipeline Version</label>
+                        <select id="pipeline_version" name="pipeline_version"
+                            style="width: 100%; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(0, 0, 0, 0.3); color: #fff; font-size: 1rem;">
+                            <option value="v3">⚡ V3 Three.js Mode (NEW — AI Animations)</option>
+                            <option value="v15_v2_director" selected>V2.5 Director Mode (High Fidelity)</option>
+                            <option value="v15_v2">V2.0 Unified (Legacy)</option>
+                            <option value="v15">V1.5 Split Agents (Legacy)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Hidden Generation Scope (Default to Full) -->
+                <input type="hidden" id="generation_scope" name="generation_scope" value="full">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="video_provider">Video Generation Provider</label>
+                        <select id="video_provider" name="video_provider"
+                            style="width: 100%; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(0, 0, 0, 0.3); color: #fff; font-size: 1rem;">
+                            <option value="kie" selected>Kie.ai (WAN - High Quality)</option>
+                            <option value="ltx">LTX Video (Fast/Experimental)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Hidden Model Override (Empty default) -->
+                <input type="hidden" id="model" name="model" value="">
+
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="dry_run" name="dry_run">
+                        <label for="dry_run">Dry Run</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="skip_wan" name="skip_wan">
+                        <label for="skip_wan">Skip AI Video Gen</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="skip_avatar" name="skip_avatar">
+                        <label for="skip_avatar">Skip Avatar</label>
+                    </div>
+                    <div class="checkbox-item" id="skipThreejsGroup" style="display:none;">
+                        <input type="checkbox" id="skip_threejs" name="skip_threejs">
+                        <label for="skip_threejs">Skip Three.js Gen (V3 only)</label>
+                    </div>
+                </div>
+                <div class="option-description" id="optionDesc">
+                    Select options to customize the job processing.
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Submit Job</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card status-area" id="statusArea">
+            <h2>Job Status</h2>
+
+            <div class="job-info">
+                <div>
+                    <span class="job-id" id="jobIdDisplay">-</span>
+                    <span class="timestamp" id="createdAt"></span>
+                </div>
+                <span class="job-status pending" id="jobStatus">Pending</span>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress" id="progressBar" style="width: 0%"></div>
+            </div>
+
+            <div class="current-step" id="currentStep">Waiting...</div>
+            <div class="status-message" id="statusMessage"
+                style="color: #aaa; font-size: 0.9rem; font-style: italic; text-align: center; margin: 10px 0;"></div>
+
+            <div class="step-details">
+                <span id="stepsCompleted">Steps: 0/0</span>
+                <span id="progressPercent">0%</span>
+            </div>
+
+            <div class="error-message" id="errorMessage" style="display: none;"></div>
+
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="refreshBtn" onclick="refreshStatus()">Refresh Status</button>
+                <button class="btn btn-success" id="playBtn" style="display: none;" onclick="openPlayer()">Play
+                    Video</button>
+                <button class="btn" id="playBtnV3" style="display: none; background: #7c4dff; color: #fff;"
+                    onclick="openPlayerV3()">&#9654; V3 Player</button>
+            </div>
+
+            <div class="files-section" id="filesSection" style="display: none;">
+                <h3>Job Output Files</h3>
+                <a class="file-link" id="presentationLink" href="#" target="_blank">presentation.json</a>
+                <a class="file-link" id="traceLink" href="#" target="_blank">generation_trace.json</a>
+                <a class="file-link" id="promptsLink" href="#" target="_blank">render_prompts.json</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Job History <button class="btn btn-secondary"
+                    style="float: right; padding: 6px 12px; font-size: 0.8rem;"
+                    onclick="loadJobHistory()">Refresh</button></h2>
+            <div id="jobHistoryList" style="margin-top: 15px;">
+                <div style="color: #888; text-align: center; padding: 20px;">Loading job history...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="analyticsModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+        <div
+            style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto; padding: 25px; position: relative; border: 1px solid rgba(255,255,255,0.2);">
+            <button onclick="closeAnalyticsModal()"
+                style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <div id="analyticsContent">
+                <div style="text-align: center; padding: 40px; color: #888;">Loading analytics...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Retry Phase Modal -->
+    <div id="retryPhaseModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+        <div
+            style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; max-width: 450px; width: 90%; padding: 25px; position: relative; border: 1px solid rgba(255,255,255,0.2);">
+            <button onclick="closeRetryPhaseModal()"
+                style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <h3 style="color: #9c27b0; margin-bottom: 20px;">Retry Phase - <span id="retryPhaseJobId"></span></h3>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; color: #aaa; font-size: 0.9rem; margin-bottom: 6px;">Phase to
+                    Retry</label>
+                <select id="retryPhaseSelect"
+                    style="width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; font-size: 1rem;">
+                    <option value="wan_render">🎬 WAN Video Rendering (AI Videos)</option>
+                    <option value="manim_render">📐 Manim Video Rendering (Math Animations)</option>
+                    <option value="manim_codegen">⚙️ Manim Code Generation</option>
+                    <option value="avatar_generation">🧑 Avatar Generation</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #aaa; font-size: 0.9rem; margin-bottom: 6px;">Section IDs
+                    (optional, comma-separated)</label>
+                <input type="text" id="retrySectionIds" placeholder="e.g., 6, 9, 11"
+                    style="width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; font-size: 1rem;">
+                <div style="color: #888; font-size: 0.75rem; margin-top: 5px;">Leave empty to retry all failed sections
+                    for this phase</div>
+            </div>
+
+            <div style="margin-bottom: 20px;" id="userFeedbackGroup">
+                <label style="display: block; color: #aaa; font-size: 0.9rem; margin-bottom: 6px;">User Feedback for
+                    Manim Regeneration (Optional)</label>
+                <textarea id="userFeedbackText" rows="4"
+                    placeholder="e.g., Make animations slower, use brighter colors, add more examples..."
+                    style="width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; font-size: 0.9rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; resize: vertical;"></textarea>
+                <div style="color: #888; font-size: 0.75rem; margin-top: 5px;">💡 Provide specific feedback to improve
+                    Manim animations (colors, speed, complexity, etc.)</div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button id="retryPhaseBtn" onclick="executePhaseRetry()" class="btn"
+                    style="flex: 1; background: #9c27b0; color: #fff; padding: 12px;">Retry Phase</button>
+                <button onclick="closeRetryPhaseModal()" class="btn btn-secondary"
+                    style="flex: 1; padding: 12px;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="llmOutputsModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center;">
+        <div
+            style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; max-width: 1000px; width: 95%; height: 85vh; display: flex; flex-direction: column; position: relative; border: 1px solid rgba(255,255,255,0.2);">
+            <div
+                style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="color: #00d4ff; margin: 0;">LLM Outputs - <span id="llmOutputsJobId"></span></h3>
+                <button onclick="closeLlmOutputsModal()"
+                    style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div style="display: flex; flex: 1; overflow: hidden;">
+                <div id="llmFileList"
+                    style="width: 280px; border-right: 1px solid rgba(255,255,255,0.1); overflow-y: auto; padding: 15px;">
+                    <div style="color: #888; text-align: center; padding: 20px;">Loading files...</div>
+                </div>
+                <div id="llmFileContent" style="flex: 1; overflow: auto; padding: 20px; background: rgba(0,0,0,0.2);">
+                    <div style="color: #888; text-align: center; padding: 40px;">Select a file to view its contents
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="reviewModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center;">
+        <div
+            style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; max-width: 1200px; width: 95%; height: 90vh; display: flex; flex-direction: column; position: relative; border: 1px solid rgba(255,255,255,0.2);">
+            <div
+                style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="color: #ff6b35; margin: 0;">Review & Edit - <span id="reviewJobId"></span></h3>
+                <button onclick="closeReviewModal()"
+                    style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="reviewSectionsList" style="flex: 1; overflow-y: auto; padding: 20px;">
+                <div style="color: #888; text-align: center; padding: 40px;">Loading sections...</div>
+            </div>
+            <div
+                style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="submitReview()" class="btn"
+                    style="background: #ff6b35; color: #fff; padding: 12px 24px;">Submit Review & Regenerate</button>
+                <button onclick="closeReviewModal()" class="btn btn-secondary"
+                    style="padding: 12px 24px;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multi-Language Avatar Modal -->
+    <div id="multiLangAvatarModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center;">
+        <div
+            style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; max-width: 500px; width: 90%; padding: 30px; position: relative; border: 1px solid rgba(255,255,255,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: #9c27b0; margin: 0;">Generate Multi-Language Avatar</h3>
+                <button onclick="closeMultiLangAvatarModal()"
+                    style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <div style="color: #00d4ff; font-size: 0.9rem; margin-bottom: 5px;">Job ID:</div>
+                <div id="multiLangJobId" style="font-family: monospace; color: #fff; font-size: 1.1rem;"></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #aaa; margin-bottom: 8px; font-size: 0.9rem;">Language:</label>
+                <select id="avatarLanguageSelect"
+                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: #fff; font-size: 0.95rem;">
+                    <option value="">Select Language</option>
+                    <option value="english">English (Default - Voice Cloning)</option>
+                    <option value="hindi">Hindi (हिंदी)</option>
+                    <option value="tamil">Tamil (தமிழ்)</option>
+                    <option value="telugu">Telugu (తెలుగు)</option>
+                    <option value="kannada">Kannada (ಕನ್ನಡ)</option>
+                    <option value="malayalam">Malayalam (മലയാളം)</option>
+                    <option value="bengali">Bengali (বাংলা)</option>
+                    <option value="marathi">Marathi (मराठी)</option>
+                    <option value="gujarati">Gujarati (ગુજરાતી)</option>
+                    <option value="punjabi">Punjabi (ਪੰਜਾਬੀ)</option>
+                    <option value="odia">Odia (ଓଡ଼ିଆ)</option>
+                    <option value="assamese">Assamese (অসমীয়া)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #aaa; margin-bottom: 8px; font-size: 0.9rem;">Speaker /
+                    Voice:</label>
+                <select id="avatarSpeakerSelect"
+                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: #fff; font-size: 0.95rem;">
+                    <option value="">Default Speaker (abhilash)</option>
+                    <optgroup label="Male Voices">
+                        <option value="abhilash">Abhilash - Clear, Professional (Default)</option>
+                        <option value="karun">Karun - Warm, Friendly</option>
+                        <option value="hitesh">Hitesh - Energetic, Youthful</option>
+                    </optgroup>
+                    <optgroup label="Female Voices">
+                        <option value="anushka">Anushka - Soft, Gentle</option>
+                        <option value="manisha">Manisha - Professional, Clear</option>
+                        <option value="vidya">Vidya - Warm, Expressive</option>
+                        <option value="arya">Arya - Young, Energetic</option>
+                    </optgroup>
+                </select>
+                <div style="color: #888; font-size: 0.75rem; margin-top: 5px;">Works with ANY Indian language. English
+                    uses voice cloning (speaker ignored).
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button id="generateMultiLangBtn" onclick="executeMultiLangAvatarGeneration()" class="btn"
+                    style="flex: 1; background: #9c27b0; color: #fff; padding: 12px 20px; font-size: 0.95rem;">
+                    Generate Avatars
+                </button>
+                <button onclick="closeMultiLangAvatarModal()" class="btn btn-secondary"
+                    style="padding: 12px 20px; font-size: 0.95rem;">
+                    Cancel
+                </button>
+            </div>
+
+            <div
+                style="margin-top: 15px; padding: 10px; background: rgba(0,212,255,0.1); border-radius: 6px; border-left: 3px solid #00d4ff;">
+                <div style="color: #00d4ff; font-size: 0.75rem; font-weight: 600; margin-bottom: 3px;">ℹ️ Info:</div>
+                <div style="color: #aaa; font-size: 0.75rem;">This will generate avatars for <strong>all
+                        sections</strong> in the selected language. Files will be saved in <code
+                        style="background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 3px;">avatars/{language}/</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentJobId = null;
+        let pollInterval = null;
+
+        function formatIST(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            }) + ' IST';
+        }
+
+        const optionDescriptions = {
+            none: "Select options to customize the job processing.",
+            dry_run: "Dry Run: Skip actual video/audio generation, only log prompts to render_prompts.json",
+            skip_wan: "Skip Video Gen: Use placeholder videos instead of AI video generation",
+            skip_avatar: "Skip Avatar: Disable avatar overlay in the player"
+        };
+
+        document.querySelectorAll('.checkbox-item input').forEach(cb => {
+            cb.addEventListener('change', updateOptionDesc);
+        });
+
+        function updateOptionDesc() {
+            const checked = Array.from(document.querySelectorAll('.checkbox-item input:checked'))
+                .map(cb => cb.id);
+
+            document.querySelectorAll('.checkbox-item').forEach(item => {
+                const input = item.querySelector('input');
+                item.classList.toggle('checked', input.checked);
+            });
+
+            if (checked.length === 0) {
+                document.getElementById('optionDesc').textContent = optionDescriptions.none;
+            } else {
+                const desc = checked.map(id => optionDescriptions[id]).filter(Boolean).join(' | ');
+                document.getElementById('optionDesc').textContent = desc;
+            }
+        }
+
+        document.getElementById('submitForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            const formData = new FormData();
+            const fileInput = document.getElementById('file');
+            formData.append('file', fileInput.files[0]);
+            formData.append('subject', document.getElementById('subject').value);
+            formData.append('grade', document.getElementById('grade').value);
+            formData.append('dry_run', document.getElementById('dry_run').checked ? 'true' : 'false');
+            formData.append('skip_wan', document.getElementById('skip_wan').checked ? 'true' : 'false');
+            formData.append('skip_avatar', document.getElementById('skip_avatar').checked ? 'true' : 'false');
+            formData.append('tts_provider', document.getElementById('tts_provider').value);
+            formData.append('pipeline_version', document.getElementById('pipeline_version').value);
+            formData.append('generation_scope', document.getElementById('generation_scope').value);
+            formData.append('video_provider', document.getElementById('video_provider').value);
+            formData.append('skip_threejs', document.getElementById('skip_threejs').checked ? 'true' : 'false');
+            const modelOverride = document.getElementById('model').value.trim();
+            if (modelOverride) {
+                formData.append('model', modelOverride);
+            }
+
+            try {
+                const response = await fetch('/submit_job', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.job_id) {
+                    currentJobId = data.job_id;
+                    showStatusArea();
+                    updateStatus(data);
+                    startPolling();
+                } else {
+                    alert('Error: ' + (data.error || data.message || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Error submitting job: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Job';
+            }
+        });
+
+        function showStatusArea() {
+            document.getElementById('statusArea').classList.add('visible');
+        }
+
+        function startPolling() {
+            // Auto-polling disabled by user request. Use manual refresh.
+            console.log('Auto-polling disabled. Use "Refresh Status" button.');
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        async function refreshStatus() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`/job/${currentJobId}/status`);
+                const data = await response.json();
+                updateStatus(data);
+
+                if (data.status === 'completed' || data.status === 'failed') {
+                    stopPolling();
+                }
+            } catch (err) {
+                console.error('Error refreshing status:', err);
+                stopPolling(); // Stop polling on error
+            }
+        }
+
+        function updateStatus(data) {
+            document.getElementById('jobIdDisplay').textContent = data.job_id || currentJobId;
+
+            const statusEl = document.getElementById('jobStatus');
+            statusEl.textContent = data.status || 'pending';
+            statusEl.className = 'job-status ' + (data.status || 'pending');
+
+            if (data.created_at) {
+                document.getElementById('createdAt').textContent =
+                    'Created: ' + formatIST(data.created_at);
+            }
+
+            const progress = data.progress || 0;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressPercent').textContent = progress + '%';
+
+            document.getElementById('currentStep').textContent =
+                data.current_step || 'Waiting...';
+
+            // Show the fun status message from status_messages.json
+            const statusMsgEl = document.getElementById('statusMessage');
+            if (data.status_message) {
+                statusMsgEl.textContent = data.status_message;
+                statusMsgEl.style.display = 'block';
+            } else {
+                statusMsgEl.style.display = 'none';
+            }
+
+            document.getElementById('stepsCompleted').textContent =
+                `Steps: ${data.steps_completed || 0}/${data.total_steps || 0}`;
+
+            if (data.error) {
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorMessage').textContent = data.error;
+            } else {
+                document.getElementById('errorMessage').style.display = 'none';
+            }
+
+            // Show detailed progress if available
+            if (data.progress_details) {
+                const pd = data.progress_details;
+                let detailsText = [];
+                if (pd.avatar_generation) {
+                    const av = pd.avatar_generation;
+                    if (av.total > 0) detailsText.push(`Avatar: ${av.completed}/${av.total}`);
+                }
+                if (pd.manim_video) {
+                    const mv = pd.manim_video;
+                    if (mv.total > 0) detailsText.push(`Manim: ${mv.completed}/${mv.total}`);
+                }
+                if (pd.wan_video) {
+                    const wv = pd.wan_video;
+                    if (wv.total > 0) detailsText.push(`WAN: ${wv.completed}/${wv.total}`);
+                }
+
+                if (detailsText.length > 0) {
+                    document.getElementById('statusMessage').textContent += " | " + detailsText.join(" | ");
+                }
+            }
+
+            if (data.status === 'completed') {
+                document.getElementById('playBtn').style.display = 'inline-block';
+                document.getElementById('filesSection').style.display = 'block';
+
+                // Show V3 player button only for V3 pipeline jobs
+                const isV3 = data.pipeline_version === 'v3' || (data.metadata && data.metadata.pipeline_version === 'v3');
+                document.getElementById('playBtnV3').style.display = isV3 ? 'inline-block' : 'none';
+
+                const basePath = `/player/jobs/${currentJobId}`;
+                document.getElementById('presentationLink').href = `${basePath}/presentation.json`;
+                document.getElementById('traceLink').href = `${basePath}/generation_trace.json`;
+                document.getElementById('promptsLink').href = `${basePath}/render_prompts.json`;
+            } else {
+                document.getElementById('playBtn').style.display = 'none';
+                document.getElementById('playBtnV3').style.display = 'none';
+                document.getElementById('filesSection').style.display = 'none';
+            }
+        }
+
+        function openPlayer(jobId) {
+            const jid = jobId || currentJobId;
+            if (jid) {
+                window.open(`/player_v2/?job=${jid}`, '_blank');
+            }
+        }
+
+        function openPlayerV3(jobId) {
+            const jid = jobId || currentJobId;
+            if (jid) {
+                window.open(`/player/jobs/${jid}/player_v3.html`, '_blank');
+            }
+        }
+
+        function retryFailedAvatars(jobId) {
+            if (!confirm(`Retry ${jobId} failed avatars?`)) return;
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = "Triggering...";
+
+            fetch(`/job/${jobId}/regenerate_failed_avatars`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+                    alert(`Avatar retry started for ${data.failed_sections_detected?.length || 0} sections!`);
+                    loadJobHistory();
+                })
+                .catch(err => {
+                    alert('Error: ' + err.message);
+                    btn.disabled = false;
+                    btn.textContent = "Retry Failed";
+                });
+        }
+
+        let historyPollInterval = null;
+        window.avatarStates = {}; // Store avatar generation states: 'idle', 'processing', 'completed'
+
+        async function loadJobHistory() {
+            const container = document.getElementById('jobHistoryList');
+            try {
+                const response = await fetch('/jobs');
+                const data = await response.json();
+
+                if (!data.jobs || data.jobs.length === 0) {
+                    container.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">No jobs found</div>';
+                    stopHistoryPolling();
+                    return;
+                }
+
+                // Check if any jobs are running - if so, start polling
+                const hasRunningJobs = data.jobs.some(j => j.status === 'running' || j.status === 'processing' || j.status === 'pending');
+                if (hasRunningJobs && !historyPollInterval) {
+                    startHistoryPolling();
+                } else if (!hasRunningJobs && historyPollInterval) {
+                    stopHistoryPolling();
+                }
+
+                container.innerHTML = data.jobs.map(job => {
+                    const statusClass = job.status === 'completed' || job.status === 'completed_with_errors' ? 'completed' :
+                        job.status === 'failed' ? 'failed' :
+                            (job.status === 'processing' || job.status === 'running') ? 'processing' : 'pending';
+                    const createdDate = formatIST(job.created_at);
+                    const dryRunBadge = job.params?.dry_run ? '<span style="background: #ff9800; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px;">DRY RUN</span>' : '';
+
+                    let actions = '';
+                    let progressBar = '';
+                    if (job.status === 'completed' || job.status === 'completed_with_errors') {
+                        actions = `
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="showLlmOutputs('${job.job_id}')">LLM Outputs</button>
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="showAnalytics('${job.job_id}')">Analytics</button>
+                            <button class="btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px; background: #9c27b0; color: #fff;" onclick="showRetryPhaseModal('${job.job_id}')">Retry Phase</button>
+                            <button class="btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px; background: #ff6b35; color: #fff;" onclick="showReviewModal('${job.job_id}')">Review</button>
+                            <button class="btn-repair" onclick="repairMissingAssets('${job.job_id}')">Repair Assets</button>
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="window.open('/player_v2/?job=${job.job_id}', '_blank')">Play</button>
+                            ${job.pipeline_version === 'v3' ? `<button class="btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px; background: #7c4dff; color: #fff;" onclick="window.open('/player/jobs/${job.job_id}/player_v3.html', '_blank')">&#9654; V3 Player</button>` : ''}
+                        `;
+
+                    } else if (job.status === 'failed') {
+                        actions = `
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="showJobError('${job.job_id}')">View Error</button>
+                        `;
+                    }
+
+                    // Avatar Button - Available for completed or failed jobs
+                    if (job.status === 'completed' || job.status === 'failed') {
+                        const avState = window.avatarStates[job.job_id];
+                        let btnText = "Generate Avatar";
+                        let btnStyle = "background: #e91e63;";
+
+                        if (avState === 'processing') {
+                            btnText = "Processing Avatars...";
+                            btnStyle = "background: #e91e63; opacity: 0.8; cursor: progress;";
+                        } else if (avState === 'completed') {
+                            btnText = "Avatars Ready!";
+                            btnStyle = "background: #4caf50;";
+                        }
+
+                        actions += `
+                             <button class="btn" style="padding: 4px 10px; font-size: 0.8rem; margin-left: 5px; ${btnStyle} color: #fff;" onclick="generateAvatar('${job.job_id}', this)" ${avState === 'processing' ? 'data-polling="true"' : ''}>${btnText}</button>
+                             <button class="btn" style="padding: 4px 10px; font-size: 0.8rem; margin-left: 5px; background: #9c27b0; color: #fff;" onclick="showMultiLangAvatarModal('${job.job_id}')">Multi-Language Avatar</button>
+                        `;
+                    }
+
+
+                    if (job.status === 'running' || job.status === 'processing') {
+                        const progress = job.progress || 0;
+                        const statusMsg = job.status_message || job.message || 'Processing...';
+                        progressBar = `
+                            <div style="margin-top: 8px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; margin-bottom: 4px;">
+                                    <span>${statusMsg}</span>
+                                    <span>${progress}%</span>
+                                </div>
+                                <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                    <div style="width: ${progress}%; height: 100%; background: linear-gradient(90deg, #00d4ff, #00ff88); border-radius: 3px; transition: width 0.5s;"></div>
+                                </div>
+                            </div>
+                            </div>
+                        `;
+
+                        let playerBtn = '';
+                        if (job.blueprint_ready) {
+                            playerBtn = `<button class="btn btn-primary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px; background: #2196f3;" onclick="window.open('/player_v2/?job=${job.job_id}', '_blank')">Show Player (Preview)</button>`;
+                        }
+
+                        actions = `${playerBtn}<span style="color: #ffc107; font-size: 0.8rem; margin-right: 10px;">In Progress...</span><button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border: 1px solid #ff5252; color: #ff5252;" onclick="forceStopJob('${job.job_id}')">Force Stop</button>`;
+                    }
+
+                    const errorPreview = (job.error && job.status !== 'running') ? `<div style="color: #ff5252; font-size: 0.8rem; margin-top: 5px; max-width: 500px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${job.error.substring(0, 100)}...</div>` : '';
+
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); ${job.status === 'failed' ? 'background: rgba(255,82,82,0.05);' : ''} ${job.status === 'running' ? 'background: rgba(255,193,7,0.05);' : ''}">
+                            <div style="flex: 1;">
+                                <span style="font-family: monospace; color: #00d4ff;">${job.job_id}</span>
+                                <span class="job-status ${statusClass}" style="margin-left: 10px; padding: 3px 8px; font-size: 0.75rem;">${job.status.toUpperCase()}</span>
+                                ${dryRunBadge}
+                                <div style="color: #888; font-size: 0.8rem; margin-top: 4px;">${createdDate} | ${job.params?.subject || 'N/A'} - ${job.params?.grade || 'N/A'}</div>
+                                ${progressBar}
+                                <!-- WAN Progress Monitoring -->
+                                <div class="wan-progress-container" id="wan-progress-area-${job.job_id}">
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #aaa;">
+                                        <span>WAN Rendering: <span id="wan-state-text-${job.job_id}">pending</span></span>
+                                        <span id="wan-beats-text-${job.job_id}">0/0 beats</span>
+                                    </div>
+                                    <div class="wan-progress-bar">
+                                        <div class="wan-progress-fill" id="wan-progress-fill-${job.job_id}"></div>
+                                        <div class="wan-progress-text" id="wan-progress-percent-${job.job_id}">0%</div>
+                                    </div>
+                                </div>
+                                ${errorPreview}
+                            </div>
+                            <div>${actions}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Immediately check status to ensure sync
+                checkAllRunningAvatarJobs();
+
+            } catch (err) {
+                container.innerHTML = `<div style="color: #ff5252; text-align: center; padding: 20px;">Error loading job history: ${err.message}</div>`;
+            }
+        }
+
+        function startHistoryPolling() {
+            // Auto-polling disabled by user request. Use manual refresh.
+        }
+
+        async function forceStopJob(jobId) {
+            if (!confirm('Are you sure you want to force stop this job? It may be left in an inconsistent state.')) return;
+            try {
+                const response = await fetch(`/job/${jobId}/cancel`, { method: 'POST' });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                loadJobHistory(); // Refresh list
+            } catch (e) {
+                alert('Error stopping job: ' + e.message);
+            }
+        }
+
+        function stopHistoryPolling() {
+            if (historyPollInterval) {
+                clearInterval(historyPollInterval);
+                historyPollInterval = null;
+                console.log('Stopped job history polling');
+            }
+        }
+
+        function showJobError(jobId) {
+            fetch(`/job/${jobId}/status`)
+                .then(r => r.json())
+                .then(data => {
+                    alert(`Job ${jobId} Error:\n\n${data.error || 'Unknown error'}`);
+                })
+                .catch(err => alert('Error fetching job details: ' + err.message));
+        }
+
+        function retryJob(jobId) {
+            if (!confirm(`Retry failed job ${jobId}?\n\nThis will resume the pipeline from the point of failure.`)) {
+                return;
+            }
+
+            fetch(`/job/${jobId}/retry`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Retry failed: ' + data.error);
+                    } else {
+                        alert(`Retry started!\n\nResuming from section ${data.resume_from_section}`);
+                        loadJobHistory();
+                        startPolling();
+                    }
+                })
+                .catch(err => alert('Error starting retry: ' + err.message));
+        }
+
+        // ISS-300: Retry Phase Modal functions
+        let currentRetryJobId = null;
+
+        function showRetryPhaseModal(jobId) {
+            currentRetryJobId = jobId;
+            document.getElementById('retryPhaseJobId').textContent = jobId;
+            document.getElementById('retrySectionIds').value = '';
+            document.getElementById('userFeedbackText').value = '';
+
+            // Check initial phase and set visibility
+            const phase = document.getElementById('retryPhaseSelect').value;
+            const feedbackGroup = document.getElementById('userFeedbackGroup');
+            if (phase === 'manim_codegen' || phase === 'manim_render') {
+                feedbackGroup.style.display = 'block';
+            } else {
+                feedbackGroup.style.display = 'none';
+            }
+
+            document.getElementById('retryPhaseModal').style.display = 'flex';
+        }
+
+        function closeRetryPhaseModal() {
+            document.getElementById('retryPhaseModal').style.display = 'none';
+            currentRetryJobId = null;
+        }
+
+        // --- Avatar Generation Functions ---
+
+        function generateAvatar(jobId, btn) {
+            if (!confirm(`Generate AI Avatars for Job ${jobId}?\n\nThis will send narration text to the remote Avatar API.`)) {
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Starting...";
+
+            fetch(`/job/${jobId}/generate_avatar`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === "queued" || data.status === "already_running") {
+                        alert("Avatar generation started! Use 'Refresh status' to track progress.");
+                        pollAvatarStatus(jobId, btn);
+                    } else {
+                        alert("Error: " + data.message);
+                        btn.disabled = false;
+                        btn.textContent = "Generate Avatar";
+                    }
+                })
+                .catch(err => {
+                    alert("Request failed: " + err.message);
+                    btn.disabled = false;
+                    btn.textContent = "Generate Avatar";
+                });
+        }
+
+        function pollAvatarStatus(jobId, btn) {
+            if (btn.dataset.polling) return; // Prevent double polling
+            btn.dataset.polling = "true";
+            window.avatarStates[jobId] = 'processing';
+
+            btn.textContent = "Processing Avatars...";
+
+            const statusCheck = () => {
+                fetch(`/job/${jobId}/avatar_status`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.state === 'completed') {
+                            // Parse success/failed counts from message
+                            // Message format: "Sequential processing complete. Success: X, Failed: Y"
+                            const msg = data.message || '';
+                            const match = msg.match(/Success:\s*(\d+).*Failed:\s*(\d+)/i);
+                            let successCount = 0;
+                            let failedCount = 0;
+                            if (match) {
+                                successCount = parseInt(match[1]);
+                                failedCount = parseInt(match[2]);
+                            }
+
+                            if (failedCount > 0 && successCount === 0) {
+                                // All failed
+                                btn.textContent = "Retry All Failed (" + (failedCount) + ")";
+                                btn.style.background = "#f44336";
+                                btn.onclick = () => retryFailedAvatars(jobId);
+                                window.avatarStates[jobId] = 'failed';
+                                alert(`Avatar generation failed!\n\nAll ${failedCount} sections failed.`);
+                            } else if (failedCount > 0) {
+                                // Partial success
+                                btn.textContent = `Retry Failed (${failedCount})`;
+                                btn.style.background = "#ff9800";
+                                btn.onclick = () => retryFailedAvatars(jobId);
+                                window.avatarStates[jobId] = 'completed_with_errors';
+                                alert(`Avatar generation completed with errors.\n\nSuccess: ${successCount}\nFailed: ${failedCount}`);
+                            } else {
+                                // All success
+                                btn.textContent = "Avatars Ready!";
+                                btn.style.background = "#4caf50";
+                                btn.onclick = () => openPlayer(jobId);
+                                window.avatarStates[jobId] = 'completed';
+                                alert("Avatar generation complete!");
+                            }
+                            btn.disabled = false;
+                        } else if (data.state === 'failed') {
+                            btn.textContent = "Avatar Gen Failed";
+                            btn.style.background = "#f44336";
+                            btn.disabled = false;
+                            window.avatarStates[jobId] = 'failed';
+                            alert("Avatar generation failed: " + data.message);
+                        } else {
+                            btn.textContent = `Generating Avatars (${data.progress}%)`;
+                        }
+                    })
+                    .catch(e => {
+                        btn.textContent = "Status Error";
+                    });
+            };
+
+            // Perform one immediate check. Subsequent updates via manual "Refresh".
+            statusCheck();
+        }
+
+
+        // --- Avatar Generation Functions ---
+
+        function generateAvatar(jobId, btn) {
+            if (!confirm(`Generate AI Avatars for Job ${jobId}?\n\nThis will send narration text to the remote Avatar API.`)) {
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Starting...";
+
+            fetch(`/job/${jobId}/generate_avatar`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === "queued" || data.status === "already_running") {
+                        alert("Avatar generation started! Use 'Refresh status' to track progress.");
+                        pollAvatarStatus(jobId, btn);
+                    } else {
+                        alert("Error: " + data.message);
+                        btn.disabled = false;
+                        btn.textContent = "Generate Avatar";
+                    }
+                })
+                .catch(err => {
+                    alert("Request failed: " + err.message);
+                    btn.disabled = false;
+                    btn.textContent = "Generate Avatar";
+                });
+        }
+
+        function pollAvatarStatus(jobId, btn) {
+            if (btn.dataset.polling) return;
+            btn.dataset.polling = "true";
+
+            btn.textContent = "Processing Avatars...";
+
+            const checkInterval = setInterval(() => {
+                fetch(`/job/${jobId}/avatar_status`)
+                    .then(r => {
+                        if (!r.ok) {
+                            clearInterval(checkInterval);
+                            btn.textContent = "Job Expired";
+                            return null;
+                        }
+                        return r.json();
+                    })
+                    .then(data => {
+                        if (!data) return;
+                        if (data.state === 'completed') {
+                            clearInterval(checkInterval);
+
+                            // Parse success/failed counts from message
+                            const msg = data.message || '';
+                            const match = msg.match(/Success:\s*(\d+).*Failed:\s*(\d+)/i);
+                            let successCount = 0;
+                            let failedCount = 0;
+                            if (match) {
+                                successCount = parseInt(match[1]);
+                                failedCount = parseInt(match[2]);
+                            }
+
+                            if (failedCount > 0 && successCount === 0) {
+                                btn.textContent = "Retry All Failed (" + failedCount + ")";
+                                btn.style.background = "#f44336";
+                                btn.onclick = (e) => { e.stopPropagation(); retryFailedAvatars(jobId); };
+                                window.avatarStates[jobId] = 'failed';
+                                alert(`Avatar generation failed!\n\nAll ${failedCount} sections failed.`);
+                            } else if (failedCount > 0) {
+                                btn.textContent = `Retry Failed (${failedCount})`;
+                                btn.style.background = "#ff9800";
+                                btn.onclick = (e) => { e.stopPropagation(); retryFailedAvatars(jobId); };
+                                window.avatarStates[jobId] = 'completed_with_errors';
+                                alert(`Avatar generation completed with errors.\n\nSuccess: ${successCount}\nFailed: ${failedCount}`);
+                            } else {
+                                btn.textContent = "Avatars Ready!";
+                                btn.style.background = "#4caf50";
+                                btn.onclick = (e) => { e.stopPropagation(); openPlayer(jobId); };
+                                window.avatarStates[jobId] = 'completed';
+                                alert("Avatar generation complete!");
+                            }
+                            btn.disabled = false;
+                        } else if (data.state === 'failed' || data.state === 'not_found') {
+                            clearInterval(checkInterval);
+                            btn.textContent = data.state === 'not_found' ? "Job Not Found" : "Avatar Gen Failed";
+                            btn.style.background = "#f44336";
+                            btn.disabled = false;
+                        } else {
+                            btn.textContent = `Generating Avatars (${data.progress}%)`;
+                        }
+                    })
+                    .catch(e => {
+                        clearInterval(checkInterval);
+                        btn.textContent = "Status Error";
+                    });
+            }, 5000);
+        }
+
+        function retryFailedAvatars(jobId) {
+            if (!confirm(`Retry ${jobId} failed avatars?`)) return;
+
+            // Find the button (might be passed as event target if called from listener)
+            const btn = event?.target || document.querySelector(`button[onclick*="generateAvatar('${jobId}'"]`);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = "Triggering...";
+            }
+
+            fetch(`/job/${jobId}/regenerate_failed_avatars`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+                    alert(`Avatar retry started for ${data.failed_sections_detected?.length || 0} sections!`);
+                    loadJobHistory();
+                })
+                .catch(err => {
+                    alert('Error: ' + err.message);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = "Retry Failed";
+                    }
+                });
+        }
+
+
+        // --- Multi-Language Avatar Functions ---
+        let currentMultiLangJobId = null;
+
+        function showMultiLangAvatarModal(jobId) {
+            currentMultiLangJobId = jobId;
+            document.getElementById('multiLangJobId').textContent = jobId;
+            document.getElementById('avatarLanguageSelect').value = '';
+            document.getElementById('avatarSpeakerSelect').value = '';
+            document.getElementById('multiLangAvatarModal').style.display = 'flex';
+        }
+
+        function closeMultiLangAvatarModal() {
+            document.getElementById('multiLangAvatarModal').style.display = 'none';
+            currentMultiLangJobId = null;
+        }
+
+        function executeMultiLangAvatarGeneration() {
+            if (!currentMultiLangJobId) return;
+
+            const language = document.getElementById('avatarLanguageSelect').value;
+            const speaker = document.getElementById('avatarSpeakerSelect').value;
+
+            if (!language) {
+                alert('Please select a language!');
+                return;
+            }
+
+            const btn = document.getElementById('generateMultiLangBtn');
+            btn.disabled = true;
+            btn.textContent = 'Starting...';
+
+            const payload = {
+                languages: [language]  // Send as array (backend expects list)
+            };
+
+            if (speaker) {
+                payload.speaker = speaker;
+            }
+
+            fetch(`/job/${currentMultiLangJobId}/generate_avatar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(r => r.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.textContent = 'Generate Avatars';
+
+                    if (data.status === 'queued' || data.status === 'already_running') {
+                        alert(`Multi-Language Avatar generation started!\\n\\nLanguage: ${language}\\nSpeaker: ${speaker || 'Default'}\\n\\nThis will generate avatars for ALL sections.\\nUse 'Refresh' button to track progress.`);
+                        closeMultiLangAvatarModal();
+                        loadJobHistory();  // Refresh to show updated state
+                    } else if (data.error) {
+                        alert('Error: ' + data.error);
+                    } else {
+                        alert('Unexpected response: ' + JSON.stringify(data));
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.textContent = 'Generate Avatars';
+                    alert('Request failed: ' + err.message);
+                });
+        }
+
+
+        function executePhaseRetry() {
+            if (!currentRetryJobId) return;
+
+            const phase = document.getElementById('retryPhaseSelect').value;
+            const sectionIdsInput = document.getElementById('retrySectionIds').value.trim();
+            const userFeedback = document.getElementById('userFeedbackText').value.trim();
+
+            let payload = { phase };
+            if (sectionIdsInput) {
+                const sectionIds = sectionIdsInput.split(',').map(s => {
+                    const num = parseInt(s.trim());
+                    return isNaN(num) ? null : num;
+                }).filter(n => n !== null);
+                if (sectionIds.length > 0) {
+                    payload.section_ids = sectionIds;
+                }
+            }
+
+            // Add user feedback for Manim phases
+            if ((phase === 'manim_codegen' || phase === 'manim_render') && userFeedback) {
+                payload.user_feedback = userFeedback;
+            }
+
+            document.getElementById('retryPhaseBtn').disabled = true;
+            document.getElementById('retryPhaseBtn').textContent = 'Retrying...';
+
+            fetch(`/job/${currentRetryJobId}/retry_phase`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('retryPhaseBtn').disabled = false;
+                    document.getElementById('retryPhaseBtn').textContent = 'Retry Phase';
+
+                    if (data.error) {
+                        alert('Retry failed: ' + data.error);
+                    } else {
+                        const result = data.result || {};
+                        const success = result.success?.length || 0;
+                        const failed = result.failed?.length || 0;
+                        const skipped = result.skipped?.length || 0;
+                        alert(`Phase Retry Complete!\n\nPhase: ${data.phase}\nSuccess: ${success}\nFailed: ${failed}\nSkipped: ${skipped}`);
+                        closeRetryPhaseModal();
+
+                        // NEW: Start polling if it was a WAN phase
+                        if (phase === 'wan_render' || phase === 'video_render') {
+                            pollWANStatus(currentRetryJobId);
+                        }
+
+                        loadJobHistory();
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('retryPhaseBtn').disabled = false;
+                    document.getElementById('retryPhaseBtn').textContent = 'Retry Phase';
+                    alert('Error: ' + err.message);
+                });
+        }
+
+        // --- WAN Progress Polling ---
+        window.wanPollers = {};
+
+        function pollWANStatus(jobId) {
+            const area = document.getElementById(`wan-progress-area-${jobId}`);
+            if (area) area.style.display = 'block';
+
+            if (window.wanPollers[jobId]) return;
+
+            window.wanPollers[jobId] = setInterval(async () => {
+                try {
+                    const res = await fetch(`/job/${jobId}/wan_status`);
+                    if (!res.ok) {
+                        if (res.status === 404) {
+                            // Not found yet, keep waiting
+                            return;
+                        }
+                        clearInterval(window.wanPollers[jobId]);
+                        delete window.wanPollers[jobId];
+                        return;
+                    }
+
+                    const data = await res.json();
+
+                    const fill = document.getElementById(`wan-progress-fill-${jobId}`);
+                    const percentText = document.getElementById(`wan-progress-percent-${jobId}`);
+                    const beatsText = document.getElementById(`wan-beats-text-${jobId}`);
+                    const stateText = document.getElementById(`wan-state-text-${jobId}`);
+
+                    if (fill) fill.style.width = `${data.progress_percent || 0}%`;
+                    if (percentText) percentText.textContent = `${data.progress_percent || 0}%`;
+                    if (beatsText) beatsText.textContent = `${data.completed_beats || 0}/${data.total_beats || 0} beats`;
+                    if (stateText) {
+                        stateText.textContent = data.state || 'pending';
+                        if (data.state === 'failed') stateText.style.color = '#ff5252';
+                        else if (data.state === 'completed') stateText.style.color = '#00ff88';
+                        else stateText.style.color = '#ffc107';
+                    }
+
+                    if (data.state === 'completed' || data.state === 'failed') {
+                        clearInterval(window.wanPollers[jobId]);
+                        delete window.wanPollers[jobId];
+                        setTimeout(() => loadJobHistory(), 2000);
+                    }
+                } catch (err) {
+                    console.error('WAN poll error:', err);
+                    clearInterval(window.wanPollers[jobId]);
+                    delete window.wanPollers[jobId];
+                }
+            }, 2000);
+        }
+
+        // --- Repair Missing Assets ---
+        async function repairMissingAssets(jobId) {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ Repairing...';
+
+            try {
+                const res = await fetch(`/api/repair-missing-assets/${jobId}`, {
+                    method: 'POST'
+                });
+
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    alert(`✅ Repair Complete!\n\nRepaired: ${data.repaired_count}\nSkipped: ${data.skipped_count}\nDetails: ${JSON.stringify(data.details, null, 2)}`);
+                    loadJobHistory();
+                } else {
+                    alert(`❌ Repair Failed: ${data.error || 'Unknown error'}`);
+                }
+            } catch (err) {
+                alert(`❌ Request Failed: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        function showAnalytics(jobId) {
+            fetch(`/job/${jobId}/analytics`)
+                .then(r => r.json())
+                .then(data => {
+                    const modal = document.getElementById('analyticsModal');
+                    const content = document.getElementById('analyticsContent');
+
+                    if (data.has_analytics && data.analytics) {
+                        const a = data.analytics;
+                        const phases = a.phases || [];
+
+                        // Format duration nicely
+                        const formatDuration = (secs) => {
+                            if (!secs) return 'N/A';
+                            if (secs < 60) return `${secs.toFixed(1)}s`;
+                            const mins = Math.floor(secs / 60);
+                            const remainingSecs = (secs % 60).toFixed(0);
+                            return `${mins}m ${remainingSecs}s`;
+                        };
+
+                        // Format cost nicely
+                        const formatCost = (cost) => cost ? `$${cost.toFixed(4)}` : '$0.00';
+
+                        // Calculate totals from phases OR flat fields (V2 analytics)
+                        let totalCost = a.llm_cost_usd || 0;
+                        let totalTokens = a.llm_total_tokens || 0;
+                        let inputTokens = a.llm_input_tokens || 0;
+                        let outputTokens = a.llm_output_tokens || 0;
+
+                        // Fallback to phases array for older analytics format
+                        if (phases.length > 0 && totalCost === 0) {
+                            phases.forEach(p => {
+                                totalCost += p.cost_usd || 0;
+                                totalTokens += p.total_tokens || p.tokens || 0;
+                            });
+                        }
+
+                        // TTS info - support both V1.5 nested format and V2 flat format
+                        const tts = a.tts || {
+                            provider: a.tts_provider || 'edge_tts',
+                            voice: a.tts_voice || 'en-IN-PrabhatNeural',
+                            total_duration_seconds: a.tts_duration_seconds || 0,
+                            segments: a.tts_segments || 0
+                        };
+
+                        // Renderer info - support both V1.5 nested format and V2 flat format
+                        const renderer = a.renderer || {
+                            manim_videos: a.manim_videos || 0,
+                            wan_videos: a.wan_videos || 0,
+                            static_slides: a.static_slides || 0
+                        };
+
+                        const llmModel = a.llm_model || 'N/A';
+
+                        // Content info - support both V1.5 nested format and V2 flat format
+                        const content_info = a.content || {
+                            sections: a.sections || 0,
+                            segments: a.segments || 0,
+                            page_count: a.page_count || 0,
+                            qa_pair_count: a.qa_pair_count || 0,
+                            table_count: a.table_count || 0,
+                            image_count: a.image_count || 0
+                        };
+
+                        // Get total pipeline time (V2) or total_duration_seconds (V1.5)
+                        const pipelineTime = a.pipeline_time_seconds || a.total_duration_seconds || 0;
+
+                        let html = `
+                            <div style="margin-bottom: 20px;">
+                                <h3 style="color: #00d4ff; margin-bottom: 10px;">Pipeline Analytics</h3>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                                        <div style="color: #888; font-size: 0.8rem;">Status</div>
+                                        <div style="font-size: 1.2rem; color: ${a.status === 'completed' ? '#4caf50' : '#ff5252'};">${a.status || 'Unknown'}</div>
+                                    </div>
+                                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                                        <div style="color: #888; font-size: 0.8rem;">Pipeline Time</div>
+                                        <div style="font-size: 1.2rem;">${formatDuration(pipelineTime)}</div>
+                                    </div>
+                                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                                        <div style="color: #888; font-size: 0.8rem;">LLM Cost</div>
+                                        <div style="font-size: 1.2rem; color: #ff9800;">${formatCost(totalCost)}</div>
+                                        <div style="font-size: 0.75rem; color: #888;">${llmModel}</div>
+                                    </div>
+                                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                                        <div style="color: #888; font-size: 0.8rem;">Total Tokens</div>
+                                        <div style="font-size: 1.2rem;">${totalTokens.toLocaleString()}</div>
+                                        ${inputTokens > 0 ? `<div style="font-size: 0.75rem; color: #888;">In: ${inputTokens.toLocaleString()} / Out: ${outputTokens.toLocaleString()}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 20px;">
+                                <h4 style="color: #00d4ff; margin-bottom: 10px;">Content Summary</h4>
+                                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                                    <div><span style="color: #888;">Sections:</span> ${content_info.sections || content_info.total_sections || phases.length || 'N/A'}</div>
+                                    <div><span style="color: #888;">Segments:</span> ${content_info.segments || content_info.total_segments || 'N/A'}</div>
+                                    <div><span style="color: #888;">Manim:</span> ${renderer.manim_videos || 0}</div>
+                                    <div><span style="color: #888;">WAN:</span> ${renderer.wan_videos || 0}</div>
+                                </div>
+                                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
+                                    ${content_info.page_count ? `<div><span style="color: #888;">Pages:</span> <span style="color: #4caf50;">${content_info.page_count}</span></div>` : ''}
+                                    ${content_info.qa_pair_count ? `<div><span style="color: #888;">Q&A Pairs:</span> <span style="color: #9c27b0;">${content_info.qa_pair_count}</span></div>` : ''}
+                                    ${content_info.table_count ? `<div><span style="color: #888;">Tables:</span> <span style="color: #ff9800;">${content_info.table_count}</span></div>` : ''}
+                                    ${content_info.image_count ? `<div><span style="color: #888;">Images:</span> <span style="color: #2196f3;">${content_info.image_count}</span></div>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 20px;">
+                                <h4 style="color: #00d4ff; margin-bottom: 10px;">Validation & Quality</h4>
+                                ${a.validation ? `
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                                        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; text-align: center;">
+                                            <div style="font-size: 2rem; font-weight: bold; color: ${a.validation.quality_score >= 80 ? '#4caf50' : a.validation.quality_score >= 50 ? '#ff9800' : '#f44336'};">${a.validation.quality_score || 0}</div>
+                                            <div style="color: #888; font-size: 0.8rem;">Quality Score</div>
+                                        </div>
+                                        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+                                            <div style="color: #888; font-size: 0.75rem; margin-bottom: 5px;">Mandatory Sections</div>
+                                            <div style="font-size: 0.85rem;">
+                                                <span style="color: ${a.validation.has_intro ? '#4caf50' : '#f44336'};">Intro ${a.validation.has_intro ? '✓' : '✗'}</span>
+                                                <span style="margin-left: 8px; color: ${a.validation.has_summary ? '#4caf50' : '#f44336'};">Summary ${a.validation.has_summary ? '✓' : '✗'}</span><br>
+                                                <span style="color: ${a.validation.has_memory ? '#4caf50' : '#f44336'};">Memory ${a.validation.has_memory ? '✓' : '✗'}</span>
+                                                <span style="margin-left: 8px; color: ${a.validation.has_recap ? '#4caf50' : '#f44336'};">Recap ${a.validation.has_recap ? '✓' : '✗'}</span>
+                                            </div>
+                                        </div>
+                                        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+                                            <div style="color: #888; font-size: 0.75rem; margin-bottom: 5px;">Generation Stats</div>
+                                            <div style="font-size: 0.85rem;">
+                                                ${a.validation.audio ? `<div>Audio: <span style="color: ${a.validation.audio.success_rate >= 100 ? '#4caf50' : a.validation.audio.success_rate > 0 ? '#ff9800' : '#f44336'};">${a.validation.audio.generated}/${a.validation.audio.expected}</span></div>` : ''}
+                                                ${a.validation.video ? `<div>Video: <span style="color: ${a.validation.video.success_rate >= 100 ? '#4caf50' : a.validation.video.success_rate > 0 ? '#ff9800' : '#f44336'};">${a.validation.video.generated}/${a.validation.video.expected}</span></div>` : ''}
+                                                ${a.validation.avatar ? `<div>Avatar: <span style="color: ${a.validation.avatar.success_rate >= 100 ? '#4caf50' : a.validation.avatar.success_rate > 0 ? '#ff9800' : '#f44336'};">${a.validation.avatar.success}/${a.validation.avatar.success + a.validation.avatar.failed}</span></div>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    ${a.validation.issues && a.validation.issues.length > 0 ? `
+                                        <div style="background: rgba(255,82,82,0.1); padding: 10px; border-radius: 8px; border-left: 3px solid #f44336;">
+                                            <div style="color: #f44336; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px;">Issues Found:</div>
+                                            <ul style="margin: 0; padding-left: 20px; color: #ff8a80; font-size: 0.8rem;">
+                                                ${a.validation.issues.map(i => `<li>${i}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                ` : '<div style="color: #888;">No validation data available</div>'}
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <h4 style="color: #00d4ff; margin-bottom: 10px;">TTS</h4>
+                                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                                    <div><span style="color: #888;">Provider:</span> ${tts.provider || 'N/A'}</div>
+                                    <div><span style="color: #888;">Voice:</span> <span style="color: #4caf50;">${tts.voice || 'N/A'}</span></div>
+                                    <div><span style="color: #888;">Audio Duration:</span> ${formatDuration(tts.total_duration_seconds)}</div>
+                                    ${tts.segments ? `<div><span style="color: #888;">Segments:</span> ${tts.segments}</div>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 style="color: #00d4ff; margin-bottom: 10px;">Phase Breakdown</h4>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                    <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                                <th style="text-align: left; padding: 8px; color: #888;">Phase</th>
+                                                <th style="text-align: right; padding: 8px; color: #888;">Duration</th>
+                                                <th style="text-align: right; padding: 8px; color: #888;">Details</th>
+                                                <th style="text-align: right; padding: 8px; color: #888;">Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${phases.map(p => {
+                            const phaseName = p.phase_name || p.phase || 'Unknown';
+                            const tokens = p.total_tokens || p.tokens || 0;
+                            let details = tokens > 0 ? tokens.toLocaleString() + ' tokens' : '';
+                            if (p.segments) details = p.segments + ' segments';
+                            if (p.wan_videos) details = p.wan_videos + ' WAN';
+                            if (p.manim_rendered) details += (details ? ', ' : '') + p.manim_rendered + ' Manim';
+                            if (p.success !== undefined) details = p.success + '/' + (p.success + (p.failed || 0)) + ' ok';
+                            return `
+                                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                                    <td style="padding: 8px;">${phaseName}</td>
+                                                    <td style="text-align: right; padding: 8px;">${formatDuration(p.duration_seconds)}</td>
+                                                    <td style="text-align: right; padding: 8px; color: #888;">${details || '-'}</td>
+                                                    <td style="text-align: right; padding: 8px; color: #ff9800;">${formatCost(p.cost_usd)}</td>
+                                                </tr>
+                                            `}).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            
+                            <div style="margin-bottom: 20px;">
+                                <h4 style="color: #00d4ff; margin-bottom: 10px;">Renderer Status</h4>
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                                <th style="text-align: left; padding: 8px; color: #888;">Section</th>
+                                                <th style="text-align: left; padding: 8px; color: #888;">Type</th>
+                                                <th style="text-align: left; padding: 8px; color: #888;">Renderer</th>
+                                                <th style="text-align: center; padding: 8px; color: #888;">Status</th>
+                                                <th style="text-align: center; padding: 8px; color: #888;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${(renderer.section_renders || []).map(r => {
+                                const statusColor = r.status === 'success' ? '#4caf50' : r.status === 'skipped' ? '#aaa' : '#ff5252';
+
+                                let actionBtn = '-';
+                                if (r.status === 'failed' || r.status === 'compilation_failed') {
+                                    // Extract retry link components if available, or build logical retry
+                                    // The backend add_render_detail populates retry_action with a link like /retry_phase...
+                                    // But dashboard works with buttons calling modals.
+                                    // Let's use showRetryPhaseModal passing specific section.
+
+                                    const phaseToRetry = r.renderer === 'manim' ? 'manim_codegen' : 'video_render';
+                                    actionBtn = `<button class="btn" style="padding: 2px 8px; font-size: 0.7rem; background: #9c27b0; color: #fff;" 
+                                                        onclick="openRetryForSection('${jobId}', '${phaseToRetry}', '${r.section_id}')">Retry</button>`;
+                                }
+
+                                return `
+                                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                                    <td style="padding: 8px;">${r.section_id}</td>
+                                                    <td style="padding: 8px; color: #ccc;">${r.section_type}</td>
+                                                    <td style="padding: 8px; color: #ccc;">${r.renderer}</td>
+                                                    <td style="padding: 8px; text-align: center; color: ${statusColor};">${r.status.toUpperCase()}</td>
+                                                    <td style="padding: 8px; text-align: center;">${actionBtn}</td>
+                                                </tr>
+                                            `}).join('')}
+                                            ${(!renderer.section_renders || renderer.section_renders.length === 0) ? '<tr><td colspan="5" style="padding: 15px; text-align: center; color: #666;">No renderer details recorded</td></tr>' : ''}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <h4 style="color: #00d4ff; margin-bottom: 10px;">Avatar Status</h4>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                    <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                                <th style="text-align: left; padding: 8px; color: #888;">Section</th>
+                                                <th style="text-align: right; padding: 8px; color: #888;">Duration</th>
+                                                <th style="text-align: center; padding: 8px; color: #888;">Status</th>
+                                                <th style="text-align: right; padding: 8px; color: #888;">Timestamp</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${((a.avatar && a.avatar.section_details) || []).map(av => {
+                                    const avStatusColor = av.status === 'completed' ? '#4caf50' : av.status === 'processing' ? '#ff9800' : '#ff5252';
+                                    return `
+                                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                                    <td style="padding: 8px;">Section ${av.section_id}</td>
+                                                    <td style="padding: 8px; text-align: right;">${av.duration_seconds ? av.duration_seconds.toFixed(1) + 's' : '-'}</td>
+                                                    <td style="padding: 8px; text-align: center; color: ${avStatusColor};">${(av.status || 'unknown').toUpperCase()}</td>
+                                                    <td style="padding: 8px; text-align: right; color: #888; font-size: 0.75rem;">${av.timestamp || '-'}</td>
+                                                </tr>
+                                            `}).join('')}
+                                            ${(!a.avatar || !a.avatar.section_details || a.avatar.section_details.length === 0) ? '<tr><td colspan="4" style="padding: 15px; text-align: center; color: #666;">No avatar details recorded</td></tr>' : ''}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        `;
+                        content.innerHTML = html;
+                    } else {
+                        content.innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #888;">
+                                <div style="font-size: 1.2rem; margin-bottom: 10px;">No Analytics Available</div>
+                                <div style="font-size: 0.9rem;">${data.message || 'Analytics data not found for this job.'}</div>
+                                ${data.basic_info ? `
+                                    <div style="margin-top: 20px; text-align: left;">
+                                        <div><span style="color: #888;">Status:</span> ${data.basic_info.status}</div>
+                                        <div><span style="color: #888;">Created:</span> ${formatIST(data.basic_info.created_at)}</div>
+                                        ${data.basic_info.error ? `<div style="color: #ff5252; margin-top: 10px;">${data.basic_info.error}</div>` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }
+
+                    modal.style.display = 'flex';
+                })
+                .catch(err => {
+                    alert('Error loading analytics: ' + err.message);
+                });
+        }
+
+        function closeAnalyticsModal() {
+            document.getElementById('analyticsModal').style.display = 'none';
+        }
+
+        let currentLlmJobId = null;
+
+        function showLlmOutputs(jobId) {
+            currentLlmJobId = jobId;
+            document.getElementById('llmOutputsJobId').textContent = jobId;
+            document.getElementById('llmOutputsModal').style.display = 'flex';
+            document.getElementById('llmFileList').innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">Loading files...</div>';
+            document.getElementById('llmFileContent').innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Select a file to view its contents</div>';
+
+            fetch(`/job/${jobId}/llm-outputs`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.outputs && data.outputs.length > 0) {
+                        renderLlmFileList(data.outputs, data.categories);
+                    } else {
+                        document.getElementById('llmFileList').innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">No LLM outputs found for this job</div>';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('llmFileList').innerHTML = `<div style="color: #ff5252; padding: 20px;">Error: ${err.message}</div>`;
+                });
+        }
+
+        function renderLlmFileList(outputs, categories) {
+            const grouped = {};
+            outputs.forEach(o => {
+                if (!grouped[o.category]) grouped[o.category] = [];
+                grouped[o.category].push(o);
+            });
+
+            const categoryNames = {
+                'agent_output': 'Agent Outputs',
+                'raw_llm': 'Raw LLM Responses',
+                'renderer': 'Renderer Prompts',
+                'trace': 'Pipeline Trace',
+                'source': 'Source Content'
+            };
+
+            const categoryColors = {
+                'agent_output': '#4caf50',
+                'raw_llm': '#ff9800',
+                'renderer': '#9c27b0',
+                'trace': '#2196f3',
+                'source': '#00bcd4'
+            };
+
+            let html = '';
+            const order = ['source', 'agent_output', 'renderer', 'raw_llm', 'trace'];
+            order.forEach(cat => {
+                if (!grouped[cat]) return;
+                const color = categoryColors[cat] || '#888';
+                html += `<div style="margin-bottom: 15px;">
+                    <div style="color: ${color}; font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                        ${categoryNames[cat] || cat}
+                    </div>`;
+                grouped[cat].forEach(file => {
+                    const sizeKb = (file.size_bytes / 1024).toFixed(1);
+                    const encodedPath = encodeURIComponent(file.path);
+                    html += `<div class="llm-file-item" onclick="loadLlmFile('${encodedPath}')" style="cursor: pointer; padding: 8px; margin: 4px 0; background: rgba(255,255,255,0.05); border-radius: 6px; transition: background 0.2s;">
+                        <div style="font-size: 0.85rem; color: #fff;">${escapeHtml(file.name)}</div>
+                        <div style="font-size: 0.7rem; color: #888; margin-top: 2px;">${escapeHtml(file.description)} (${sizeKb} KB)</div>
+                    </div>`;
+                });
+                html += '</div>';
+            });
+
+            document.getElementById('llmFileList').innerHTML = html;
+
+            // Add hover styles
+            document.querySelectorAll('.llm-file-item').forEach(el => {
+                el.addEventListener('mouseenter', () => el.style.background = 'rgba(0,212,255,0.2)');
+                el.addEventListener('mouseleave', () => el.style.background = 'rgba(255,255,255,0.05)');
+            });
+        }
+
+        function loadLlmFile(encodedFilePath) {
+            const decodedPath = decodeURIComponent(encodedFilePath);
+            document.getElementById('llmFileContent').innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">Loading...</div>';
+
+            fetch(`/job/${currentLlmJobId}/llm-outputs/${encodedFilePath}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('llmFileContent').innerHTML = `<div style="color: #ff5252; padding: 20px;">${data.error}</div>`;
+                        return;
+                    }
+
+                    let html = `<div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div style="color: #00d4ff; font-weight: 600;">${escapeHtml(decodedPath)}</div>
+                        <div style="color: #888; font-size: 0.8rem;">Type: ${data.file_type} | Size: ${(data.size_bytes / 1024).toFixed(1)} KB</div>
+                    </div>`;
+
+                    if (data.file_type === 'json') {
+                        html += renderJsonContent(data.content, decodedPath);
+                    } else {
+                        html += `<pre style="font-family: 'Monaco', 'Menlo', monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; max-height: 60vh; overflow: auto;">${escapeHtml(data.content)}</pre>`;
+                    }
+
+                    document.getElementById('llmFileContent').innerHTML = html;
+                })
+                .catch(err => {
+                    document.getElementById('llmFileContent').innerHTML = `<div style="color: #ff5252; padding: 20px;">Error: ${err.message}</div>`;
+                });
+        }
+
+        function renderJsonContent(content, filePath) {
+            let html = '';
+
+            // Special handling for different file types
+            if (filePath.includes('narration')) {
+                html += renderNarrationArtifact(content);
+            } else if (filePath.includes('visuals')) {
+                html += renderVisualsArtifact(content);
+            } else if (filePath.includes('chunker')) {
+                html += renderChunkerArtifact(content);
+            } else if (filePath.includes('planner')) {
+                html += renderPlannerArtifact(content);
+            } else if (filePath === 'render_prompts.json') {
+                html += renderRenderPrompts(content);
+            } else {
+                // Generic JSON display
+                html += `<pre style="font-family: 'Monaco', 'Menlo', monospace; font-size: 0.75rem; white-space: pre-wrap; word-break: break-word; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; max-height: 60vh; overflow: auto;">${escapeHtml(JSON.stringify(content, null, 2))}</pre>`;
+            }
+
+            return html;
+        }
+
+        function renderNarrationArtifact(content) {
+            let html = '';
+            const segments = content.segments || content;
+            if (Array.isArray(segments)) {
+                html += `<div style="margin-bottom: 10px; color: #4caf50;">Found ${segments.length} narration segments</div>`;
+                segments.forEach((seg, i) => {
+                    html += `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #4caf50;">
+                        <div style="color: #888; font-size: 0.75rem; margin-bottom: 5px;">Segment ${i + 1}${seg.duration_seconds ? ` | ${seg.duration_seconds}s` : ''}</div>
+                        <div style="font-size: 0.9rem;">${escapeHtml(seg.text || seg.narration_text || JSON.stringify(seg))}</div>
+                    </div>`;
+                });
+            } else {
+                html += `<pre style="font-family: monospace; font-size: 0.75rem; white-space: pre-wrap;">${escapeHtml(JSON.stringify(content, null, 2))}</pre>`;
+            }
+            return html;
+        }
+
+        function renderVisualsArtifact(content) {
+            let html = '';
+            const beats = content.visual_beats || content.beats || content;
+            if (Array.isArray(beats)) {
+                html += `<div style="margin-bottom: 10px; color: #9c27b0;">Found ${beats.length} visual beats</div>`;
+                beats.forEach((beat, i) => {
+                    const renderer = beat.renderer || 'none';
+                    const rendererColor = renderer === 'manim' ? '#ff9800' : renderer === 'wan' ? '#e91e63' : '#888';
+                    html += `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${rendererColor};">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="color: #888; font-size: 0.75rem;">Beat ${i + 1}</span>
+                            <span style="color: ${rendererColor}; font-size: 0.75rem; font-weight: 600;">${renderer.toUpperCase()}</span>
+                        </div>
+                        ${beat.visual_description ? `<div style="font-size: 0.85rem; margin-bottom: 5px;"><span style="color: #888;">Description:</span> ${escapeHtml(beat.visual_description)}</div>` : ''}
+                        ${beat.manim_scene_spec ? `<div style="font-size: 0.8rem; background: rgba(255,152,0,0.1); padding: 8px; border-radius: 4px; margin-top: 5px;"><span style="color: #ff9800;">Manim Spec:</span><pre style="margin: 5px 0 0 0; font-size: 0.75rem; white-space: pre-wrap;">${escapeHtml(typeof beat.manim_scene_spec === 'string' ? beat.manim_scene_spec : JSON.stringify(beat.manim_scene_spec, null, 2))}</pre></div>` : ''}
+                        ${beat.wan_video_prompt ? `<div style="font-size: 0.8rem; background: rgba(233,30,99,0.1); padding: 8px; border-radius: 4px; margin-top: 5px;"><span style="color: #e91e63;">WAN Prompt:</span> ${escapeHtml(beat.wan_video_prompt)}</div>` : ''}
+                    </div>`;
+                });
+            } else {
+                html += `<pre style="font-family: monospace; font-size: 0.75rem; white-space: pre-wrap;">${escapeHtml(JSON.stringify(content, null, 2))}</pre>`;
+            }
+            return html;
+        }
+
+        function renderChunkerArtifact(content) {
+            let html = '';
+            const blocks = content.content_blocks || content.blocks || content;
+            if (Array.isArray(blocks)) {
+                html += `<div style="margin-bottom: 10px; color: #2196f3;">Found ${blocks.length} content blocks</div>`;
+                blocks.forEach((block, i) => {
+                    html += `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #2196f3;">
+                        <div style="color: #888; font-size: 0.75rem; margin-bottom: 5px;">Block ${block.block_id || i + 1} | ${block.type || 'unknown'}</div>
+                        <div style="font-size: 0.85rem;">${escapeHtml(typeof block.content === 'string' ? block.content : JSON.stringify(block.content || block))}</div>
+                    </div>`;
+                });
+            } else {
+                html += `<pre style="font-family: monospace; font-size: 0.75rem; white-space: pre-wrap;">${escapeHtml(JSON.stringify(content, null, 2))}</pre>`;
+            }
+            return html;
+        }
+
+        function renderPlannerArtifact(content) {
+            let html = '';
+            const sections = content.sections || content;
+            if (Array.isArray(sections)) {
+                html += `<div style="margin-bottom: 10px; color: #00bcd4;">Found ${sections.length} planned sections</div>`;
+                sections.forEach((sec, i) => {
+                    html += `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #00bcd4;">
+                        <div style="color: #00bcd4; font-weight: 600; margin-bottom: 5px;">${sec.type || sec.section_type || 'Section'} ${i + 1}</div>
+                        ${sec.title ? `<div style="font-size: 0.9rem; margin-bottom: 5px;">${escapeHtml(sec.title)}</div>` : ''}
+                        ${sec.goal ? `<div style="color: #888; font-size: 0.8rem;">Goal: ${escapeHtml(sec.goal)}</div>` : ''}
+                    </div>`;
+                });
+            } else {
+                html += `<pre style="font-family: monospace; font-size: 0.75rem; white-space: pre-wrap;">${escapeHtml(JSON.stringify(content, null, 2))}</pre>`;
+            }
+            return html;
+        }
+
+        function renderRenderPrompts(content) {
+            let html = '';
+            const prompts = content.prompts || content;
+            if (Array.isArray(prompts)) {
+                html += `<div style="margin-bottom: 10px; color: #9c27b0;">Found ${prompts.length} render prompts</div>`;
+                prompts.forEach((p, i) => {
+                    const renderer = p.renderer || 'unknown';
+                    const rendererColor = renderer === 'manim' ? '#ff9800' : renderer === 'wan' || renderer === 'video' ? '#e91e63' : '#888';
+                    html += `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${rendererColor};">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="color: #888; font-size: 0.75rem;">Section ${p.section_id || '?'} Beat ${p.beat_index ?? '?'}</span>
+                            <span style="color: ${rendererColor}; font-size: 0.75rem; font-weight: 600;">${renderer.toUpperCase()}</span>
+                        </div>
+                        <pre style="font-size: 0.8rem; white-space: pre-wrap; margin: 0;">${escapeHtml(p.prompt || JSON.stringify(p, null, 2))}</pre>
+                    </div>`;
+                });
+            } else {
+                html += `<pre style="font-family: monospace; font-size: 0.75rem; white-space: pre-wrap;">${escapeHtml(JSON.stringify(content, null, 2))}</pre>`;
+            }
+            return html;
+        }
+
+        function escapeHtml(text) {
+            if (typeof text !== 'string') text = String(text);
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function closeLlmOutputsModal() {
+            document.getElementById('llmOutputsModal').style.display = 'none';
+            currentLlmJobId = null;
+        }
+
+        loadJobHistory();
+
+        // Auto-poll for avatar status disabled by user request
+        // setInterval(checkAllRunningAvatarJobs, 10000);
+
+        function checkAllRunningAvatarJobs() {
+            const buttons = document.querySelectorAll('button[onclick^="generateAvatar"]');
+            buttons.forEach(btn => {
+                const match = btn.getAttribute('onclick').match(/'([^']+)'/);
+                if (match) {
+                    const jobId = match[1];
+                    // Only check if not already polling and not completed/failed
+                    if (!btn.dataset.polling && !btn.textContent.includes("Ready!") && !btn.textContent.includes("Avatars Ready")) {
+                        fetch(`/job/${jobId}/avatar_status`)
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.state === 'processing' || data.state === 'queued') {
+                                    pollAvatarStatus(jobId, btn);
+                                } else if (data.state === 'completed') {
+                                    btn.textContent = "Avatars Ready!";
+                                    btn.style.background = "#4caf50";
+                                }
+                            })
+                            .catch(() => { });
+                    }
+                }
+            });
+        }
+        function openRetryForSection(jobId, phase, sectionId) {
+            currentRetryJobId = jobId;
+            document.getElementById('retryPhaseJobId').textContent = jobId;
+            document.getElementById('retryPhaseModal').style.display = 'flex';
+            document.getElementById('retryPhaseSelect').value = phase;
+            document.getElementById('retrySectionIds').value = sectionId;
+        }
+
+        // Review Modal Functions
+        let currentReviewJobId = null;
+        let reviewSectionsData = [];
+
+        async function showReviewModal(jobId) {
+            currentReviewJobId = jobId;
+            document.getElementById('reviewJobId').textContent = jobId;
+            document.getElementById('reviewModal').style.display = 'flex';
+
+            // Load presentation data (User Requested: Static Fetch + Client-side Transform)
+            try {
+                // FIXED: Fetch raw JSON directly as requested
+                // const response = await fetch(`/job/${jobId}/presentation_for_review`);
+                const response = await fetch(`/player/jobs/${jobId}/presentation.json`);
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load presentation.json (Status ${response.status})`);
+                }
+
+                const rawPresentation = await response.json();
+
+                // Client-side transformation to match Review UI expected format
+                // (Replicates logic from app.py:get_presentation_for_review)
+                const sections = (rawPresentation.sections || []).map(section => {
+                    const content = {
+                        bullet_items: [],
+                        quiz_data: section.quiz_data || null,
+                        flashcards: section.flashcards || [],
+                        images: [],
+                        explanation_plan: "",
+                        visual_beats: []
+                    };
+
+                    // Narration Text
+                    const segments = section.narration?.segments || [];
+                    const narration_text = segments.map(s => s.text || "").join(" ");
+
+                    // Explanation Plan
+                    if (section.explanation_plan) {
+                        content.explanation_plan = typeof section.explanation_plan === 'object' ?
+                            JSON.stringify(section.explanation_plan, null, 2) : String(section.explanation_plan);
+                    }
+
+                    // Visual Beats & Images logic
+                    const seenImageIds = new Set();
+
+                    // 1. From Segments (Legacy)
+                    segments.forEach(seg => {
+                        const vc = seg.visual_content || {};
+                        if (vc.items) content.bullet_items.push(...vc.items);
+                        if (vc.image_id && !seenImageIds.has(vc.image_id)) {
+                            seenImageIds.add(vc.image_id);
+                            content.images.push({ image_id: vc.image_id, description: vc.verbatim_content || "" });
+                        }
+                    });
+
+                    // 2. From Visual Beats (Primary)
+                    (section.visual_beats || []).forEach(b => {
+                        const desc = b.description || b.display_text || "";
+                        const beatData = { description: desc };
+                        if (b.video_asset) beatData.video_asset = b.video_asset;
+
+                        if (desc || b.video_asset) content.visual_beats.push(beatData);
+
+                        if (b.image_id && !seenImageIds.has(b.image_id)) {
+                            seenImageIds.add(b.image_id);
+                            content.images.push({ image_id: b.image_id, description: desc });
+                        }
+
+                        if (b.visual_type === 'bullet_list' && content.bullet_items.length === 0 && desc) {
+                            content.bullet_items.push(desc);
+                        }
+                    });
+
+                    return {
+                        section_id: section.section_id,
+                        section_type: section.section_type,
+                        title: section.title,
+                        narration_text: narration_text,
+                        content: content
+                    };
+                });
+
+                reviewSectionsData = sections;
+                renderReviewSections(sections);
+
+            } catch (err) {
+                alert('Error loading presentation: ' + err.message);
+                closeReviewModal();
+            }
+        }
+
+        function renderReviewSections(sections) {
+            const container = document.getElementById('reviewSectionsList');
+
+            container.innerHTML = sections.map((section, idx) => {
+                const content = section.content || {};
+                let contentHtml = '';
+
+                // Render Explanation Plan
+                if (content.explanation_plan) {
+                    contentHtml += `
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #ffa726; font-size: 0.9rem; margin-bottom: 5px; font-weight: 600;">📋 Explanation Plan:</label>
+                            <textarea id="plan_${section.section_id}" 
+                                style="width: 100%; min-height: 60px; padding: 10px; border: 1px solid rgba(255,167,38,0.3); border-radius: 6px; background: rgba(255,167,38,0.05); color: #fff; font-family: inherit; font-size: 0.85rem;"
+                                placeholder="Edit explanation plan...">${escapeHtml(content.explanation_plan)}</textarea>
+                        </div>
+                    `;
+                }
+
+                // Render Visual Beats
+                if (content.visual_beats && content.visual_beats.length > 0) {
+                    contentHtml += `
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #9c27b0; font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">🎬 Visual Beats (${content.visual_beats.length}):</label>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                ${content.visual_beats.map((beat, beatIdx) => `
+                                    <div style="background: rgba(156,39,176,0.1); border-left: 3px solid #9c27b0; padding: 10px; border-radius: 4px;">
+                                        <div style="color: #888; font-size: 0.75rem; margin-bottom: 5px;">Beat ${beatIdx + 1}</div>
+                                        
+                                        ${beat.video_asset ? `
+                                            <div style="margin-bottom: 10px; text-align: center;">
+                                                <video controls 
+                                                    style="max-width: 100%; max-height: 200px; border-radius: 4px; border: 1px solid rgba(156,39,176,0.3);"
+                                                    src="/player/jobs/${currentReviewJobId}/${beat.video_asset}">
+                                                    Your browser does not support the video tag.
+                                                </video>
+                                                <div style="font-size: 0.7rem; color: #888; margin-top: 2px;">${escapeHtml(beat.video_asset)}</div>
+                                            </div>
+                                        ` : ''}
+
+                                        <textarea id="beat_${section.section_id}_${beatIdx}" 
+                                            style="width: 100%; min-height: 50px; padding: 8px; border: 1px solid rgba(156,39,176,0.3); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 0.85rem;"
+                                            placeholder="Edit beat description...">${escapeHtml(beat.description || '')}</textarea>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Render Bullet Items
+                if (content.bullet_items && content.bullet_items.length > 0) {
+                    contentHtml += `
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #4caf50; font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">📌 Learning Points (${content.bullet_items.length}):</label>
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                ${content.bullet_items.map((item, itemIdx) => `
+                                    <div style="display: flex; align-items: start; gap: 8px; background: rgba(76,175,80,0.05); padding: 8px; border-radius: 4px; border-left: 2px solid #4caf50;">
+                                        <span style="color: #4caf50; font-size: 1.2rem; line-height: 1;">•</span>
+                                        <input type="text" id="bullet_${section.section_id}_${itemIdx}" 
+                                            value="${escapeHtml(String(item))}"
+                                            style="flex: 1; padding: 6px 10px; border: 1px solid rgba(76,175,80,0.3); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 0.85rem;"
+                                            placeholder="Edit bullet point..." />
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Render Images
+                if (content.images && content.images.length > 0) {
+                    contentHtml += `
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #ff9800; font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">🖼️ Images (${content.images.length}):</label>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                ${content.images.map((img, imgIdx) => `
+                                    <div style="background: rgba(255,152,0,0.1); border-left: 3px solid #ff9800; padding: 12px; border-radius: 4px;">
+                                        <div style="color: #ff9800; font-size: 0.85rem; margin-bottom: 5px; font-weight: 600;">Image ID: ${escapeHtml(img.image_id)}</div>
+                                        <div style="margin-bottom: 10px; text-align: center;">
+                                            <img src="/player/jobs/${currentReviewJobId}/images/${img.image_id.replace('.jpg', '.png')}" 
+                                                 onerror="this.onerror=null; this.src='/player/jobs/${currentReviewJobId}/images/${img.image_id}'"
+                                                 style="max-width: 100%; max-height: 200px; border-radius: 4px; border: 1px solid rgba(255,152,0,0.3);" 
+                                                 alt="Image preview" />
+                                        </div>
+                                        <textarea id="img_desc_${section.section_id}_${imgIdx}" 
+                                            style="width: 100%; min-height: 50px; padding: 8px; border: 1px solid rgba(255,152,0,0.3); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 0.85rem;"
+                                            placeholder="Edit image description...">${escapeHtml(img.description || '')}</textarea>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Render Quiz Data
+                if (content.quiz_data) {
+                    const quiz = content.quiz_data;
+                    contentHtml += `
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #e91e63; font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">❓ Quiz Questions:</label>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                ${(quiz.questions || []).map((q, qIdx) => `
+                                    <div style="background: rgba(233,30,99,0.1); border-left: 3px solid #e91e63; padding: 12px; border-radius: 4px;">
+                                        <div style="color: #888; font-size: 0.75rem; margin-bottom: 5px;">Question ${qIdx + 1}</div>
+                                        <textarea id="quiz_q_${section.section_id}_${qIdx}" 
+                                            style="width: 100%; min-height: 50px; padding: 8px; border: 1px solid rgba(233,30,99,0.3); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 0.85rem; margin-bottom: 8px;"
+                                            placeholder="Edit question...">${escapeHtml(q.question || '')}</textarea>
+                                        
+                                        <div style="margin-left: 15px;">
+                                            <div style="color: #aaa; font-size: 0.8rem; margin-bottom: 5px;">Options:</div>
+                                            ${(q.options || []).map((opt, optIdx) => `
+                                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                                                    <input type="radio" name="quiz_correct_${section.section_id}_${qIdx}" 
+                                                        ${q.correct_answer === opt ? 'checked' : ''}
+                                                        id="quiz_correct_${section.section_id}_${qIdx}_${optIdx}"
+                                                        style="margin: 0;" />
+                                                    <input type="text" id="quiz_opt_${section.section_id}_${qIdx}_${optIdx}" 
+                                                        value="${escapeHtml(String(opt))}"
+                                                        style="flex: 1; padding: 6px 10px; border: 1px solid rgba(233,30,99,0.3); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 0.8rem;"
+                                                        placeholder="Edit option..." />
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                        
+                                        ${q.explanation ? `
+                                            <div style="margin-top: 8px;">
+                                                <label style="color: #aaa; font-size: 0.8rem;">Explanation:</label>
+                                                <textarea id="quiz_exp_${section.section_id}_${qIdx}" 
+                                                    style="width: 100%; min-height: 40px; padding: 6px; border: 1px solid rgba(233,30,99,0.3); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 0.8rem;"
+                                                    placeholder="Edit explanation...">${escapeHtml(q.explanation)}</textarea>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Render Flashcards
+                if (content.flashcards && content.flashcards.length > 0) {
+                    contentHtml += `
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #00bcd4; font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">🃏 Flashcards (${content.flashcards.length}):</label>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                ${content.flashcards.map((card, cardIdx) => `
+                                    <div style="background: rgba(0,188,212,0.1); border-left: 3px solid #00bcd4; padding: 12px; border-radius: 4px;">
+                                        <div style="color: #888; font-size: 0.75rem; margin-bottom: 5px;">Card ${cardIdx + 1}</div>
+                                        <div style="margin-bottom: 8px;">
+                                            <label style="color: #aaa; font-size: 0.8rem;">Front:</label>
+                                            <textarea id="flash_front_${section.section_id}_${cardIdx}" 
+                                                style="width: 100%; min-height: 40px; padding: 8px; border: 1px solid rgba(0,188,212,0.3); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 0.85rem;"
+                                                placeholder="Edit front...">${escapeHtml(card.front || '')}</textarea>
+                                        </div>
+                                        <div>
+                                            <label style="color: #aaa; font-size: 0.8rem;">Back:</label>
+                                            <textarea id="flash_back_${section.section_id}_${cardIdx}" 
+                                                style="width: 100%; min-height: 40px; padding: 8px; border: 1px solid rgba(0,188,212,0.3); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 0.85rem;"
+                                                placeholder="Edit back...">${escapeHtml(card.back || '')}</textarea>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                        <h4 style="color: #00d4ff; margin-bottom: 15px;">
+                            Section ${section.section_id}: ${section.title}
+                            <span style="font-size: 0.8rem; color: #888; margin-left: 10px;">(${section.section_type})</span>
+                        </h4>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #aaa; font-size: 0.9rem; margin-bottom: 5px; font-weight: 600;">🎙️ Narration Text:</label>
+                            <textarea id="narration_${section.section_id}" 
+                                style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 0.9rem;"
+                                placeholder="Edit narration text...">${section.narration_text || ''}</textarea>
+                        </div>
+                        
+                        ${contentHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function closeReviewModal() {
+            document.getElementById('reviewModal').style.display = 'none';
+            currentReviewJobId = null;
+            reviewSectionsData = [];
+        }
+
+        async function submitReview() {
+            if (!currentReviewJobId) return;
+
+            // Collect edits from all fields
+            const edits = reviewSectionsData.map(section => {
+                const content = section.content || {};
+                const edit = {
+                    section_id: section.section_id,
+                    narration_text: null,
+                    content: {}
+                };
+
+                // Narration text
+                const narrationEl = document.getElementById(`narration_${section.section_id}`);
+                if (narrationEl) {
+                    edit.narration_text = narrationEl.value;
+                }
+
+                // Explanation plan
+                const planEl = document.getElementById(`plan_${section.section_id}`);
+                if (planEl) {
+                    edit.content.explanation_plan = planEl.value;
+                }
+
+                // Visual beats
+                if (content.visual_beats && content.visual_beats.length > 0) {
+                    edit.content.visual_beats = content.visual_beats.map((beat, beatIdx) => {
+                        const beatEl = document.getElementById(`beat_${section.section_id}_${beatIdx}`);
+                        return {
+                            description: beatEl ? beatEl.value : beat.description
+                        };
+                    });
+                }
+
+                // Bullet items
+                if (content.bullet_items && content.bullet_items.length > 0) {
+                    edit.content.bullet_items = content.bullet_items.map((item, itemIdx) => {
+                        const bulletEl = document.getElementById(`bullet_${section.section_id}_${itemIdx}`);
+                        return bulletEl ? bulletEl.value : item;
+                    });
+                }
+
+                // Images
+                if (content.images && content.images.length > 0) {
+                    edit.content.images = content.images.map((img, imgIdx) => {
+                        const imgDescEl = document.getElementById(`img_desc_${section.section_id}_${imgIdx}`);
+                        return {
+                            image_id: img.image_id,
+                            description: imgDescEl ? imgDescEl.value : img.description
+                        };
+                    });
+                }
+
+                // Quiz data
+                if (content.quiz_data) {
+                    const quiz = content.quiz_data;
+                    edit.content.quiz_data = {
+                        questions: (quiz.questions || []).map((q, qIdx) => {
+                            const questionEl = document.getElementById(`quiz_q_${section.section_id}_${qIdx}`);
+                            const explanationEl = document.getElementById(`quiz_exp_${section.section_id}_${qIdx}`);
+
+                            // Collect options
+                            const options = (q.options || []).map((opt, optIdx) => {
+                                const optEl = document.getElementById(`quiz_opt_${section.section_id}_${qIdx}_${optIdx}`);
+                                return optEl ? optEl.value : opt;
+                            });
+
+                            // Determine correct answer from radio buttons
+                            let correctAnswer = q.correct_answer;
+                            for (let optIdx = 0; optIdx < options.length; optIdx++) {
+                                const radioEl = document.getElementById(`quiz_correct_${section.section_id}_${qIdx}_${optIdx}`);
+                                if (radioEl && radioEl.checked) {
+                                    correctAnswer = options[optIdx];
+                                    break;
+                                }
+                            }
+
+                            return {
+                                question: questionEl ? questionEl.value : q.question,
+                                options: options,
+                                correct_answer: correctAnswer,
+                                explanation: explanationEl ? explanationEl.value : q.explanation
+                            };
+                        })
+                    };
+                }
+
+                // Flashcards
+                if (content.flashcards && content.flashcards.length > 0) {
+                    edit.content.flashcards = content.flashcards.map((card, cardIdx) => {
+                        const frontEl = document.getElementById(`flash_front_${section.section_id}_${cardIdx}`);
+                        const backEl = document.getElementById(`flash_back_${section.section_id}_${cardIdx}`);
+                        return {
+                            front: frontEl ? frontEl.value : card.front,
+                            back: backEl ? backEl.value : card.back
+                        };
+                    });
+                }
+
+                return edit;
+            });
+
+            if (!confirm(`Submit edits for ${edits.length} section(s) and trigger regeneration?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/job/${currentReviewJobId}/submit_review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ edits })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error submitting review: ' + data.error);
+                    return;
+                }
+
+                alert(data.message || 'Review submitted successfully!');
+                closeReviewModal();
+                loadJobHistory(); // Refresh job list
+            } catch (err) {
+                alert('Error submitting review: ' + err.message);
+            }
+        }
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Lecture - No License Player</title>
+    <style>
+        /* --- 1. VISUAL POLISH (CSS ANIMATIONS) --- */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
+
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        #stage {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- 2. TEXT & POP-OUTS --- */
+        #content-layer {
+            z-index: 10;
+            width: 60%;
+            margin-right: 20%;
+            /* Make room for avatar */
+        }
+
+        .segment-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid transparent;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            opacity: 0.5;
+            transform: scale(0.95);
+            filter: blur(2px);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            /* Spring effect */
+        }
+
+        .segment-box.active {
+            opacity: 1;
+            transform: scale(1.05) translateX(20px);
+            filter: blur(0);
+            border-left-color: #60a5fa;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- 3. GPU AVATAR LAYER --- */
+        #avatar-layer {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 40%;
+            height: 50%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="stage">
+        <div id="content-layer">
+            <h1>Roller Coaster Physics</h1>
+            <div class="segment-box" id="seg-0">1. Potential Energy is highest at the top.</div>
+            <div class="segment-box" id="seg-1">2. Kinetic Energy takes over as you drop.</div>
+            <div class="segment-box" id="seg-2">3. Energy is conserved throughout the ride.</div>
+        </div>
+
+        <div id="avatar-layer">
+            <video id="source-vid" src="avatar.mp4" loop muted playsinline style="display:none"></video>
+            <canvas id="gpu-canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. THE GPU ENGINE (WebGL) ---
+        class WebGLChromaKey {
+            constructor(video, canvas) {
+                this.video = video;
+                this.canvas = canvas;
+                this.gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, alpha: true });
+                if (!this.gl) return console.error("WebGL failed");
+                this.init();
+            }
+
+            init() {
+                const gl = this.gl;
+                const vs = `attribute vec2 p; varying vec2 uv; void main(){ gl_Position=vec4(p,0,1); uv=p*0.5+0.5; uv.y=1.0-uv.y; }`;
+                const fs = `precision mediump float; uniform sampler2D tex; varying vec2 uv;
+                void main() {
+                    vec4 c = texture2D(tex, uv);
+                    float g = c.g; float rb = max(c.r, c.b);
+                    float mask = smoothstep(0.4, 0.48, g - rb); // TWEAK THESE NUMBERS FOR KEYING
+                    gl_FragColor = vec4(c.rgb, c.a * (1.0 - mask));
+                }`;
+
+                const program = this.createProgram(gl, vs, fs);
+                const buffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+                const loc = gl.getAttribLocation(program, "p");
+                gl.enableVertexAttribArray(loc);
+                gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+                this.texture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            }
+
+            render() {
+                if (this.video.paused || this.video.ended) return;
+                const gl = this.gl;
+                gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.video);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                requestAnimationFrame(() => this.render());
+            }
+
+            start() { this.render(); }
+
+            createProgram(gl, vs, fs) {
+                const p = gl.createProgram();
+                const add = (src, type) => {
+                    const s = gl.createShader(type);
+                    gl.shaderSource(s, src); gl.compileShader(s); gl.attachShader(p, s);
+                };
+                add(vs, gl.VERTEX_SHADER); add(fs, gl.FRAGMENT_SHADER);
+                gl.linkProgram(p); gl.useProgram(p);
+                return p;
+            }
+        }
+
+        // --- 2. MAIN LOGIC ---
+        window.onload = () => {
+            const video = document.getElementById('source-vid');
+            const canvas = document.getElementById('gpu-canvas');
+
+            // Start GPU Engine
+            const engine = new WebGLChromaKey(video, canvas);
+
+            // Simulate Playback Interaction
+            document.body.onclick = () => {
+                video.play();
+                engine.start();
+                simulateTextSync();
+            };
+
+            // Mock Text Animation (Replace with your timeupdate logic)
+            function simulateTextSync() {
+                let i = 0;
+                setInterval(() => {
+                    document.querySelectorAll('.segment-box').forEach(el => el.classList.remove('active'));
+                    const el = document.getElementById(`seg-${i}`);
+                    if (el) el.classList.add('active');
+                    i = (i + 1) % 3;
+                }, 2000);
+            }
+        };
+    </script>
+</body>
+
+</html>

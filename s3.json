@@ -1,0 +1,205 @@
+{
+  "section_id": 3,
+  "section_type": "content",
+  "title": "Trigonometric Ratios",
+  "renderer": "manim",
+  "decision_reason": "Manim is chosen to visually construct the trigonometric ratios on a triangle, which is more effective than a static image for explaining mathematical formulas.",
+  "avatar_layout": {
+    "visibility": "always",
+    "mode": "floating",
+    "position": "right",
+    "width_percent": 52
+  },
+  "narration": {
+    "full_text": "Trigonometry, at its core, is the study of the relationships between the sides and angles of a triangle. To understand these relationships, we always start with a special kind of triangle: the right-angled triangle. In a right-angled triangle, we name the sides in relation to a specific angle, let's call it angle A. The side opposite to angle A is the 'Opposite' side. The side next to angle A is the 'Adjacent' side. And the longest side, opposite the right angle, is always the 'Hypotenuse'. These three sides form the basis for all our trigonometric ratios. There are six main trigonometric ratios: Sine, Cosine, Tangent, Cosecant, Secant, and Cotangent. Let's see how they are defined. Sine of angle A, or sin A, is the ratio of the Opposite side to the Hypotenuse. Cosine of angle A, or cos A, is the ratio of the Adjacent side to the Hypotenuse. Finally, Tangent of angle A, or tan A, is the ratio of the Opposite side to the Adjacent side. A good way to remember this is the phrase SOH-CAH-TOA.",
+    "segments": [
+      {
+        "segment_id": 1,
+        "text": "Trigonometry, at its core, is the study of the relationships between the sides and angles of a triangle. To understand these relationships, we always start with a special kind of triangle: the right-angled triangle.",
+        "duration_seconds": 17.26,
+        "gesture_hint": "introduce",
+        "visual_content": {
+          "content_type": "text",
+          "display_format": null,
+          "items": [],
+          "verbatim_content": "Trigonometry is the study of relationships between the sides and angles of a triangle."
+        },
+        "display_directives": {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        "duration_estimate": 13.6,
+        "audio_file": "3_1.mp3",
+        "audio_path": "audio/3_1.mp3"
+      },
+      {
+        "segment_id": 2,
+        "text": "In a right-angled triangle, we name the sides in relation to a specific angle, let's call it angle A. The side opposite to angle A is the 'Opposite' side. The side next to angle A is the 'Adjacent' side. And the longest side, opposite the right angle, is always the 'Hypotenuse'.",
+        "duration_seconds": 25.89,
+        "gesture_hint": "explain",
+        "visual_content": {
+          "content_type": "diagram",
+          "display_format": null,
+          "items": [],
+          "verbatim_content": "A right-angled triangle with sides labeled Opposite, Adjacent, and Hypotenuse relative to angle A.",
+          "image_id": "8c378a184b5ae4d1605cb74d7b7a7e3f_img.jpg",
+          "image_path": "images/8c378a184b5ae4d1605cb74d7b7a7e3f_img.png"
+        },
+        "display_directives": {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        "duration_estimate": 20.4,
+        "audio_file": "3_2.mp3",
+        "audio_path": "audio/3_2.mp3"
+      },
+      {
+        "segment_id": 3,
+        "text": "These three sides form the basis for all our trigonometric ratios. There are six main trigonometric ratios: Sine, Cosine, Tangent, Cosecant, Secant, and Cotangent. Let's see how they are defined.",
+        "duration_seconds": 15.23,
+        "gesture_hint": "transition",
+        "visual_content": {
+          "content_type": "bullet_points",
+          "display_format": "bullets",
+          "items": [
+            "The Six Trigonometric Ratios:",
+            "* SinA",
+            "* CosA",
+            "* TanA",
+            "* CosecA",
+            "* SecA",
+            "* CotA"
+          ],
+          "verbatim_content": null
+        },
+        "display_directives": {
+          "text_layer": "show",
+          "visual_layer": "hide",
+          "avatar_layer": "show"
+        },
+        "duration_estimate": 12.0,
+        "audio_file": "3_3.mp3",
+        "audio_path": "audio/3_3.mp3"
+      },
+      {
+        "segment_id": 4,
+        "text": "Sine of angle A, or sin A, is the ratio of the Opposite side to the Hypotenuse. Cosine of angle A, or cos A, is the ratio of the Adjacent side to the Hypotenuse. Finally, Tangent of angle A, or tan A, is the ratio of the Opposite side to the Adjacent side. A good way to remember this is the phrase SOH-CAH-TOA.",
+        "duration_seconds": 31.98,
+        "gesture_hint": "explain",
+        "visual_content": {
+          "content_type": "equation",
+          "display_format": "latex",
+          "items": [],
+          "verbatim_content": null
+        },
+        "display_directives": {
+          "text_layer": "hide",
+          "visual_layer": "show",
+          "avatar_layer": "show"
+        },
+        "duration_estimate": 25.2,
+        "audio_file": "3_4.mp3",
+        "audio_path": "audio/3_4.mp3"
+      }
+    ],
+    "total_duration_seconds": 90.36
+  },
+  "visual_beats": [
+    {
+      "beat_id": "beat_1",
+      "segment_id": "seg_1",
+      "visual_beat_type": "text",
+      "description": "Trigonometry is the study of relationships between the sides and angles of a triangle.",
+      "source_block_ids": []
+    },
+    {
+      "beat_id": "beat_2",
+      "segment_id": "seg_2",
+      "visual_beat_type": "diagram",
+      "description": "A right-angled triangle with sides labeled Opposite, Adjacent, and Hypotenuse relative to angle A.",
+      "source_block_ids": [],
+      "image_id": "8c378a184b5ae4d1605cb74d7b7a7e3f_img.jpg",
+      "image_path": "images/8c378a184b5ae4d1605cb74d7b7a7e3f_img.png"
+    },
+    {
+      "beat_id": "beat_3",
+      "segment_id": "seg_3",
+      "visual_beat_type": "bullet_list",
+      "description": "The Six Trigonometric Ratios:\n* SinA\n* CosA\n* TanA\n* CosecA\n* SecA\n* CotA",
+      "source_block_ids": []
+    },
+    {
+      "beat_id": "beat_4",
+      "segment_id": "seg_4",
+      "visual_beat_type": "equation",
+      "description": "Defining the primary trigonometric ratios.",
+      "source_block_ids": []
+    }
+  ],
+  "display_directives": [
+    {
+      "text_layer": "show",
+      "visual_layer": "hide",
+      "avatar_layer": "show"
+    },
+    {
+      "text_layer": "hide",
+      "visual_layer": "show",
+      "avatar_layer": "show"
+    },
+    {
+      "text_layer": "show",
+      "visual_layer": "hide",
+      "avatar_layer": "show"
+    },
+    {
+      "text_layer": "hide",
+      "visual_layer": "show",
+      "avatar_layer": "show"
+    }
+  ],
+  "audio_path": "section_3.mp3",
+  "render_spec": {
+    "manim_scene_spec": {
+      "manim_code": "# Segment 1 (0.0-17.3s) - Introduction to Trigonometry\ntitle = Text(\"Trigonometry\", font_size=48).to_edge(UP)\nsubtitle = Text(\"The study of triangles\", font_size=36).next_to(title, DOWN)\n\ntriangle = Polygon(\n    [-2, -1, 0], [2, -1, 0], [-2, 2, 0],\n    color=WHITE, fill_opacity=0.2\n)\ntriangle.move_to(ORIGIN)\n\nself.play(Write(title), run_time=2)\nself.play(FadeIn(subtitle), run_time=2)\nself.wait(1.3)\nself.play(Create(triangle), run_time=3)\nself.wait(9)\n\n# Segment 2 (17.3-43.2s) - Labeling the right triangle\nright_angle = Square(side_length=0.4, color=WHITE)\nright_angle.next_to(triangle.get_vertices()[1], UL, buff=0)\n\nangle_A = Arc(\n    radius=0.5,\n    start_angle=PI,\n    angle=PI/3,\n    color=YELLOW\n).move_to(triangle.get_vertices()[0]).shift(RIGHT*0.1 + UP*0.1)\n\nangle_label = MathTex(\"A\", color=YELLOW).next_to(angle_A, UL, buff=0.1)\n\nopp_line = Line(triangle.get_vertices()[1], triangle.get_vertices()[2], color=RED)\nadj_line = Line(triangle.get_vertices()[0], triangle.get_vertices()[1], color=GREEN)\nhyp_line = Line(triangle.get_vertices()[0], triangle.get_vertices()[2], color=BLUE)\n\nopp_label = Text(\"Opposite\", color=RED, font_size=24).next_to(opp_line, RIGHT)\nadj_label = Text(\"Adjacent\", color=GREEN, font_size=24).next_to(adj_line, DOWN)\nhyp_label = Text(\"Hypotenuse\", color=BLUE, font_size=24).next_to(hyp_line, LEFT)\n\nself.play(\n    Create(right_angle),\n    Create(angle_A),\n    Write(angle_label),\n    run_time=3\n)\nself.play(\n    Create(opp_line),\n    Create(adj_line),\n    Create(hyp_line),\n    run_time=3\n)\nself.play(\n    Write(opp_label),\n    Write(adj_label),\n    Write(hyp_label),\n    run_time=4\n)\nself.wait(15.9)\n\n# Segment 3 (43.2-58.4s) - Introducing trig ratios\nratios = VGroup(\n    MathTex(r\"\\sin A\"),\n    MathTex(r\"\\cos A\"),\n    MathTex(r\"\\tan A\"),\n    MathTex(r\"\\csc A\"),\n    MathTex(r\"\\sec A\"),\n    MathTex(r\"\\cot A\")\n).arrange(DOWN, buff=0.5).to_edge(RIGHT)\n\nself.play(\n    FadeOut(title),\n    FadeOut(subtitle),\n    triangle.animate.scale(0.7).to_edge(LEFT),\n    run_time=2\n)\nself.play(\n    *[Write(ratio) for ratio in ratios],\n    run_time=5\n)\nself.wait(8.2)\n\n# Segment 4 (58.4-90.4s) - Primary ratios with SOH-CAH-TOA\nsin_def = MathTex(r\"\\sin A = \\frac{\\text{Opposite}}{\\text{Hypotenuse}}\", color=YELLOW)\ncos_def = MathTex(r\"\\cos A = \\frac{\\text{Adjacent}}{\\text{Hypotenuse}}\", color=YELLOW)\ntan_def = MathTex(r\"\\tan A = \\frac{\\text{Opposite}}{\\text{Adjacent}}\", color=YELLOW)\n\nsoh_cah_toa = Text(\"SOH-CAH-TOA\", color=YELLOW, font_size=36)\n\nformulas = VGroup(sin_def, cos_def, tan_def).arrange(DOWN, buff=0.5)\nformulas.next_to(ratios, LEFT, buff=1)\nsoh_cah_toa.next_to(formulas, DOWN, buff=1)\n\nself.play(Write(sin_def), run_time=3)\nself.play(Write(cos_def), run_time=3)\nself.play(Write(tan_def), run_time=3)\nself.play(Write(soh_cah_toa), run_time=3)\nself.wait(20)",
+      "code_type": "construct_body"
+    }
+  },
+  "explanation_plan": {
+    "visual_beats": [
+      {
+        "beat_id": "beat_1",
+        "segment_id": "seg_1",
+        "visual_beat_type": "text",
+        "description": "Trigonometry is the study of relationships between the sides and angles of a triangle.",
+        "source_block_ids": []
+      },
+      {
+        "beat_id": "beat_2",
+        "segment_id": "seg_2",
+        "visual_beat_type": "diagram",
+        "description": "A right-angled triangle with sides labeled Opposite, Adjacent, and Hypotenuse relative to angle A.",
+        "source_block_ids": [],
+        "image_id": "8c378a184b5ae4d1605cb74d7b7a7e3f_img.jpg",
+        "image_path": "images/8c378a184b5ae4d1605cb74d7b7a7e3f_img.png"
+      },
+      {
+        "beat_id": "beat_3",
+        "segment_id": "seg_3",
+        "visual_beat_type": "bullet_list",
+        "description": "The Six Trigonometric Ratios:\n* SinA\n* CosA\n* TanA\n* CosecA\n* SecA\n* CotA",
+        "source_block_ids": []
+      },
+      {
+        "beat_id": "beat_4",
+        "segment_id": "seg_4",
+        "visual_beat_type": "equation",
+        "description": "Defining the primary trigonometric ratios.",
+        "source_block_ids": []
+      }
+    ],
+    "v15_manim_code": "# Segment 1 (0.0-17.3s) - Introduction to Trigonometry\ntitle = Text(\"Trigonometry\", font_size=48).to_edge(UP)\nsubtitle = Text(\"The study of triangles\", font_size=36).next_to(title, DOWN)\n\ntriangle = Polygon(\n    [-2, -1, 0], [2, -1, 0], [-2, 2, 0],\n    color=WHITE, fill_opacity=0.2\n)\ntriangle.move_to(ORIGIN)\n\nself.play(Write(title), run_time=2)\nself.play(FadeIn(subtitle), run_time=2)\nself.wait(1.3)\nself.play(Create(triangle), run_time=3)\nself.wait(9)\n\n# Segment 2 (17.3-43.2s) - Labeling the right triangle\nright_angle = Square(side_length=0.4, color=WHITE)\nright_angle.next_to(triangle.get_vertices()[1], UL, buff=0)\n\nangle_A = Arc(\n    radius=0.5,\n    start_angle=PI,\n    angle=PI/3,\n    color=YELLOW\n).move_to(triangle.get_vertices()[0]).shift(RIGHT*0.1 + UP*0.1)\n\nangle_label = MathTex(\"A\", color=YELLOW).next_to(angle_A, UL, buff=0.1)\n\nopp_line = Line(triangle.get_vertices()[1], triangle.get_vertices()[2], color=RED)\nadj_line = Line(triangle.get_vertices()[0], triangle.get_vertices()[1], color=GREEN)\nhyp_line = Line(triangle.get_vertices()[0], triangle.get_vertices()[2], color=BLUE)\n\nopp_label = Text(\"Opposite\", color=RED, font_size=24).next_to(opp_line, RIGHT)\nadj_label = Text(\"Adjacent\", color=GREEN, font_size=24).next_to(adj_line, DOWN)\nhyp_label = Text(\"Hypotenuse\", color=BLUE, font_size=24).next_to(hyp_line, LEFT)\n\nself.play(\n    Create(right_angle),\n    Create(angle_A),\n    Write(angle_label),\n    run_time=3\n)\nself.play(\n    Create(opp_line),\n    Create(adj_line),\n    Create(hyp_line),\n    run_time=3\n)\nself.play(\n    Write(opp_label),\n    Write(adj_label),\n    Write(hyp_label),\n    run_time=4\n)\nself.wait(15.9)\n\n# Segment 3 (43.2-58.4s) - Introducing trig ratios\nratios = VGroup(\n    MathTex(r\"\\sin A\"),\n    MathTex(r\"\\cos A\"),\n    MathTex(r\"\\tan A\"),\n    MathTex(r\"\\csc A\"),\n    MathTex(r\"\\sec A\"),\n    MathTex(r\"\\cot A\")\n).arrange(DOWN, buff=0.5).to_edge(RIGHT)\n\nself.play(\n    FadeOut(title),\n    FadeOut(subtitle),\n    triangle.animate.scale(0.7).to_edge(LEFT),\n    run_time=2\n)\nself.play(\n    *[Write(ratio) for ratio in ratios],\n    run_time=5\n)\nself.wait(8.2)\n\n# Segment 4 (58.4-90.4s) - Primary ratios with SOH-CAH-TOA\nsin_def = MathTex(r\"\\sin A = \\frac{\\text{Opposite}}{\\text{Hypotenuse}}\", color=YELLOW)\ncos_def = MathTex(r\"\\cos A = \\frac{\\text{Adjacent}}{\\text{Hypotenuse}}\", color=YELLOW)\ntan_def = MathTex(r\"\\tan A = \\frac{\\text{Opposite}}{\\text{Adjacent}}\", color=YELLOW)\n\nsoh_cah_toa = Text(\"SOH-CAH-TOA\", color=YELLOW, font_size=36)\n\nformulas = VGroup(sin_def, cos_def, tan_def).arrange(DOWN, buff=0.5)\nformulas.next_to(ratios, LEFT, buff=1)\nsoh_cah_toa.next_to(formulas, DOWN, buff=1)\n\nself.play(Write(sin_def), run_time=3)\nself.play(Write(cos_def), run_time=3)\nself.play(Write(tan_def), run_time=3)\nself.play(Write(soh_cah_toa), run_time=3)\nself.wait(20)"
+  }
+}

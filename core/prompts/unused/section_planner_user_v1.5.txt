@@ -1,0 +1,31 @@
+Plan the sections for an educational video about:
+
+Subject: {subject}
+Grade Level: {grade}
+
+## CONTENT DENSITY ANALYSIS (from SmartChunker):
+{content_density_analysis}
+
+## RECOMMENDED SECTION GROUPINGS:
+{topic_grouping_hints}
+
+## SOURCE TOPICS FROM CHUNKER:
+{topics}
+
+## QUIZ QUESTIONS EXTRACTED FROM PDF:
+{quiz_questions}
+
+## INSTRUCTIONS:
+
+1. USE the recommended_content_sections from density analysis as your TARGET
+2. USE topic_grouping_hints to decide which topics go into which content section
+3. Create a section plan following the required order: intro → summary → content sections → [quiz if questions exist] → memory → recap
+4. Assign appropriate renderers based on content type
+5. Ensure all topics are covered by at least one content/example section
+6. Keep total duration reasonable (5-10 minutes)
+7. ONLY create a quiz section if quiz_questions array is non-empty
+
+CRITICAL: Your number of content sections MUST match recommended_content_sections (±1).
+If density analysis says 5 content sections, create 4-6 content sections.
+
+Output ONLY the JSON structure with your section plan.

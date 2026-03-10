@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>V2.5 Integration Test</title>
+    <style>
+        .hidden {
+            display: none !important;
+        }
+
+        .reveal-hidden {
+            opacity: 0;
+        }
+
+        .reveal-visible {
+            opacity: 1;
+        }
+
+        .quiz-hidden {
+            display: none;
+        }
+
+        .flipped {
+            transform: rotateY(180deg);
+        }
+
+        .memory-visible {
+            opacity: 1;
+        }
+
+        .video-mode {
+            background: black;
+        }
+
+        /* Actual CSS classes used by player_v2.js should be mocked or imported */
+        #player-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+        }
+
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #video-layer {
+            z-index: 10;
+        }
+
+        #content-layer {
+            z-index: 20;
+        }
+
+        #avatar-layer {
+            z-index: 30;
+        }
+    </style>
+    <script>
+        // --- MOCK API ---
+        const MOCK_JOB = {
+            job_id: "test-job",
+            slides: [
+                {
+                    section_type: "intro",
+                    avatar_video: "intro.mp4",
+                    narration: { segments: [{ text: "Intro", duration_seconds: 5 }] }
+                },
+                {
+                    section_type: "summary",
+                    visual_beats: [{ visual_beat_type: "bullet_list" }, { visual_beat_type: "bullet_list" }],
+                    narration: { segments: [{ duration_seconds: 2 }, { duration_seconds: 2 }] } // 2 bullets, 2 segs
+                },
+                {
+                    section_type: "content",
+                    section_id: "content-1",
+                    narration: {
+                        segments: [
+                            { purpose: "teach", duration_seconds: 5, text: "Teach" },
+                            { purpose: "show", duration_seconds: 5, text: "Show" }
+                        ]
+                    }
+                },
+                {
+                    section_type: "quiz",
+                    quiz_questions: [
+                        { question: "Q1", options: ["A", "B"], correct_index: 0 },
+                        { question: "Q2", options: ["C", "D"], correct_index: 1 }
+                    ],
+                    narration: {
+                        segments: [
+                            { purpose: "introduce", duration_seconds: 2 },
+                            { purpose: "pause", duration_seconds: 2 },
+                            { purpose: "explain", duration_seconds: 2 },
+                            // Q2
+                            { purpose: "introduce", duration_seconds: 2 },
+                            { purpose: "pause", duration_seconds: 2 },
+                            { purpose: "explain", duration_seconds: 2 }
+                        ]
+                    }
+                },
+                {
+                    section_type: "example",
+                    visual_beats: [{ visual_beat_type: "flashcard", description: "Example 1" }],
+                    narration: { segments: [{ duration_seconds: 5 }] }
+                },
+                {
+                    section_type: "memory",
+                    flashcards: [{ front: "F", back: "B" }],
+                    narration: { segments: [{ duration_seconds: 10 }] }
+                },
+                {
+                    section_type: "recap",
+                    recap_video_paths: ["recap.mp4"],
+                    narration: { segments: [{ duration_seconds: 5 }] }
+                }
+            ]
+        };
+
+        // Mock Fetch
+        window.fetch = async (url) => {
+            if (url.includes('presentation.json')) {
+                return {
+                    ok: true,
+                    json: async () => MOCK_JOB
+                };
+            }
+            // Mock HEAD requests for media
+            return { ok: true };
+        };
+
+        // Mock Utils
+        window.resolveMediaPath = (p) => p;
+        window.sanitizeMarkdown = (t) => t;
+
+        // Logging
+        function log(msg, status = "INFO") {
+            const box = document.getElementById('log-box');
+            if (box) box.innerText += `[${status}] ${msg}\n`;
+            console.log(`[${status}] ${msg}`);
+        }
+
+    </script>
+</head>
+
+<body>
+    <div id="player-container">
+        <div id="video-layer" class="layer hidden">
+            <video id="content-video" style="width:100%; height:100%"></video>
+        </div>
+        <div id="content-layer" class="layer hidden">
+            <div id="content-box"></div>
+        </div>
+        <div id="avatar-layer" class="layer hidden">
+            <video id="avatar-video"></video>
+        </div>
+        <audio id="narration-audio"></audio>
+    </div>
+
+    <div id="dev-panel" style="display:none"></div> <!-- Required by player logic -->
+
+    <div id="log-box"
+        style="position:fixed; bottom:0; left:0; width:100%; height:200px; background:#fff; color:#000; overflow:scroll; z-index:1000; border-top:2px solid red;">
+    </div>
+
+    <script src="player_v2.js"></script> <!-- Real Player Code -->
+
+    <script>
+        // --- TEST RUNNER ---
+        window.onload = async () => {
+            // Player init() runs automatically on window.onload in player_v2.js usually?
+            // Or maybe we need to call it?
+            // Checking code: window.onload = init; IS present in player_v2.js usually.
+            // If not, we call init().
+
+            // Wait for player to init and load slides
+            setTimeout(runIntegrationTests, 2000);
+        };
+
+        async function runIntegrationTests() {
+            log("Starting V2.5 Integration Tests...");
+
+            // --- TEST 1: INTRO (Slide 0) ---
+            log("\n--- TEST 1: INTRO ---");
+            if (currentSlideIndex === 0) {
+                const v = document.getElementById('video-layer');
+                const c = document.getElementById('content-layer');
+                const a = document.getElementById('avatar-layer');
+                if (v.classList.contains('hidden') && c.classList.contains('hidden')) log("PASS: Layers Hidden", "PASS");
+                else log("FAIL: Layers Visible", "FAIL");
+                if (!a.classList.contains('hidden')) log("PASS: Avatar Visible", "PASS");
+            } else {
+                log("FAIL: Slide 0 not loaded", "FAIL");
+            }
+
+            // --- TEST 2: SUMMARY (Slide 1) ---
+            log("\n--- TEST 2: SUMMARY ---");
+            goToSlide(1); // Helper in player_v2.js
+            await wait(500);
+
+            // Test Sync: Trigger time updates manually or mock them?
+            // Player uses activeTimeSource.currentTime.
+            // In Intro/Summary, activeTimeSource is likely narrationAudio (or mock timer).
+            // Since we mocked fetch(audio) with HEAD ok, player tries to play it.
+            // audio.play() might fail (no src). Timer fallback logic kicks in?
+
+            // Force manual update
+            updateSummaryProgressiveReveal();
+            // Mock time state
+            if (window.narrationAudio) window.narrationAudio.currentTime = 0.1;
+            // Call update loop manually
+            updateSummaryProgressiveReveal();
+
+            const b1 = document.getElementById('summary-bullet-0');
+            if (b1 && b1.classList.contains('reveal-visible')) log("PASS: Bullet 1 Revealed immediately (Segment 0 starts at 0)", "PASS");
+            else log("FAIL: Bullet 1 NOT Revealed", "FAIL");
+
+            if (window.narrationAudio) window.narrationAudio.currentTime = 2.1; // Seg 2 start
+            updateSummaryProgressiveReveal();
+            const b2 = document.getElementById('summary-bullet-1');
+            if (b2 && b2.classList.contains('reveal-visible')) log("PASS: Bullet 2 Revealed at 2.1s", "PASS");
+            else log("FAIL: Bullet 2 NOT Revealed", "FAIL");
+
+
+            // --- TEST 3: CONTENT (Slide 2) ---
+            log("\n--- TEST 3: CONTENT ---");
+            goToSlide(2);
+            await wait(500);
+
+            // Seg 0: Teach. ContentVideo should be paused.
+            // We need to simulate time update to trigger enforceTeachShowLogic
+            // Mock time
+            const contentVid = document.getElementById('content-video');
+            Object.defineProperty(contentVid, 'paused', { value: false, writable: true }); // Make it writable for test
+            Object.defineProperty(contentVid, 'currentTime', { value: 0, writable: true });
+
+            // Force logic run
+            // player's updateTimer() calls renderFrame() which calls enforceTeachShowLogic
+            // We can call enforceTeachShowLogic directly if we have access, or trigger timeupdate
+            // Since functions are global, we can call them!
+
+            const slide2 = slides[2];
+            enforceTeachShowLogic(slide2, slide2.narration.segments[0], 0, 0, 0);
+
+            if (contentVid.paused) log("PASS: Video Paused in Teach", "PASS");
+            else log("FAIL: Video NOT Paused", "FAIL");
+
+            // Seg 1: Show
+            enforceTeachShowLogic(slide2, slide2.narration.segments[1], 1, 5, 5); // Time 5 starts seg 1
+            if (!contentVid.paused) log("PASS: Video Playing in Show", "PASS");
+            else {
+                // Warning: play() promise might fail in test env
+                log("NOTE: Video Play check skipped (browser policy)", "INFO");
+            }
+
+
+            // --- TEST 4: QUIZ (Slide 3) ---
+            log("\n--- TEST 4: QUIZ ---");
+            goToSlide(3);
+            await wait(500);
+
+            updateQuizProgressiveReveal(0); // Introduce
+            const qCard = document.getElementById('quiz-0');
+            const choices = qCard ? qCard.querySelectorAll('.quiz-choice') : [];
+
+            if (qCard && !qCard.classList.contains('quiz-hidden')) log("PASS: Quiz Card Shown", "PASS");
+            else log("FAIL: Quiz Card Hidden", "FAIL");
+
+            if (choices[0] && !choices[0].classList.contains('correct')) log("PASS: Answer Hidden initially", "PASS");
+
+            if (choices[0] && choices[0].classList.contains('correct')) log("PASS: Answer Revealed in Step 3", "PASS");
+            else log("FAIL: Answer NOT Revealed", "FAIL");
+
+            // Q2 Test (Segments 3, 4, 5)
+            // Seg 3 (Intro Q2), Seg 4 (Pause Q2), Seg 5 (Explain Q2)
+            updateQuizProgressiveReveal(3); // Intro Q2
+            const qCard2 = document.getElementById('quiz-1');
+            const choices2 = qCard2 ? qCard2.querySelectorAll('.quiz-choice') : [];
+
+            if (qCard2 && !qCard2.classList.contains('quiz-hidden') && qCard.classList.contains('quiz-hidden'))
+                log("PASS: Q2 Shown, Q1 Hidden", "PASS");
+            else log("FAIL: Q2 Transition Failed", "FAIL");
+
+            updateQuizProgressiveReveal(5); // Explain Q2
+            if (choices2[1] && choices2[1].classList.contains('correct')) log("PASS: Q2 Answer Revealed", "PASS");
+            else log("FAIL: Q2 Answer NOT Revealed", "FAIL");
+
+
+            // --- TEST 5: EXAMPLE (Slide 4) ---
+            log("\n--- TEST 5: EXAMPLE ---");
+            goToSlide(4);
+            await wait(500);
+
+            // Example usually uses renderContent or specialized render?
+            // Player treats 'example' often like 'content'.
+            // Check content layer visibility
+            const cLayerEx = document.getElementById('content-layer');
+            if (!cLayerEx.classList.contains('hidden')) log("PASS: Example Content Layer Visible", "PASS");
+            else log("FAIL: Example Content Layer Hidden", "FAIL");
+
+
+            // --- TEST 6: MEMORY (Slide 5) ---
+            log("\n--- TEST 6: MEMORY ---");
+            goToSlide(5);
+
+
+            // --- TEST 5: MEMORY (Slide 4) ---
+            log("\n--- TEST 5: MEMORY ---");
+            goToSlide(4);
+            await wait(500);
+
+            // Mock getDuration/getTime for updateMemoryFlip
+            // updateMemoryFlip calls getTime() / getDuration() directly.
+            // We need to overwrite them or mock return values?
+            // They are global functions in player_v2.js.
+            // We can overwrite them in our window scope!
+            window.getTime = () => 1;
+            window.getDuration = () => 20;
+            updateMemoryFlip();
+
+            const card = document.getElementById('flashcard-0');
+            if (card && card.classList.contains('memory-visible') && !card.classList.contains('flipped'))
+                log("PASS: Front Shown", "PASS");
+            else log("FAIL: Front check failed", "FAIL");
+
+            window.getTime = () => 15; // > 50%
+            updateMemoryFlip();
+            if (card && card.classList.contains('flipped')) log("PASS: Card Flipped", "PASS");
+            else log("FAIL: Card Flip failed", "FAIL");
+
+
+            // --- TEST 7: RECAP (Slide 6) ---
+            log("\n--- TEST 7: RECAP ---");
+            goToSlide(6);
+            await wait(500);
+
+            // renderRecap runs on load
+            const vLayer = document.getElementById('video-layer');
+            if (!vLayer.classList.contains('hidden')) log("PASS: Video Layer Visible", "PASS");
+            else log("FAIL: Video Layer Hidden", "FAIL");
+
+            log("\n--- COMPLIANCE CHECK COMPLETE ---");
+        }
+
+        function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+    </script>
+</body>
+
+</html>

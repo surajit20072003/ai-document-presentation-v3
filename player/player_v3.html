@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>V3 Player</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg: #0d1117;
+            --surf: #161b22;
+            --surf2: #21262d;
+            --border: rgba(255, 255, 255, 0.07);
+            --w: #e6edf3;
+            --dim: rgba(230, 237, 243, 0.42);
+            --gold: #f6c44e;
+            --amber: #ff9f43;
+            --teal: #00d2b4;
+            --rose: #ff6b8a;
+            --sky: #79c0ff;
+            --lav: #b8a9ff;
+            --grn: #7ee787;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html,
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--w);
+            font-family: 'Sora', sans-serif
+        }
+
+        /* ── LAYOUT ── */
+        #app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column
+        }
+
+        #topbar {
+            height: 48px;
+            background: rgba(10, 14, 20, .97);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 12px;
+            flex-shrink: 0;
+            z-index: 20;
+            display: none
+        }
+
+        #main {
+            flex: 1;
+            position: relative;
+            overflow: hidden
+        }
+
+        #botbar {
+            height: 60px;
+            background: rgba(8, 12, 18, .98);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 18px;
+            gap: 12px;
+            flex-shrink: 0;
+            z-index: 20;
+            display: none
+        }
+
+        /* ── TOPBAR ── */
+        .tb-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase
+        }
+
+        .tb-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--w)
+        }
+
+        .tb-sec-name {
+            font-size: 14px;
+            color: var(--dim);
+            margin-left: 4px
+        }
+
+        .tb-dots {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+            align-items: center
+        }
+
+        .tb-dot {
+            height: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all .35s;
+            background: rgba(255, 255, 255, .1)
+        }
+
+        .tb-dot.past {
+            background: rgba(246, 196, 78, .35);
+            width: 16px
+        }
+
+        .tb-dot.cur {
+            background: var(--gold);
+            width: 28px
+        }
+
+        .tb-dot.future {
+            width: 16px
+        }
+
+        /* ── BADGE COLOURS ── */
+        .badge-intro {
+            background: rgba(246, 196, 78, .15);
+            color: var(--gold);
+            border: 1px solid rgba(246, 196, 78, .25)
+        }
+
+        .badge-summary {
+            background: rgba(121, 192, 255, .12);
+            color: var(--sky);
+            border: 1px solid rgba(121, 192, 255, .2)
+        }
+
+        .badge-content {
+            background: rgba(0, 210, 180, .12);
+            color: var(--teal);
+            border: 1px solid rgba(0, 210, 180, .2)
+        }
+
+        .badge-example {
+            background: rgba(184, 169, 255, .12);
+            color: var(--lav);
+            border: 1px solid rgba(184, 169, 255, .2)
+        }
+
+        .badge-memory {
+            background: rgba(255, 107, 138, .12);
+            color: var(--rose);
+            border: 1px solid rgba(255, 107, 138, .2)
+        }
+
+        .badge-recap {
+            background: rgba(126, 231, 135, .12);
+            color: var(--grn);
+            border: 1px solid rgba(126, 231, 135, .2)
+        }
+
+        .badge-quiz {
+            background: rgba(255, 107, 138, .12);
+            color: var(--rose);
+            border: 1px solid rgba(255, 107, 138, .2)
+        }
+
+        /* ── LAYER STACK ── */
+        /* Layer 1: WAN/LTX video — renderer:video */
+        #wan-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            display: none
+        }
+
+        #wan-layer.on {
+            display: block
+        }
+
+        #wan-vid {
+            width: 100%;
+            height: 100%;
+            object-fit: cover
+        }
+
+        /* Layer 2: Three.js div — renderer:threejs */
+        #threejs-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            display: none
+        }
+
+        #threejs-layer.on {
+            display: block;
+            z-index: 4
+                /* above .scene (z:3) so WebGL canvas is not blocked by HTML layer */
+        }
+
+        /* Subtitles */
+        #subtitle-overlay {
+            position: absolute;
+            bottom: 48px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 800px;
+            text-align: center;
+            pointer-events: none;
+            z-index: 50;
+            display: none;
+        }
+
+        .subtitle-text {
+            display: inline-block;
+            background: transparent;
+            color: #ffffff;
+            font-size: 20px;
+            line-height: 1.55;
+            padding: 0 8px;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            /* Strong multi-layer shadow makes text readable on any background */
+            text-shadow:
+                0 0 6px rgba(0, 0, 0, 0.95),
+                0 0 12px rgba(0, 0, 0, 0.9),
+                1px 1px 3px rgba(0, 0, 0, 1),
+                -1px -1px 3px rgba(0, 0, 0, 1);
+        }
+
+        /* Layer 3: Scene content (intro/summary/memory/quiz etc.) */
+        .scene {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .55s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px;
+            gap: 18px
+        }
+
+        .scene.on {
+            opacity: 1;
+            pointer-events: all
+        }
+
+        /* ── LOADING / ERROR ── */
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            background: var(--bg)
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(246, 196, 78, .2);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin .8s linear infinite
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .loading-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--dim);
+            letter-spacing: .08em
+        }
+
+        #error-screen {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: var(--bg)
+        }
+
+        .error-icon {
+            font-size: 48px
+        }
+
+        .error-msg {
+            font-size: 14px;
+            color: var(--rose);
+            text-align: center;
+            max-width: 400px;
+            line-height: 1.6
+        }
+
+        /* ── SCENES ── */
+        /* INTRO */
+        .intro-icon {
+            font-size: 56px;
+            animation: floatPulse 3s ease infinite
+        }
+
+        @keyframes floatPulse {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1)
+            }
+
+            50% {
+                transform: translateY(-8px) scale(1.05)
+            }
+        }
+
+        .intro-title {
+            font-family: 'Caveat', cursive;
+            font-size: 54px;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--amber) 40%, var(--sky) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: riseIn .8s .2s both
+        }
+
+        .intro-sub {
+            font-size: 15px;
+            color: var(--dim);
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.6;
+            animation: riseIn .8s .5s both
+        }
+
+        .intro-chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: riseIn .8s .8s both
+        }
+
+        .chip {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid
+        }
+
+        @keyframes riseIn {
+            from {
+                opacity: 0;
+                transform: translateY(18px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* SUMMARY bullets */
+        .sum-hd {
+            font-family: 'Caveat', cursive;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gold);
+            width: 100%
+        }
+
+        .sbullet {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: var(--surf);
+            border: 1px solid var(--border);
+            width: 100%;
+            opacity: 0;
+            transform: translateX(-16px);
+            transition: all .5s
+        }
+
+        .sbullet.show {
+            opacity: 1;
+            transform: translateX(0)
+        }
+
+        .sbullet-n {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), var(--amber));
+            color: #120d00;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0
+        }
+
+        .sbullet-t {
+            font-size: 14px;
+            color: var(--w);
+            line-height: 1.5
+        }
+
+        /* MEMORY flashcards */
+        .mem-hd {
+            font-family: 'Caveat', cursive;
+            font-size: 28px;
+            color: var(--rose)
+        }
+
+        .card-scene {
+            perspective: 800px;
+            width: 100%;
+            max-width: 460px
+        }
+
+        .card-3d {
+            width: 100%;
+            height: 200px;
+            transform-style: preserve-3d;
+            transition: transform .55s cubic-bezier(.4, 0, .2, 1);
+            cursor: pointer;
+            position: relative
+        }
+
+        .card-3d.flipped {
+            transform: rotateY(180deg)
+        }
+
+        .card-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, var(--surf) 0%, var(--surf2) 100%);
+            border: 1px solid var(--border)
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, rgba(255, 107, 138, .12), rgba(0, 210, 180, .08));
+            border: 1px solid rgba(255, 107, 138, .2);
+            transform: rotateY(180deg)
+        }
+
+        .card-q {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--w);
+            line-height: 1.5
+        }
+
+        .card-hint {
+            font-size: 11px;
+            color: var(--dim);
+            margin-top: 12px
+        }
+
+        .card-a {
+            font-size: 16px;
+            color: var(--w);
+            line-height: 1.6
+        }
+
+        .card-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 12px
+        }
+
+        .card-pips {
+            display: flex;
+            gap: 6px
+        }
+
+        .cpip {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .15);
+            cursor: pointer;
+            transition: all .25s
+        }
+
+        .cpip.on {
+            background: var(--rose);
+            transform: scale(1.3)
+        }
+
+        .cpip.done {
+            background: rgba(255, 255, 255, .4)
+        }
+
+        .card-ctr {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--dim);
+            text-align: center
+        }
+
+
+        /* QUIZ */
+        .quiz-card {
+            background: var(--surf);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            width: 100%;
+            max-width: 540px
+        }
+
+        .quiz-q {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--w);
+            margin-bottom: 20px;
+            line-height: 1.5;
+            text-align: center
+        }
+
+        .quiz-opts {
+            display: flex;
+            flex-direction: column;
+            gap: 10px
+        }
+
+        .quiz-opt {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            background: var(--surf2);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all .25s
+        }
+
+        .quiz-opt:hover {
+            border-color: var(--sky);
+            background: rgba(121, 192, 255, .08)
+        }
+
+        .quiz-opt.correct {
+            border-color: var(--grn) !important;
+            background: rgba(126, 231, 135, .12) !important
+        }
+
+        .quiz-opt.wrong {
+            border-color: var(--rose) !important;
+            background: rgba(255, 107, 138, .08) !important
+        }
+
+        .quiz-opt-lbl {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            background: rgba(255, 255, 255, .06);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0
+        }
+
+        .quiz-explanation {
+            font-size: 13px;
+            color: var(--dim);
+            line-height: 1.6;
+            text-align: center;
+            margin-top: 16px;
+            opacity: 0;
+            transition: opacity .4s
+        }
+
+        .quiz-explanation.show {
+            opacity: 1
+        }
+
+        /* ── AVATAR OVERLAY ── */
+        #av-overlay {
+            position: fixed;
+            bottom: 68px;
+            right: 16px;
+            z-index: 50;
+            width: 160px;
+            height: 284px;
+            /* 9:16 ratio */
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+            border: 1px solid rgba(255, 255, 255, .1);
+            transition: all .3s;
+            cursor: pointer;
+            display: none
+        }
+
+        #av-overlay:hover {
+            width: 200px;
+            height: 356px;
+            /* keep 9:16 on hover */
+            /* keep ratio on hover */
+        }
+
+        #av-overlay video {
+            width: 100%;
+            display: block;
+            object-fit: cover
+        }
+
+        #av-overlay .av-tag {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255, 255, 255, .6);
+            background: rgba(0, 0, 0, .55);
+            padding: 3px
+        }
+
+        #av-narr {
+            font-size: 10px;
+            line-height: 1.55;
+            color: rgba(255, 255, 255, .55);
+            padding: 8px;
+            background: rgba(0, 0, 0, .4);
+            border-top: 1px solid rgba(255, 255, 255, .08);
+            display: none
+        }
+
+        #av-overlay:hover #av-narr {
+            display: block
+        }
+
+        /* ── BOTTOM BAR ── */
+        .nb {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, .09);
+            background: rgba(255, 255, 255, .04);
+            color: var(--w);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .2s;
+            flex-shrink: 0
+        }
+
+        .nb:hover {
+            border-color: var(--gold);
+            color: var(--gold)
+        }
+
+        .pb {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--gold), var(--amber));
+            color: #1a1000;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(246, 196, 78, .25);
+            transition: all .2s
+        }
+
+        .pb:hover {
+            transform: scale(1.06)
+        }
+
+        .prog-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 0
+        }
+
+        .prog-meta {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: rgba(255, 255, 255, .3)
+        }
+
+        .prog-track {
+            height: 3px;
+            background: rgba(255, 255, 255, .06);
+            border-radius: 2px;
+            overflow: hidden
+        }
+
+        .prog-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), var(--amber));
+            border-radius: 2px;
+            transition: width .4s
+        }
+
+        .seg-dots {
+            display: flex;
+            gap: 5px;
+            margin-top: 2px
+        }
+
+        /* ── GESTURE HUD ── */
+        #gesture-hud {
+            position: fixed;
+            top: 58px;
+            left: 12px;
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            pointer-events: none
+        }
+
+        #g-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .14);
+            border: 1px solid rgba(255, 255, 255, .18);
+            transition: background .3s
+        }
+
+        #g-dot.active {
+            background: var(--teal)
+        }
+
+        #g-dot.denied {
+            background: var(--rose)
+        }
+
+        #g-lbl {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--gold);
+            background: rgba(0, 0, 0, .65);
+            padding: 3px 8px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity .25s;
+            white-space: nowrap
+        }
+
+        #g-lbl.show {
+            opacity: 1
+        }
+
+        #g-zoom {
+            font-size: 9px;
+            color: rgba(230, 237, 243, .38);
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0, 0, 0, .4);
+            padding: 2px 6px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity .3s
+        }
+
+        #g-zoom.show {
+            opacity: 1
+        }
+
+        #cam-vid {
+            position: fixed;
+            bottom: -9999px;
+            left: -9999px;
+            width: 320px;
+            height: 240px
+        }
+    </style>
+    <!-- THREE.JS must load before any initScene() call -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- TF HandPose: async, gesture controls silently disabled if camera denied -->
+    <script>
+        (function () {
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js';
+            s.onload = function () {
+                var s2 = document.createElement('script');
+                s2.src = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js';
+                s2.onload = function () { window._handposeReady = true; if (window._initGestures) window._initGestures(); };
+                document.head.appendChild(s2);
+            };
+            document.head.appendChild(s);
+        })();
+    </script>
+</head>
+
+<body>
+    <div id="app">
+
+        <!-- LOADING -->
+        <div id="loading-screen">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading lesson...</div>
+        </div>
+
+        <!-- ERROR -->
+        <div id="error-screen">
+            <div class="error-icon">⚠️</div>
+            <div class="error-msg" id="error-msg">Could not load presentation.json</div>
+        </div>
+
+        <!-- TOP BAR -->
+        <div id="topbar">
+            <div class="tb-badge badge-intro" id="top-badge">INTRO</div>
+            <div class="tb-title" id="tb-title">Lesson</div>
+            <div class="tb-sec-name" id="tb-secname">/ Loading</div>
+            <div class="tb-dots" id="tb-dots"></div>
+        </div>
+
+        <!-- MAIN -->
+        <div id="main">
+            <!-- Layer 1: WAN/LTX video (renderer: "video") -->
+            <div id="wan-layer">
+                <video id="wan-vid" autoplay muted playsinline loop></video>
+            </div>
+            <!-- Layer 2: Three.js (renderer: "threejs") -->
+            <div id="threejs-layer"></div>
+            <!-- Layer 3: Scene content -->
+            <div id="scenes-container"></div>
+        </div>
+
+        <!-- GESTURE HUD -->
+        <div id="gesture-hud">
+            <div id="g-dot" title="Camera gesture control"></div>
+            <div id="g-lbl"></div>
+            <div id="g-zoom">Pinch to zoom</div>
+        </div>
+        <video id="cam-vid" autoplay playsinline muted></video>
+
+        <!-- INTERACTION HINT (GAP 4 — fades in at beat start, fades out after 3s) -->
+        <div id="interaction-hint" style="
+            position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+            background:rgba(0,0,0,0.60); color:#f6c44e;
+            font-family:'Caveat',cursive; font-size:1.35rem;
+            padding:7px 20px; border-radius:24px; border:1px solid rgba(246,196,78,0.3);
+            pointer-events:none; opacity:0; transition:opacity 0.4s ease;
+            z-index:55; white-space:nowrap;
+        "></div>
+
+        <!-- SUBTITLES OVERLAY -->
+        <div id="subtitle-overlay">
+            <div class="subtitle-text" id="subtitle-text"></div>
+        </div>
+
+        <!-- C1: QUIZ OVERLAY — fullscreen pre-baked branching quiz UI -->
+        <div id="quiz-overlay" style="
+            display:none; position:fixed; inset:0; z-index:52;
+            flex-direction:column; align-items:center; justify-content:center;
+            background:rgba(13,17,23,0.96); padding:28px;
+        ">
+            <!-- Question card -->
+            <div id="quiz-question-card" style="
+                max-width:640px; width:100%;
+                background:#161b22; border:1px solid rgba(255,255,255,0.08);
+                border-top:3px solid #f6c44e; border-radius:16px;
+                padding:24px 28px; margin-bottom:22px;
+            ">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(246,196,78,0.6);letter-spacing:.12em;margin-bottom:10px"
+                    id="quiz-q-label">QUESTION 1 / 1</div>
+                <div id="quiz-q-text" style="font-size:22px;line-height:1.65;color:#e6edf3"></div>
+            </div>
+            <!-- A/B/C/D option buttons -->
+            <div id="quiz-options"
+                style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px;width:100%;margin-bottom:20px">
+            </div>
+            <!-- Feedback/explanation strip -->
+            <div id="quiz-feedback" style="
+                max-width:640px; width:100%; padding:12px 18px; border-radius:10px;
+                font-size:13px; line-height:1.6; display:none;
+                border:1px solid rgba(255,255,255,0.07);
+            "></div>
+        </div>
+
+        <!-- AVATAR OVERLAY -->
+        <div id="av-overlay">
+            <video id="av-vid" autoplay playsinline
+                style="position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;"
+                crossOrigin="anonymous"></video>
+            <canvas id="av-canvas"
+                style="width:100%;height:100%;display:block;position:absolute;top:0;left:0;"></canvas>
+            <div class="av-tag" id="av-tag">Avatar</div>
+            <div id="av-narr"></div>
+        </div>
+
+        <!-- BOTTOM BAR -->
+        <div id="botbar">
+            <button class="nb" onclick="prevSection()" id="btn-prev" title="Previous Section">&#8592;</button>
+            <button class="pb" onclick="togglePlayPause()" id="play-pause-btn" title="Pause">&#10074;&#10074;</button>
+            <button class="nb" onclick="replaySection()" id="btn-replay" title="Replay Section">&#8634;</button>
+            <div class="prog-wrap">
+                <div class="prog-meta">
+                    <span id="bot-label">Loading</span>
+                    <span id="bot-ctr">0 / 0</span>
+                </div>
+                <div class="prog-track">
+                    <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+                </div>
+                <div class="seg-dots" id="seg-dots"></div>
+            </div>
+            <div class="tb-badge badge-intro" id="bot-badge" style="margin-left:auto">INTRO</div>
+            <button class="nb" onclick="nextSection()">&#8594;</button>
+        </div>
+
+    </div><!-- /app -->
+
+    <script>
+        // ══════════════════════════════════════════════════════════
+        // V3 PLAYER — Data-driven from presentation.json
+        // Layer 1: WAN video (renderer:video)
+        // Layer 2: Three.js (renderer:threejs)
+        // Layer 3: Structured HTML scenes (intro/summary/memory/quiz/recap)
+        // Avatar .mp4 = MASTER CLOCK — avatar.onended drives section advance
+        // ══════════════════════════════════════════════════════════
+
+        var SECTIONS = [];
+        var PRESENTATION = null;
+        var curSec = 0;
+        var timers = [];
+        var activeScene = null;    // current Three.js scene hooks
+        var loadedScripts = {};    // cache loaded .js paths
+
+        var BADGE_MAP = {
+            intro: { label: 'INTRO', cls: 'badge-intro' },
+            summary: { label: 'SUMMARY', cls: 'badge-summary' },
+            content: { label: 'CONTENT', cls: 'badge-content' },
+            example: { label: 'EXAMPLE', cls: 'badge-example' },
+            memory: { label: 'MEMORY', cls: 'badge-memory' },
+            recap: { label: 'RECAP', cls: 'badge-recap' },
+            quiz: { label: 'QUIZ', cls: 'badge-quiz' },
+        };
+
+        // ══════════════════════════════════════════════════════════
+        // BOOTSTRAP — fetch presentation.json
+        // ══════════════════════════════════════════════════════════
+        (function bootstrap() {
+            var params = new URLSearchParams(window.location.search);
+            var jobId = params.get('job') || params.get('job_id');
+            var jsonUrl = jobId
+                ? '/api/jobs/' + jobId + '/presentation.json'
+                : (params.get('data') || 'presentation.json');
+
+            fetch(jsonUrl)
+                .then(function (r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + jsonUrl);
+                    return r.json();
+                })
+                .then(function (data) {
+                    PRESENTATION = data;
+                    SECTIONS = data.sections || [];
+                    if (SECTIONS.length === 0) throw new Error('presentation.json has no sections');
+                    initPlayer();
+                })
+                .catch(function (err) {
+                    document.getElementById('loading-screen').style.display = 'none';
+                    var es = document.getElementById('error-screen');
+                    es.style.display = 'flex';
+                    document.getElementById('error-msg').textContent = String(err);
+                });
+        })();
+
+        // ══════════════════════════════════════════════════════════
+        // INIT
+        // ══════════════════════════════════════════════════════════
+        var avWebGL = null;
+        function initAvatarWebGL() {
+            var canvas = document.getElementById('av-canvas');
+            var video = document.getElementById('av-vid');
+            if (typeof THREE === 'undefined') return;
+
+            var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+            var overlay = document.getElementById('av-overlay');
+            var dpr = window.devicePixelRatio || 1;
+            renderer.setSize(overlay.offsetWidth, overlay.offsetHeight, false);
+            renderer.setPixelRatio(dpr);
+
+            var scene = new THREE.Scene();
+            var camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+            var texture = new THREE.VideoTexture(video);
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.format = THREE.RGBAFormat;
+
+            // Sample actual green from top-left corner of first video frame
+            var keyColor = new THREE.Color(0x00b140); // fallback: common avatar green
+            try {
+                var sampleCanvas = document.createElement('canvas');
+                sampleCanvas.width = 16; sampleCanvas.height = 16;
+                var sctx = sampleCanvas.getContext('2d');
+                sctx.drawImage(video, 0, 0, 16, 16);
+                var px = sctx.getImageData(2, 2, 1, 1).data; // sample top-left corner
+                if (px[1] > px[0] && px[1] > px[2]) {        // confirm it's greenish
+                    keyColor.setRGB(px[0] / 255, px[1] / 255, px[2] / 255);
+                }
+            } catch (e) { /* cross-origin fallback — use default */ }
+
+            var material = new THREE.ShaderMaterial({
+                uniforms: {
+                    map: { value: texture },
+                    keyColor: { value: keyColor },
+                    similarity: { value: 0.35 },   // looser — catches green spill
+                    smoothness: { value: 0.15 }    // soft edge
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+                `,
+                fragmentShader: `
+                    uniform sampler2D map;
+                    uniform vec3 keyColor;
+                    uniform float similarity;
+                    uniform float smoothness;
+                    varying vec2 vUv;
+                    void main() {
+                        vec4 videoColor = texture2D(map, vUv);
+                        float Y1 = 0.299 * keyColor.r + 0.587 * keyColor.g + 0.114 * keyColor.b;
+                        float Cr1 = keyColor.r - Y1;
+                        float Cb1 = keyColor.b - Y1;
+                        float Y2 = 0.299 * videoColor.r + 0.587 * videoColor.g + 0.114 * videoColor.b;
+                        float Cr2 = videoColor.r - Y2;
+                        float Cb2 = videoColor.b - Y2;
+                        float blend = distance(vec2(Cr2, Cb2), vec2(Cr1, Cb1));
+                        float alpha = smoothstep(similarity, similarity + smoothness, blend);
+                        gl_FragColor = vec4(videoColor.rgb * alpha, alpha);
+                    }
+                `,
+                transparent: true
+            });
+            var plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+            scene.add(plane);
+
+            avWebGL = { renderer: renderer, scene: scene, camera: camera };
+
+            function animate() {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', function () {
+                var overlay = document.getElementById('av-overlay');
+                var dpr = window.devicePixelRatio || 1;
+                renderer.setSize(overlay.offsetWidth, overlay.offsetHeight, false);
+                renderer.setPixelRatio(dpr);
+            });
+        }
+
+        function initPlayer() {
+            var title = PRESENTATION.title || (SECTIONS[0] && SECTIONS[0].title) || 'Lesson';
+            document.title = title + ' — V3';
+            document.getElementById('tb-title').textContent = title;
+            document.getElementById('av-tag').textContent =
+                (PRESENTATION.avatar_name || 'Priya') + ' · ' + (PRESENTATION.subject || 'Lesson');
+
+            buildTopDots();
+            buildScenes();
+
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('topbar').style.display = 'flex';
+            document.getElementById('botbar').style.display = 'flex';
+            document.getElementById('av-overlay').style.display = 'block';
+
+            if (typeof THREE !== 'undefined') {
+                var avVidEl = document.getElementById('av-vid');
+                if (avVidEl.readyState >= 2) {
+                    initAvatarWebGL();
+                } else {
+                    avVidEl.addEventListener('loadeddata', function () {
+                        initAvatarWebGL();
+                    }, { once: true });
+                }
+            }
+
+            loadSection(0);
+            window._initGestures && window._initGestures();
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // BUILD SCENE DOM
+        // ══════════════════════════════════════════════════════════
+        function buildTopDots() {
+            var c = document.getElementById('tb-dots');
+            SECTIONS.forEach(function (s, i) {
+                var d = document.createElement('div');
+                d.className = 'tb-dot future'; d.id = 'tbd' + i;
+                d.onclick = function () { loadSection(i); };
+                d.title = s.title || '';
+                c.appendChild(d);
+            });
+        }
+
+        function buildScenes() {
+            var container = document.getElementById('scenes-container');
+            SECTIONS.forEach(function (sec, i) {
+                var div = document.createElement('div');
+                div.className = 'scene' + (i === 0 ? ' on' : '');
+                div.id = 'scene-' + i;
+                div.innerHTML = buildSceneHTML(sec);
+                container.appendChild(div);
+            });
+        }
+
+        function buildSceneHTML(sec) {
+            var type = sec.section_type || sec.type || 'content';
+            var renderer = sec.renderer || 'none';
+            if (type === 'intro') return buildIntroHTML(sec);
+            if (type === 'summary') return buildSummaryHTML(sec);
+            if (type === 'memory') return buildMemoryHTML(sec);
+            if (type === 'recap') return buildRecapHTML(sec);
+            // quiz with threejs: Three.js IS the visual — transparent overlay only
+            if (type === 'quiz' && renderer === 'threejs') return buildTransparentLabel(sec);
+            // quiz with no threejs: show quiz card
+            if (type === 'quiz') return buildQuizHTML(sec);
+            // content/example — Three.js or WAN fills screen; just show transparent label
+            return buildTransparentLabel(sec);
+        }
+
+        function buildTransparentLabel(sec) {
+            return '<div style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%)' +
+                ';font-family:\'JetBrains Mono\',monospace;font-size:11px;color:rgba(255,255,255,.2)' +
+                ';letter-spacing:.08em;pointer-events:none;">' + esc(sec.title || '') + '</div>';
+        }
+
+        function buildIntroHTML(sec) {
+            var chips = (sec.key_terms || []).map(function (t, i) {
+                var colors = ['var(--gold)', 'var(--sky)', 'var(--teal)', 'var(--lav)', 'var(--rose)'];
+                var borders = ['rgba(246,196,78,.3)', 'rgba(121,192,255,.3)', 'rgba(0,210,180,.3)', 'rgba(184,169,255,.3)', 'rgba(255,107,138,.3)'];
+                var ci = i % 5;
+                return '<div class="chip" style="color:' + colors[ci] + ';border-color:' + borders[ci] + '">' + esc(t) + '</div>';
+            }).join('');
+            return '<div class="intro-icon">&#9651;</div>' +
+                '<div class="intro-title">' + esc(sec.title || 'Lesson') + '</div>' +
+                '<div class="intro-sub">' + esc(sec.narration && sec.narration.full_text ? sec.narration.full_text.substring(0, 200) + '...' : '') + '</div>' +
+                (chips ? '<div class="intro-chips">' + chips + '</div>' : '');
+        }
+
+        function buildSummaryHTML(sec) {
+            var bullets = [];
+            if (sec.narration && sec.narration.segments) {
+                sec.narration.segments.forEach(function (seg) {
+                    if (seg.text) bullets.push(seg.text.substring(0, 120));
+                });
+            }
+            var items = bullets.slice(0, 6).map(function (t, i) {
+                return '<div class="sbullet" id="sb-' + sec.section_id + '-' + i + '">' +
+                    '<div class="sbullet-n">' + (i + 1) + '</div>' +
+                    '<div class="sbullet-t">' + esc(t) + '</div></div>';
+            }).join('');
+            return '<div style="align-items:flex-start;max-width:680px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:10px">' +
+                '<div class="sum-hd">By the end of this section, you will...</div>' + items + '</div>';
+        }
+
+        function buildMemoryHTML(sec) {
+            var rawCards = sec.flashcards || [];
+            // Normalize: supports {q,a} or {front,back} or {question,answer}
+            var cards = rawCards.map(function (c) {
+                return {
+                    q: c.q || c.front || c.question || 'Question?',
+                    a: c.a || c.back || c.answer || ''
+                };
+            });
+            if (!cards.length && sec.narration && sec.narration.segments) {
+                sec.narration.segments.forEach(function (seg) {
+                    if (seg.purpose === 'quiz_question' || seg.purpose === 'introduce') {
+                        cards.push({ q: seg.text, a: '' });
+                    }
+                });
+            }
+            if (!cards.length) cards = [{ q: 'What was the key concept?', a: 'Review previous sections.' }];
+            FLASHCARDS_CUR = cards;
+            var pips = cards.map(function (_, i) {
+                return '<div class="cpip"' + (i === 0 ? ' style="background:var(--rose)"' : '') + ' onclick="goCard(' + i + ')"></div>';
+            }).join('');
+            return '<div class="mem-hd">Memory Cards</div>' +
+                '<div class="card-scene"><div class="card-3d" id="card-3d" onclick="flipCard()">' +
+                '<div class="card-face card-front"><div class="card-q" id="card-q">' + esc(cards[0].q) + '</div>' +
+                '<div class="card-hint">&#128161; Click to reveal</div></div>' +
+                '<div class="card-face card-back"><div class="card-a" id="card-a">' + esc(cards[0].a) + '</div></div>' +
+                '</div></div>' +
+                '<div class="card-nav"><button class="nb" onclick="prevCard()">&#8592;</button>' +
+                '<div class="card-pips" id="card-pips">' + pips + '</div>' +
+                '<button class="nb" onclick="nextCard()">&#8594;</button></div>' +
+                '<div class="card-ctr" id="card-ctr">1 of ' + cards.length + '</div>';
+        }
+
+        function buildRecapHTML(sec) {
+            // Recap renders nothing in scene container.
+            // Video plays fullscreen; subtitle overlay shows beat narration.
+            return '';
+        }
+
+        function buildQuizHTML(sec) {
+            var quiz = sec.understanding_quiz || {};
+            var opts = quiz.options || {};
+            var optItems = Object.keys(opts).map(function (k) {
+                return '<div class="quiz-opt" id="qopt-' + sec.section_id + '-' + k + '" onclick="selectQuizOpt(\'' + sec.section_id + '\',\'' + k + '\')">' +
+                    '<span class="quiz-opt-lbl">' + k + '</span>' + esc(opts[k]) + '</div>';
+            }).join('');
+            return '<div class="quiz-card">' +
+                '<div class="quiz-q">' + esc(quiz.question || 'Quiz') + '</div>' +
+                '<div class="quiz-opts" id="qopts-' + sec.section_id + '">' + optItems + '</div>' +
+                '<div class="quiz-explanation" id="qexp-' + sec.section_id + '">' + esc(quiz.explanation || '') + '</div>' +
+                '</div>';
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // SECTION LOADING — avatar master clock
+        // ══════════════════════════════════════════════════════════
+        function clearTimers() {
+            timers.forEach(function (t) { clearTimeout(t); clearInterval(t); });
+            timers = [];
+        }
+
+        function loadSection(idx) {
+            clearTimers();
+
+            // Hide subtitles by default on new section load
+            var subtitleEl = document.getElementById('subtitle-overlay');
+            if (subtitleEl) subtitleEl.style.display = 'none';
+
+            // Dispose live Three.js scene and clear canvas
+            if (activeScene) { try { activeScene.dispose(); } catch (e) { } activeScene = null; }
+            // FIX: declare threejsLayer BEFORE the _pointerCleanup guard that uses it
+            // (previously var was hoisted as undefined, causing _pointerCleanup TypeError)
+            var threejsLayer = document.getElementById('threejs-layer');
+            // GAP 3: clean up pointer listeners and interaction timer from previous scene
+            if (threejsLayer && typeof threejsLayer._pointerCleanup === 'function') {
+                try { threejsLayer._pointerCleanup(); } catch (e) { }
+                threejsLayer._pointerCleanup = null;
+            }
+            if (threejsLayer) {
+                threejsLayer.classList.remove('on');
+                threejsLayer.innerHTML = ''; // clear old canvas elements to prevent stacking
+            }
+
+            // Hide WAN video layer
+            var wanLayer = document.getElementById('wan-layer');
+            var wanVid = document.getElementById('wan-vid');
+            wanLayer.classList.remove('on');
+            wanVid.pause(); wanVid.src = '';
+
+            // Show/hide scenes
+            var prevEl = document.getElementById('scene-' + curSec);
+            if (prevEl) prevEl.classList.remove('on');
+            curSec = idx;
+            var sec = SECTIONS[idx];
+            if (!sec) return;
+            var sceneEl = document.getElementById('scene-' + idx);
+            if (sceneEl) sceneEl.classList.add('on');
+
+            // Update dots
+            for (var i = 0; i < SECTIONS.length; i++) {
+                var d = document.getElementById('tbd' + i);
+                if (d) d.className = 'tb-dot ' + (i < idx ? 'past' : i === idx ? 'cur' : 'future');
+            }
+
+            // Update bars
+            var secType = sec.section_type || sec.type || 'content';
+            var badge = BADGE_MAP[secType] || { label: secType.toUpperCase(), cls: 'badge-content' };
+            document.getElementById('tb-secname').textContent = '/ ' + (sec.title || '');
+            document.getElementById('bot-label').textContent = sec.title || '';
+            document.getElementById('bot-ctr').textContent = (idx + 1) + ' / ' + SECTIONS.length;
+            document.getElementById('prog-fill').style.width = ((idx + 1) / SECTIONS.length * 100) + '%';
+            ['top-badge', 'bot-badge'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                el.textContent = badge.label;
+                el.className = 'tb-badge ' + badge.cls;
+            });
+            document.getElementById('seg-dots').innerHTML = '';
+
+            // ── C1: QUIZ SECTION BRANCH ────────────────────────────────
+            if (secType === 'quiz') {
+                initQuizSection(sec);
+                return; // quiz section manages its own avatar + advance flow
+            }
+            document.getElementById('quiz-overlay').style.display = 'none';
+
+            // ── AVATAR = MASTER CLOCK ──────────────────────────────
+            var vid = document.getElementById('av-vid');
+            var wrap = document.getElementById('av-overlay');
+            vid.onended = null;
+            var avatarUrl = sec.avatar_url || sec.avatar || sec.avatar_video || '';
+            if (avatarUrl) {
+                vid.src = avatarUrl; vid.load();
+                vid.play().catch(function () { });
+                // Pass actual avatar duration to Three.js so animation stays in sync
+                // Avatar = master clock, so initScene(duration) must match actual MP4 duration
+                // VSYNC-003: track when avatar actually starts playing (not just buffered)
+                var _avBox = { started: false };   // boxed so loadThreejsScene closure reads mutations
+                vid.onplay = (function (box) { return function () { box.started = true; }; })(_avBox);
+                // SYNC FIX (Cause 3): prefer TTS-sourced duration from presentation.json.
+                // sec.segment_duration_seconds is written by tts_duration.py (real audio length).
+                // Only use vid.duration if it is a finite value AND no TTS duration exists.
+                var _ttsRealDur = sec.segment_duration_seconds || null;
+
+                vid.onloadedmetadata = (function (box) {
+                    return function () {
+                        // Priority: 1) real vid.duration (finite), 2) TTS-sourced from JSON, 3) fallback 15s
+                        var actualDur = (vid.duration && isFinite(vid.duration))
+                            ? vid.duration
+                            : (_ttsRealDur || 15);
+                        var renderer = sec.renderer || 'none';
+                        if (renderer === 'threejs') {
+                            var hasJs = sec.threejs_file || (sec.threejs_files && sec.threejs_files.length > 0);
+                            if (hasJs) loadThreejsScene(sec, actualDur, box);
+                        } else if (renderer === 'video' || renderer === 'wan_video' || sec.section_type === 'recap') {
+                            loadVideoScene(sec, actualDur, box);
+                        }
+                    };
+                })(_avBox);
+
+                // SYNC FIX: if vid.duration was Infinity at loadedmetadata time (CDN stream),
+                // durationchange fires when the real duration becomes known. Reload Three.js
+                // scene with the corrected duration to prevent animation over/under-run.
+                vid.addEventListener('durationchange', (function (box, capturedSec) {
+                    return function () {
+                        if (!isFinite(vid.duration) || vid.duration <= 0) return;
+                        var renderer = capturedSec.renderer || 'none';
+                        if (renderer === 'video' || renderer === 'wan_video' || capturedSec.section_type === 'recap') {
+                            loadVideoScene(capturedSec, vid.duration, box);
+                            return;
+                        }
+                        if (renderer !== 'threejs') return;
+                        var hasJs = capturedSec.threejs_file || (capturedSec.threejs_files && capturedSec.threejs_files.length > 0);
+                        if (!hasJs) return;
+                        // Only reload if the corrected duration is meaningfully different from TTS estimate
+                        var prev = _ttsRealDur || 15;
+                        if (Math.abs(vid.duration - prev) > 1.5) {
+                            loadThreejsScene(capturedSec, vid.duration, box);
+                        }
+                    };
+                })(_avBox, sec), { once: true });
+                vid.onended = function () {
+                    if (sec.understanding_quiz) {
+                        initQuizSection(sec);
+                    } else if (curSec < SECTIONS.length - 1) {
+                        timers.push(setTimeout(function () { loadSection(curSec + 1); }, 700));
+                    }
+                };
+            } else {
+                vid.src = '';
+                // Fallback timer when no avatar clip
+                var fallbackDur = sec.segment_duration_seconds || sec.dur || 30;
+                timers.push(setTimeout(function () {
+                    if (sec.understanding_quiz) {
+                        initQuizSection(sec);
+                    } else if (curSec < SECTIONS.length - 1) loadSection(curSec + 1);
+                }, fallbackDur * 1000));
+
+                var renderer = sec.renderer || 'none';
+                if (renderer === 'threejs') {
+                    loadThreejsScene(sec, fallbackDur, { started: true });
+                } else if (renderer === 'video' || renderer === 'wan_video' || sec.section_type === 'recap') {
+                    loadVideoScene(sec, fallbackDur, { started: true });
+                }
+            }
+            document.getElementById('av-narr').textContent = sec.narration && sec.narration.full_text
+                ? sec.narration.full_text.substring(0, 200) : '';
+
+            // ── SECTION TYPE INITS ─────────────────────────────────
+            var secType = sec.section_type || sec.type || 'content';
+            if (secType === 'summary') initSummarySection(sec, idx);
+            if (secType === 'recap') initRecapSection(sec, idx);
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // VIDEO DYNAMIC LOADER (WITH SEQUENTIAL BEAT SUPPORT)
+        // ══════════════════════════════════════════════════════════
+        function loadVideoScene(sec, avatarDuration, _avBox) {
+            if (!_avBox) _avBox = { started: true };
+            var wanLayer = document.getElementById('wan-layer');
+            var wanVid = document.getElementById('wan-vid');
+            var sectionAtLoad = curSec;
+
+            // Determine if we have multiple beats or just one file
+            var files = sec.beat_video_paths && sec.beat_video_paths.length > 0 ? sec.beat_video_paths : (sec.video_path || sec.video_url ? [sec.video_path || sec.video_url] : []);
+            if (files.length === 0) return;
+
+            wanLayer.classList.add('on');
+
+            // Get durations for each beat
+            var beatDurations = [];
+            var totalDur = (avatarDuration && isFinite(avatarDuration)) ? avatarDuration : (sec.segment_duration_seconds || sec.dur || 15);
+            var avgDur = totalDur / files.length;
+
+            if (sec.narration && sec.narration.segments && sec.narration.segments.length === files.length) {
+                beatDurations = sec.narration.segments.map(function (s) { return s.duration_seconds || avgDur; });
+            } else {
+                for (var i = 0; i < files.length; i++) beatDurations.push(avgDur);
+            }
+
+            // State for sequence playback
+            var currentBeatIdx = 0;
+            var accumulatedTime = 0;
+
+            function playNextBeat() {
+                if (curSec !== sectionAtLoad) return;
+                if (currentBeatIdx >= files.length) return;
+
+                var vPath = files[currentBeatIdx];
+                var beatDuration = beatDurations[currentBeatIdx];
+
+                wanVid.src = vPath;
+                wanVid.load();
+                wanVid.play().catch(function () { });
+
+                // SUBTITLES: Update text for this beat
+                var subtitleEl = document.getElementById('subtitle-overlay');
+                var subtitleTextEl = document.getElementById('subtitle-text');
+                if (sec.narration && sec.narration.segments && sec.narration.segments[currentBeatIdx]) {
+                    var beatText = sec.narration.segments[currentBeatIdx].text;
+                    if (beatText && beatText.trim().length > 0) {
+                        subtitleTextEl.innerText = beatText;
+                        if (subtitleEl) subtitleEl.style.display = 'block';
+                    } else {
+                        if (subtitleEl) subtitleEl.style.display = 'none';
+                    }
+                } else {
+                    if (subtitleEl) subtitleEl.style.display = 'none';
+                }
+
+                accumulatedTime += beatDuration;
+                currentBeatIdx++;
+
+                if (currentBeatIdx < files.length) {
+                    var checkInterval = setInterval(function () {
+                        if (curSec !== sectionAtLoad) { clearInterval(checkInterval); return; }
+                        var v = document.getElementById('av-vid');
+                        if (v && v.currentTime >= accumulatedTime) {
+                            clearInterval(checkInterval);
+                            playNextBeat();
+                        }
+                    }, 50);
+                    timers.push(checkInterval);
+                }
+            }
+
+            var startCheck = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(startCheck); return; }
+                if (_avBox.started) {
+                    clearInterval(startCheck);
+                    playNextBeat();
+                }
+            }, 50);
+            timers.push(startCheck);
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // THREE.JS DYNAMIC LOADER (WITH SEQUENTIAL BEAT SUPPORT)
+        // ══════════════════════════════════════════════════════════
+        function loadThreejsScene(sec, avatarDuration, _avBox) {
+            if (!_avBox) _avBox = { started: true };
+            var threejsLayer = document.getElementById('threejs-layer');
+            var sectionAtLoad = curSec;
+
+            // Determine if we have multiple beats or just one file
+            var files = sec.threejs_files && sec.threejs_files.length > 0 ? sec.threejs_files : (sec.threejs_file ? [sec.threejs_file] : []);
+            if (files.length === 0) return;
+
+            // Get durations for each beat from render_spec if available
+            var beatDurations = [];
+            if (sec.render_spec && sec.render_spec.segment_specs && sec.render_spec.segment_specs.length === files.length) {
+                beatDurations = sec.render_spec.segment_specs.map(function (s) { return s.segment_duration_seconds; });
+            } else {
+                // Fallback: divide total duration equally if no specific beat durations
+                var totalDur = (avatarDuration && isFinite(avatarDuration)) ? avatarDuration : (sec.segment_duration_seconds || sec.dur || 15);
+                var avgDur = totalDur / files.length;
+                for (var i = 0; i < files.length; i++) beatDurations.push(avgDur);
+            }
+
+            // State for sequence playback
+            var currentBeatIdx = 0;
+            var accumulatedTime = 0; // Time elapsed in previous beats
+
+            function playNextBeat() {
+                if (curSec !== sectionAtLoad) return; // aborted
+                if (currentBeatIdx >= files.length) return; // all beats played
+
+                var jsPath = files[currentBeatIdx];
+                var beatDuration = beatDurations[currentBeatIdx];
+                var beatStartTime = accumulatedTime;
+
+                function runScene(sceneFn) {
+                    if (curSec !== sectionAtLoad) return;
+                    if (currentBeatIdx === 0) {
+                        threejsLayer.innerHTML = '';
+                        threejsLayer.classList.add('on');
+                    }
+
+                    try {
+                        if (typeof sceneFn === 'function') {
+                            var _lastAvTime = 0;
+                            var params = {
+                                getTime: function () {
+                                    if (!_avBox.started) return 0;
+                                    var v = document.getElementById('av-vid');
+                                    if (v && isFinite(v.currentTime) && v.currentTime > 0) {
+                                        _lastAvTime = v.currentTime;
+                                    }
+                                    // Make time relative to THIS beat's start time
+                                    return Math.max(0, _lastAvTime - beatStartTime);
+                                },
+                                imageSrc: (sec.render_spec && sec.render_spec.segment_specs && sec.render_spec.segment_specs[currentBeatIdx] ? sec.render_spec.segment_specs[currentBeatIdx].image_source : sec.image_source) || null
+                            };
+
+                            // Cleanup previous beat's DOM and scene if not the first beat
+                            if (activeScene && activeScene.dispose) {
+                                activeScene.dispose();
+                            }
+                            // Also clean up any pointer event listeners from previous beat
+                            if (threejsLayer._pointerCleanup) {
+                                threejsLayer._pointerCleanup();
+                                threejsLayer._pointerCleanup = null;
+                            }
+
+                            activeScene = sceneFn(threejsLayer, beatDuration, params);
+
+                            // Wiring pointer events
+                            var _mouseIsDown = false;
+                            function _getPointerNorm(e) {
+                                var r = threejsLayer.getBoundingClientRect();
+                                var src = (e.touches && e.touches.length) ? e.touches[0] : e;
+                                return {
+                                    nx: (src.clientX - r.left) / r.width,
+                                    ny: (src.clientY - r.top) / r.height
+                                };
+                            }
+                            function _dispatchMove(e) { if (activeScene && activeScene.onPointerMove) { var p = _getPointerNorm(e); activeScene.onPointerMove(p.nx, p.ny, _mouseIsDown); } }
+                            function _dispatchDown(e) { _mouseIsDown = true; if (activeScene && activeScene.onPointerDown) { var p = _getPointerNorm(e); activeScene.onPointerDown(p.nx, p.ny); } }
+                            function _dispatchUp(e) { _mouseIsDown = false; if (activeScene && activeScene.onPointerUp) { var p = _getPointerNorm(e); activeScene.onPointerUp(p.nx, p.ny); } }
+
+                            if (activeScene && (activeScene.onPointerMove || activeScene.onPointerDown)) {
+                                threejsLayer.addEventListener('mousemove', _dispatchMove);
+                                threejsLayer.addEventListener('mousedown', _dispatchDown);
+                                threejsLayer.addEventListener('mouseup', _dispatchUp);
+                                threejsLayer.addEventListener('touchmove', function (e) { e.preventDefault(); _dispatchMove(e); }, { passive: false });
+                                threejsLayer.addEventListener('touchstart', _dispatchDown, { passive: true });
+                                threejsLayer.addEventListener('touchend', _dispatchUp, { passive: true });
+                                threejsLayer._pointerCleanup = function () {
+                                    threejsLayer.removeEventListener('mousemove', _dispatchMove);
+                                    threejsLayer.removeEventListener('mousedown', _dispatchDown);
+                                    threejsLayer.removeEventListener('mouseup', _dispatchUp);
+                                };
+                            }
+
+                            // SUBTITLES: Update text for this beat
+                            var subtitleEl = document.getElementById('subtitle-overlay');
+                            var subtitleTextEl = document.getElementById('subtitle-text');
+                            if (sec.narration && sec.narration.segments && sec.narration.segments[currentBeatIdx]) {
+                                var beatText = sec.narration.segments[currentBeatIdx].text;
+                                if (beatText && beatText.trim().length > 0) {
+                                    subtitleTextEl.innerText = beatText;
+                                    if (subtitleEl) subtitleEl.style.display = 'block';
+                                } else {
+                                    if (subtitleEl) subtitleEl.style.display = 'none';
+                                }
+                            } else {
+                                if (subtitleEl) subtitleEl.style.display = 'none';
+                            }
+
+                            // Schedule the next beat based on avatar master clock
+                            accumulatedTime += beatDuration;
+                            currentBeatIdx++;
+
+                            if (currentBeatIdx < files.length) {
+                                // We need to check avatar time periodically to trigger next beat exactly when it's supposed to start
+                                var checkInterval = setInterval(function () {
+                                    if (curSec !== sectionAtLoad) { clearInterval(checkInterval); return; }
+                                    var v = document.getElementById('av-vid');
+                                    if (v && v.currentTime >= accumulatedTime) {
+                                        clearInterval(checkInterval);
+                                        playNextBeat();
+                                    }
+                                }, 50);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[V3 Player] initScene error in beat ' + (currentBeatIdx - 1) + ':', e);
+                    }
+                }
+
+                if (loadedScripts[jsPath]) {
+                    runScene(loadedScripts[jsPath]);
+                } else {
+                    var script = document.createElement('script');
+                    script.src = jsPath;
+                    script.onload = function () {
+                        var fn = typeof window.initScene === 'function' ? window.initScene : null;
+                        loadedScripts[jsPath] = fn;
+                        runScene(fn);
+                    };
+                    script.onerror = function () { console.warn('[V3 Player] Failed to load:', jsPath); };
+                    document.head.appendChild(script);
+                }
+            }
+
+            // Start the sequence
+            playNextBeat();
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // SECTION INITS
+        // ══════════════════════════════════════════════════════════
+        function initSummarySection(sec) {
+            if (!sec.narration || !sec.narration.segments) return;
+            sec.narration.segments.forEach(function (_, i) {
+                var el = document.getElementById('sb-' + sec.section_id + '-' + i);
+                if (el) el.classList.remove('show');
+                timers.push(setTimeout(function (idx) {
+                    return function () {
+                        var el2 = document.getElementById('sb-' + sec.section_id + '-' + idx);
+                        if (el2) el2.classList.add('show');
+                    };
+                }(i), 400 + i * 1800));
+            });
+        }
+
+        function initRecapSection(sec) {
+            if (!sec.narration || !sec.narration.segments) return;
+            var segs = sec.narration.segments;
+            var sectionAtLoad = curSec;
+
+            // Hide all segments first
+            segs.forEach(function (_, i) {
+                var el = document.getElementById('rs-' + sec.section_id + '-' + i);
+                if (el) el.classList.remove('show');
+            });
+
+            // Show segment 0 immediately
+            var first = document.getElementById('rs-' + sec.section_id + '-0');
+            if (first) first.classList.add('show');
+
+            // Reveal subsequent segments in sync with avatar beats
+            var beatTimes = [];
+            var accum = 0;
+            segs.forEach(function (seg) {
+                beatTimes.push(accum);
+                accum += (seg.duration_seconds || 15);
+            });
+
+            var avEl = document.getElementById('av-vid');
+            function onTimeUpdate() {
+                if (curSec !== sectionAtLoad) {
+                    avEl.removeEventListener('timeupdate', onTimeUpdate);
+                    return;
+                }
+                var t = avEl.currentTime;
+                for (var i = 1; i < segs.length; i++) {
+                    if (t >= beatTimes[i]) {
+                        var el = document.getElementById('rs-' + sec.section_id + '-' + i);
+                        if (el && !el.classList.contains('show')) el.classList.add('show');
+                    }
+                }
+            }
+            avEl.addEventListener('timeupdate', onTimeUpdate);
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // QUIZ INTERACTION
+        // ══════════════════════════════════════════════════════════
+        function selectQuizOpt(secId, key) {
+            var sec = SECTIONS.find(function (s) { return s.section_id === secId || String(s.section_id) === String(secId); });
+            if (!sec) return;
+            var quiz = sec.understanding_quiz || {};
+            var correctKey = quiz.correct;
+            var opts = document.querySelectorAll('[id^="qopt-' + secId + '-"]');
+            opts.forEach(function (el) {
+                el.onclick = null;
+                var k = el.id.split('-').pop();
+                if (k === correctKey) el.classList.add('correct');
+                else if (k === key) el.classList.add('wrong');
+            });
+            var exp = document.getElementById('qexp-' + secId);
+            if (exp) exp.classList.add('show');
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // FLASHCARD STATE
+        // ══════════════════════════════════════════════════════════
+        var cardIdx = 0, cardFlipped = false, FLASHCARDS_CUR = [];
+        function flipCard() {
+            cardFlipped = !cardFlipped;
+            var el = document.getElementById('card-3d');
+            if (el) el.classList.toggle('flipped', cardFlipped);
+        }
+        function nextCard() { if (cardIdx < FLASHCARDS_CUR.length - 1) { cardIdx++; showCard(); } }
+        function prevCard() { if (cardIdx > 0) { cardIdx--; showCard(); } }
+        function goCard(i) { cardIdx = i; showCard(); }
+        function showCard() {
+            var fc = FLASHCARDS_CUR[cardIdx];
+            if (!fc) return;
+            var qEl = document.getElementById('card-q'), aEl = document.getElementById('card-a');
+            if (qEl) qEl.textContent = fc.q || '';
+            if (aEl) aEl.innerHTML = fc.a || '';
+            var c3d = document.getElementById('card-3d');
+            if (c3d) c3d.classList.remove('flipped');
+            cardFlipped = false;
+            var ctr = document.getElementById('card-ctr');
+            if (ctr) ctr.textContent = (cardIdx + 1) + ' of ' + FLASHCARDS_CUR.length;
+            var pips = document.getElementById('card-pips');
+            if (!pips) return;
+            for (var i = 0; i < pips.children.length; i++) {
+                pips.children[i].className = 'cpip' + (i === cardIdx ? ' on' : i < cardIdx ? ' done' : '');
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // NAVIGATION
+        // ══════════════════════════════════════════════════════════
+        function replaySection() { loadSection(curSec); }
+        function nextSection() { if (curSec < SECTIONS.length - 1) loadSection(curSec + 1); }
+        function prevSection() { if (curSec > 0) loadSection(curSec - 1); }
+
+        function togglePlayPause() {
+            var avVid = document.getElementById('av-vid');
+            var wanVid = document.getElementById('wan-vid');
+            var btn = document.getElementById('play-pause-btn');
+
+            if (!avVid) return;
+
+            if (avVid.paused) {
+                avVid.play().catch(function () { });
+                if (wanVid && wanVid.src && wanVid.paused) wanVid.play().catch(function () { });
+                if (btn) btn.innerHTML = '&#10074;&#10074;'; // Pause icon
+            } else {
+                avVid.pause();
+                if (wanVid && !wanVid.paused) wanVid.pause();
+                if (btn) btn.innerHTML = '&#9654;'; // Play icon
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // C1: PRE-BAKED QUIZ BRANCHING
+        // Reads sec.questions[] → each question has avatar_clips.question/correct/wrong
+        // Flow: play question clip → show buttons → on answer → play correct/wrong clip
+        //       avatar.onended → next question OR loadSection(curSec+1)
+        // ══════════════════════════════════════════════════════════
+        function initQuizSection(sec) {
+            var overlay = document.getElementById('quiz-overlay');
+            var qLabel = document.getElementById('quiz-q-label');
+            var qText = document.getElementById('quiz-q-text');
+            var qOptions = document.getElementById('quiz-options');
+            var qFeedback = document.getElementById('quiz-feedback');
+            var vid = document.getElementById('av-vid');
+
+            overlay.style.display = 'flex';
+            qFeedback.style.display = 'none';
+
+            var questions = (sec.questions && sec.questions.length > 0) ? sec.questions : (sec.understanding_quiz ? [sec.understanding_quiz] : []);
+            var qIdx = 0;
+
+            function showQuestion(qi) {
+                var q = questions[qi];
+                if (!q) {
+                    // All questions done — hide quiz, advance section
+                    overlay.style.display = 'none';
+                    timers.push(setTimeout(function () {
+                        if (curSec < SECTIONS.length - 1) loadSection(curSec + 1);
+                    }, 600));
+                    return;
+                }
+
+                qLabel.textContent = 'QUESTION ' + (qi + 1) + ' / ' + questions.length;
+                qText.textContent = q.question_text || q.question || '';
+                qOptions.innerHTML = '';
+                qFeedback.style.display = 'none';
+
+                // Play question avatar clip
+                var clips = q.avatar_clips || {};
+                playQuizClip(clips.question, function () {
+                    // Avatar clip ended — reveal option buttons
+                    buildOptionButtons(q, qi);
+                });
+            }
+
+            function playQuizClip(url, onEnd) {
+                vid.onended = null;
+                if (url) {
+                    vid.src = url; vid.load();
+                    vid.play().catch(function () { });
+                    vid.onended = function () { if (onEnd) onEnd(); };
+                } else {
+                    // No clip — run callback after a brief pause
+                    timers.push(setTimeout(onEnd || function () { }, 3000));
+                }
+            }
+
+            function buildOptionButtons(q, qi) {
+                qOptions.innerHTML = '';
+                var opts = q.options || {};
+                var keys = Object.keys(opts);
+                var answered = false;
+
+                keys.forEach(function (key) {
+                    var btn = document.createElement('button');
+                    btn.id = 'quiz-opt-' + key;
+                    btn.textContent = key + ': ' + opts[key];
+                    btn.style.cssText = [
+                        'padding:16px 20px', 'border-radius:10px', 'cursor:pointer',
+                        'font-family:\'Sora\',sans-serif', 'font-size:18px', 'text-align:left',
+                        'background:#21262d', 'color:#e6edf3',
+                        'border:1px solid rgba(255,255,255,0.08)', 'transition:all .25s'
+                    ].join(';');
+                    btn.onmouseover = function () { if (!answered) btn.style.borderColor = '#f6c44e'; };
+                    btn.onmouseout = function () { if (!answered) btn.style.borderColor = 'rgba(255,255,255,0.08)'; };
+
+                    btn.onclick = function () {
+                        if (answered) return;
+                        answered = true;
+
+                        var correct = q.correct_option || q.correct || '';
+                        var isRight = (key === correct);
+
+                        // Style buttons: correct=green, wrong=red
+                        keys.forEach(function (k) {
+                            var b = document.getElementById('quiz-opt-' + k);
+                            if (!b) return;
+                            if (k === correct) {
+                                b.style.background = 'rgba(126,231,135,0.14)';
+                                b.style.borderColor = '#7ee787';
+                                b.style.color = '#7ee787';
+                            } else if (k === key && !isRight) {
+                                b.style.background = 'rgba(255,107,138,0.14)';
+                                b.style.borderColor = '#ff6b8a';
+                                b.style.color = '#ff6b8a';
+                            }
+                            b.style.cursor = 'default';
+                        });
+
+                        // Show explanation
+                        var expl = q.explanation || '';
+                        if (expl) {
+                            qFeedback.style.display = 'block';
+                            qFeedback.style.background = isRight
+                                ? 'rgba(126,231,135,0.07)' : 'rgba(255,107,138,0.07)';
+                            qFeedback.style.borderColor = isRight
+                                ? 'rgba(126,231,135,0.25)' : 'rgba(255,107,138,0.25)';
+                            qFeedback.style.color = '#e6edf3';
+                            qFeedback.innerHTML = (isRight ? '✅ ' : '❌ ') + expl;
+                        }
+
+                        // Play correct or wrong clip → on end advance to next question
+                        var clips = q.avatar_clips || {};
+                        var nextClip = isRight ? clips.correct : clips.wrong;
+                        playQuizClip(nextClip, function () {
+                            timers.push(setTimeout(function () {
+                                qIdx++;
+                                showQuestion(qIdx);
+                            }, 900));
+                        });
+                    };
+
+                    qOptions.appendChild(btn);
+                });
+            }
+
+            // Start from first question
+            showQuestion(qIdx);
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowRight') nextSection();
+            if (e.key === 'ArrowLeft') prevSection();
+            if (e.key === ' ') { e.preventDefault(); replaySection(); }
+        });
+
+        window.addEventListener('resize', function () {
+            if (activeScene && activeScene.onResize) activeScene.onResize();
+        });
+
+        // ══════════════════════════════════════════════════════════
+        // GESTURE ENGINE (HandPose) — silent fail if camera denied
+        // ══════════════════════════════════════════════════════════
+        var _gestureModel = null, _gestureOn = false, _lastPinch = null, _lastGTime = 0, _lastGName = '';
+        var _waveHist = [], _avPaused = false;
+        var GESTURE_COOLDOWN = 800;
+
+        function _initGestures() {
+            if (typeof handpose === 'undefined') return;
+            // navigator.mediaDevices only available on HTTPS or localhost (secure context)
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 } })
+                .then(function (stream) {
+                    var cam = document.getElementById('cam-vid');
+                    cam.srcObject = stream; cam.play();
+                    document.getElementById('g-dot').classList.add('active');
+                    document.getElementById('g-zoom').classList.add('show');
+                    handpose.load().then(function (m) { _gestureModel = m; _gestureOn = true; _detectLoop(); }).catch(function () { });
+                })
+                .catch(function () { document.getElementById('g-dot').classList.add('denied'); });
+        }
+        window._initGestures = _initGestures;
+
+        function _detectLoop() {
+            if (!_gestureOn || !_gestureModel) return;
+            _gestureModel.estimateHands(document.getElementById('cam-vid')).then(function (hands) {
+                if (hands.length > 0) _processHand(hands[0]);
+                requestAnimationFrame(_detectLoop);
+            }).catch(function () { requestAnimationFrame(_detectLoop); });
+        }
+
+        function _processHand(hand) {
+            var lm = hand.landmarks;
+            var thumbTip = lm[4], indexTip = lm[8], wrist = lm[0];
+            var pd = _dist(thumbTip, indexTip);
+            if (pd < 60) {
+                if (_lastPinch !== null) {
+                    var delta = (_lastPinch - pd) * 0.04;
+                    if (activeScene && activeScene.onPinchZoom) activeScene.onPinchZoom(-delta);
+                }
+                _lastPinch = pd; _showGHint('Pinch Zoom'); return;
+            }
+            _lastPinch = null;
+            var up = _fingersUp(lm);
+            if (up >= 4) { _fireGesture('palm', function () { _toggleAvatar(); _showGHint('Pause / Resume'); }); return; }
+            if (up === 1 && (indexTip[1] - lm[5][1]) > 40) { _fireGesture('down', function () { replaySection(); _showGHint('Replay'); }); return; }
+            _waveHist.push(wrist[0]);
+            if (_waveHist.length > 20) _waveHist.shift();
+            if (_waveHist.length >= 20) {
+                var mn = Math.min.apply(null, _waveHist), mx = Math.max.apply(null, _waveHist);
+                if (mx - mn > 80) { _fireGesture('wave', function () { nextSection(); _showGHint('Next'); }); _waveHist = []; }
+            }
+        }
+
+        function _dist(a, b) { return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2)); }
+        function _fingersUp(lm) {
+            var tips = [8, 12, 16, 20], pips = [6, 10, 14, 18], c = 0;
+            tips.forEach(function (t, i) { if (lm[t][1] < lm[pips[i]][1]) c++; });
+            return c;
+        }
+        function _fireGesture(name, fn) {
+            var now = Date.now();
+            if (name === _lastGName && now - _lastGTime < GESTURE_COOLDOWN) return;
+            _lastGName = name; _lastGTime = now; fn();
+        }
+        function _toggleAvatar() {
+            var v = document.getElementById('av-vid');
+            _avPaused = !_avPaused;
+            if (_avPaused) v.pause(); else v.play().catch(function () { });
+        }
+        var _gLblTimer = null;
+        function _showGHint(txt) {
+            var el = document.getElementById('g-lbl');
+            el.textContent = txt; el.classList.add('show');
+            clearTimeout(_gLblTimer);
+            _gLblTimer = setTimeout(function () { el.classList.remove('show'); }, 1500);
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // TOUCH (mobile)
+        // ══════════════════════════════════════════════════════════
+        (function () {
+            var el = document.getElementById('main');
+            var sx = 0, sy = 0, st = 0;
+            el.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); }, { passive: true });
+            el.addEventListener('touchend', function (e) {
+                var dx = e.changedTouches[0].clientX - sx;
+                var dy = e.changedTouches[0].clientY - sy;
+                var dt = Date.now() - st;
+                if (dt < 300 && Math.abs(dx) < 12 && Math.abs(dy) < 12) { _toggleAvatar(); return; }
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                    if (dx < 0) nextSection(); else replaySection();
+                }
+            }, { passive: true });
+            var lastTD = null;
+            el.addEventListener('touchmove', function (e) {
+                if (e.touches.length === 2) {
+                    var td = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    if (lastTD !== null) {
+                        var delta = (td - lastTD) * 0.025;
+                        if (activeScene && activeScene.onPinchZoom) activeScene.onPinchZoom(-delta);
+                    }
+                    lastTD = td;
+                }
+            }, { passive: true });
+            el.addEventListener('touchend', function (e) { if (e.touches.length < 2) lastTD = null; }, { passive: true });
+        })();
+
+        // ══════════════════════════════════════════════════════════
+        // UTILITY
+        // ══════════════════════════════════════════════════════════
+        function esc(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+    </script>
+</body>
+
+</html>

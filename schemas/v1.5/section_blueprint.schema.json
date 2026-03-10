@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "section_blueprint.schema.json",
+  "title": "SectionBlueprint",
+  "description": "Output from SectionPlanner agent - defines section metadata and rendering strategy",
+  "type": "object",
+  "properties": {
+    "section_id": {
+      "type": "string",
+      "pattern": "^section_[0-9]+$",
+      "description": "Unique section identifier (e.g., section_1)"
+    },
+    "section_type": {
+      "type": "string",
+      "enum": ["intro", "summary", "content", "example", "quiz", "memory", "recap"],
+      "description": "Type determines structure and rendering"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 100,
+      "description": "Section title for display"
+    },
+    "source_topics": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Topic IDs this section covers from Chunker output"
+    },
+    "learning_goals": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "maxItems": 5,
+      "description": "What viewer will learn from this section"
+    },
+    "suggested_renderer": {
+      "type": "string",
+      "enum": ["manim", "remotion", "video", "none"],
+      "description": "Recommended renderer for this section"
+    },
+    "renderer_reasoning": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Brief explanation for renderer choice"
+    },
+    "avatar_visibility": {
+      "type": "string",
+      "enum": ["required", "optional", "hidden"],
+      "description": "How prominently avatar should appear"
+    },
+    "avatar_position": {
+      "type": "string",
+      "enum": ["left", "right", "center", "hidden"],
+      "description": "Avatar screen position"
+    },
+    "estimated_duration_seconds": {
+      "type": "number",
+      "minimum": 10,
+      "maximum": 300,
+      "description": "Estimated section duration"
+    }
+  },
+  "required": [
+    "section_id",
+    "section_type",
+    "title",
+    "source_topics",
+    "learning_goals",
+    "suggested_renderer",
+    "renderer_reasoning",
+    "avatar_visibility",
+    "avatar_position",
+    "estimated_duration_seconds"
+  ],
+  "additionalProperties": false
+}

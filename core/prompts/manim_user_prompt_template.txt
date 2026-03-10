@@ -1,0 +1,25 @@
+Generate Manim animation code synchronized to narration segments.
+
+**Section**: {section_title}
+
+**Narration Segments with Timing**:
+{narration_segments}
+
+**Visual Requirements**:
+{visual_description}
+
+**Mathematical Content**:
+- Main formulas: {formulas}
+- Key terms to label: {key_terms}
+
+**Animation Guidelines**:
+- Total duration: {total_duration} seconds
+- Each animation block MUST match its narration segment duration EXACTLY
+- Use timing comments showing narration sync
+- Create actual Manim objects (no Dot() placeholders)
+- Use smooth, educational pacing
+
+**Special Requirements**:
+{special_requirements}
+
+Generate construct() method body code only, with timing comments for each segment.

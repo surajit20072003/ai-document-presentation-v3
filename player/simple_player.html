@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Educational Player</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; min-height: 100vh; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        h1 { text-align: center; margin-bottom: 20px; color: #00d4ff; }
+        
+        .player-area {
+            display: flex;
+            gap: 20px;
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 500px;
+        }
+        
+        .content-panel {
+            flex: 1;
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        
+        .avatar-panel {
+            background: #000;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .avatar-panel.intro-mode {
+            width: 80%;
+            max-width: 800px;
+        }
+        
+        .avatar-panel.standard-mode {
+            width: 55%;
+            max-width: 500px;
+        }
+        
+        .avatar-panel video {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            color: #00d4ff;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #00d4ff;
+            padding-bottom: 10px;
+        }
+        
+        .section-type {
+            display: inline-block;
+            background: #e94560;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .segment {
+            background: rgba(255,255,255,0.05);
+            border-left: 3px solid #00d4ff;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .segment.active {
+            background: rgba(0,212,255,0.15);
+            border-left-color: #e94560;
+        }
+        
+        .segment-narration {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .segment-visual {
+            background: rgba(255,255,255,0.08);
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        .segment-visual h4 {
+            color: #00d4ff;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        
+        .visual-content {
+            font-size: 1em;
+            line-height: 1.5;
+        }
+        
+        .visual-content ul, .visual-content ol {
+            margin-left: 20px;
+        }
+        
+        .visual-content li {
+            margin-bottom: 5px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: #e94560;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+        
+        button:hover { background: #ff6b6b; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        
+        .nav-info {
+            background: #0f3460;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        
+        .formula-block {
+            background: #1a1a2e;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.5em;
+            color: #00d4ff;
+        }
+        
+        .error {
+            background: #e94560;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        /* Layout modes */
+        .layout-intro .content-panel { display: none; }
+        .layout-intro .avatar-panel { width: 80%; margin: 0 auto; }
+        
+        .layout-standard { flex-direction: row; }
+        .layout-standard .content-panel { flex: 1; }
+        .layout-standard .avatar-panel { width: 55%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Educational Video Player</h1>
+        
+        <div id="loading" class="loading">Loading presentation...</div>
+        <div id="error" class="error" style="display:none;"></div>
+        
+        <div id="player" style="display:none;">
+            <div id="player-area" class="player-area layout-standard">
+                <div class="content-panel" id="content-panel">
+                    <div class="section-type" id="section-type">Loading...</div>
+                    <h2 class="section-title" id="section-title">Loading...</h2>
+                    <div id="segments-container"></div>
+                </div>
+                <div class="avatar-panel standard-mode" id="avatar-panel">
+                    <video id="avatar-video" loop muted autoplay playsinline>
+                        <source src="/player/assets/avatar_placeholder.mp4" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="btn-prev-section" onclick="prevSection()">⏮ Prev Section</button>
+                <button id="btn-prev" onclick="prevSegment()">◀ Prev</button>
+                <button id="btn-play" onclick="togglePlay()">▶ Play</button>
+                <button id="btn-next" onclick="nextSegment()">Next ▶</button>
+                <button id="btn-next-section" onclick="nextSection()">Next Section ⏭</button>
+                <div class="nav-info">
+                    <span id="nav-info">Section 1/1 | Segment 1/1</span>
+                </div>
+            </div>
+            
+            <audio id="audio-player" style="display:none;"></audio>
+        </div>
+    </div>
+
+    <script>
+        let presentation = null;
+        let currentSectionIndex = 0;
+        let currentSegmentIndex = 0;
+        let isPlaying = false;
+        let audioPlayer = document.getElementById('audio-player');
+        
+        // Get job ID from URL path
+        function getJobId() {
+            const pathParts = window.location.pathname.split('/');
+            // Expected: /jobs/{jobId}/simple_player.html or /player/jobs/{jobId}/simple_player.html
+            for (let i = 0; i < pathParts.length; i++) {
+                if (pathParts[i] === 'jobs' && pathParts[i+1]) {
+                    return pathParts[i+1];
+                }
+            }
+            // Fallback: check query param
+            const params = new URLSearchParams(window.location.search);
+            return params.get('job') || 'c821c39c';
+        }
+        
+        async function loadPresentation() {
+            const jobId = getJobId();
+            console.log('Loading job:', jobId);
+            
+            try {
+                // Try multiple paths
+                const paths = [
+                    `presentation.json`,
+                    `/player/jobs/${jobId}/presentation.json`,
+                    `./presentation.json`
+                ];
+                
+                let data = null;
+                for (const path of paths) {
+                    try {
+                        const resp = await fetch(path);
+                        if (resp.ok) {
+                            data = await resp.json();
+                            console.log('Loaded from:', path);
+                            break;
+                        }
+                    } catch (e) {
+                        console.log('Failed path:', path);
+                    }
+                }
+                
+                if (!data) {
+                    throw new Error('Could not load presentation.json');
+                }
+                
+                presentation = data;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('player').style.display = 'block';
+                
+                renderSection();
+                
+            } catch (err) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Error: ' + err.message;
+            }
+        }
+        
+        function renderSection() {
+            const section = presentation.sections[currentSectionIndex];
+            if (!section) return;
+            
+            const sectionType = section.section_type || 'content';
+            const isIntro = sectionType === 'intro';
+            
+            // Update section info
+            document.getElementById('section-type').textContent = sectionType;
+            document.getElementById('section-title').textContent = section.title || 'Untitled Section';
+            
+            // Apply layout mode
+            const playerArea = document.getElementById('player-area');
+            const avatarPanel = document.getElementById('avatar-panel');
+            const contentPanel = document.getElementById('content-panel');
+            
+            if (isIntro) {
+                playerArea.className = 'player-area layout-intro';
+                avatarPanel.className = 'avatar-panel intro-mode';
+                avatarPanel.style.width = '80%';
+                contentPanel.style.display = 'none';
+            } else {
+                playerArea.className = 'player-area layout-standard';
+                avatarPanel.className = 'avatar-panel standard-mode';
+                avatarPanel.style.width = '55%';
+                contentPanel.style.display = 'block';
+            }
+            
+            // Render segments
+            const segments = section.narration?.segments || [];
+            const container = document.getElementById('segments-container');
+            container.innerHTML = '';
+            
+            segments.forEach((seg, idx) => {
+                const div = document.createElement('div');
+                div.className = 'segment' + (idx === currentSegmentIndex ? ' active' : '');
+                div.id = 'segment-' + idx;
+                
+                // ONLY show visual content (not narration - narration is for audio)
+                const vc = seg.visual_content;
+                if (vc) {
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'visual-content';
+                    contentDiv.innerHTML = formatVisualContent(vc);
+                    div.appendChild(contentDiv);
+                } else {
+                    // Fallback if no visual content
+                    const fallback = document.createElement('div');
+                    fallback.className = 'visual-content';
+                    fallback.textContent = '(No visual content for this segment)';
+                    div.appendChild(fallback);
+                }
+                
+                div.onclick = () => goToSegment(idx);
+                container.appendChild(div);
+            });
+            
+            // Update audio source
+            const audioPath = `/player/jobs/${getJobId()}/audio/section_${currentSectionIndex + 1}.mp3`;
+            audioPlayer.src = audioPath;
+            
+            updateNavInfo();
+            
+            // Trigger MathJax rendering
+            if (window.MathJax) {
+                MathJax.typesetPromise().catch(err => console.log('MathJax error:', err));
+            }
+        }
+        
+        function formatVisualContent(vc) {
+            if (!vc) return '';
+            
+            const type = vc.content_type;
+            
+            // Handle formulas with LaTeX
+            if (type === 'formula' || type === 'equation') {
+                const latex = vc.latex || vc.formula || vc.content || '';
+                return `<div class="formula-block">\\[${escapeHtml(latex)}\\]</div>`;
+            }
+            
+            // Handle bullet lists - supports both {level, text} objects and plain strings
+            if (type === 'bullet_list' || type === 'list') {
+                const items = vc.bullet_points || vc.items || vc.bullets || [];
+                if (items.length === 0) return formatText(vc.content || vc.text || '');
+                return '<ul>' + items.map(item => {
+                    const text = typeof item === 'object' ? item.text : item;
+                    const level = typeof item === 'object' ? (item.level || 1) : 1;
+                    const indent = level > 1 ? `style="margin-left: ${(level-1)*20}px;"` : '';
+                    return `<li ${indent}>${formatText(text)}</li>`;
+                }).join('') + '</ul>';
+            }
+            
+            // Handle ordered lists - supports both {level, text} objects and plain strings
+            if (type === 'ordered_list' || type === 'numbered_list') {
+                const items = vc.list_items || vc.items || vc.steps || [];
+                if (items.length === 0) return formatText(vc.content || vc.text || '');
+                return '<ol>' + items.map(item => {
+                    const text = typeof item === 'object' ? item.text : item;
+                    return `<li>${formatText(text)}</li>`;
+                }).join('') + '</ol>';
+            }
+            
+            // Handle paragraphs
+            if (type === 'paragraph' || type === 'text') {
+                return formatText(vc.content || vc.text || '');
+            }
+            
+            // Handle tables
+            if (type === 'table') {
+                const headers = vc.headers || [];
+                const rows = vc.rows || [];
+                let html = '<table border="1" style="border-collapse:collapse; width:100%;">';
+                if (headers.length) {
+                    html += '<tr>' + headers.map(h => `<th style="padding:8px; background:#0f3460;">${formatText(h)}</th>`).join('') + '</tr>';
+                }
+                rows.forEach(row => {
+                    html += '<tr>' + row.map(cell => `<td style="padding:8px;">${formatText(cell)}</td>`).join('') + '</tr>';
+                });
+                html += '</table>';
+                return html;
+            }
+            
+            // Default: show raw content
+            return formatText(vc.content || vc.text || JSON.stringify(vc, null, 2));
+        }
+        
+        function formatText(text) {
+            if (!text) return '';
+            text = escapeHtml(text);
+            // Convert inline LaTeX $...$ to MathJax format
+            text = text.replace(/\$([^$]+)\$/g, '\\($1\\)');
+            // Convert display LaTeX $$...$$ to MathJax format
+            text = text.replace(/\$\$([^$]+)\$\$/g, '\\[$1\\]');
+            return text;
+        }
+        
+        function escapeHtml(text) {
+            if (typeof text !== 'string') return String(text);
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+        
+        function updateNavInfo() {
+            const totalSections = presentation.sections.length;
+            const section = presentation.sections[currentSectionIndex];
+            const totalSegments = section?.narration?.segments?.length || 1;
+            
+            document.getElementById('nav-info').textContent = 
+                `Section ${currentSectionIndex + 1}/${totalSections} | Segment ${currentSegmentIndex + 1}/${totalSegments}`;
+            
+            // Update button states
+            document.getElementById('btn-prev-section').disabled = currentSectionIndex === 0;
+            document.getElementById('btn-next-section').disabled = currentSectionIndex >= totalSections - 1;
+            
+            const section2 = presentation.sections[currentSectionIndex];
+            const segCount = section2?.narration?.segments?.length || 1;
+            document.getElementById('btn-prev').disabled = currentSegmentIndex === 0 && currentSectionIndex === 0;
+            document.getElementById('btn-next').disabled = 
+                currentSegmentIndex >= segCount - 1 && currentSectionIndex >= totalSections - 1;
+        }
+        
+        function goToSegment(idx) {
+            currentSegmentIndex = idx;
+            highlightCurrentSegment();
+            updateNavInfo();
+        }
+        
+        function highlightCurrentSegment() {
+            document.querySelectorAll('.segment').forEach((el, idx) => {
+                el.classList.toggle('active', idx === currentSegmentIndex);
+            });
+            
+            const activeEl = document.getElementById('segment-' + currentSegmentIndex);
+            if (activeEl) {
+                activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        function prevSegment() {
+            if (currentSegmentIndex > 0) {
+                currentSegmentIndex--;
+                highlightCurrentSegment();
+                updateNavInfo();
+            } else if (currentSectionIndex > 0) {
+                currentSectionIndex--;
+                const prevSection = presentation.sections[currentSectionIndex];
+                currentSegmentIndex = (prevSection?.narration?.segments?.length || 1) - 1;
+                renderSection();
+            }
+        }
+        
+        function nextSegment() {
+            const section = presentation.sections[currentSectionIndex];
+            const segCount = section?.narration?.segments?.length || 1;
+            
+            if (currentSegmentIndex < segCount - 1) {
+                currentSegmentIndex++;
+                highlightCurrentSegment();
+                updateNavInfo();
+            } else if (currentSectionIndex < presentation.sections.length - 1) {
+                currentSectionIndex++;
+                currentSegmentIndex = 0;
+                renderSection();
+            }
+        }
+        
+        function prevSection() {
+            if (currentSectionIndex > 0) {
+                currentSectionIndex--;
+                currentSegmentIndex = 0;
+                renderSection();
+            }
+        }
+        
+        function nextSection() {
+            if (currentSectionIndex < presentation.sections.length - 1) {
+                currentSectionIndex++;
+                currentSegmentIndex = 0;
+                renderSection();
+            }
+        }
+        
+        function togglePlay() {
+            const btn = document.getElementById('btn-play');
+            if (isPlaying) {
+                audioPlayer.pause();
+                btn.textContent = '▶ Play';
+                isPlaying = false;
+            } else {
+                audioPlayer.play().catch(err => console.log('Audio play error:', err));
+                btn.textContent = '⏸ Pause';
+                isPlaying = true;
+            }
+        }
+        
+        audioPlayer.onended = function() {
+            isPlaying = false;
+            document.getElementById('btn-play').textContent = '▶ Play';
+            // Auto-advance to next section
+            if (currentSectionIndex < presentation.sections.length - 1) {
+                nextSection();
+            }
+        };
+        
+        // Load on page ready
+        document.addEventListener('DOMContentLoaded', loadPresentation);
+    </script>
+</body>
+</html>

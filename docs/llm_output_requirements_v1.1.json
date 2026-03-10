@@ -1,0 +1,207 @@
+{
+    "version": "1.1",
+    "role": "LLM Director",
+    "description": "Authoritative contract for converting textbook Markdown into synchronized educational videos, narration, gestures, and presentation structure.",
+    "subject_metadata": {
+        "subject": "Physics | Biology | Maths | Chemistry",
+        "grade": "8 | 9 | 10",
+        "chapter": "string",
+        "difficulty": "introductory | standard | advanced"
+    },
+    "global_principles": {
+        "llm_is_director": true,
+        "renderers_are_executors": true,
+        "player_is_dumb": true,
+        "no_fallbacks_allowed": true,
+        "fail_fast_on_quality_violation": true
+    },
+    "display_fitness_rules": {
+        "max_text_lines_on_screen": 4,
+        "max_words_per_line": 12,
+        "no_simultaneous_dense_text_and_complex_visual": true,
+        "if_text_exceeds_limits": "split_into_additional_segments"
+    },
+    "pedagogical_sequence_rule": {
+        "content_sections": "explain_with_text_then_visualize",
+        "example_sections": "visualize_step_by_step_with_minimal_text",
+        "never_show_full_text_and_complex_visual_simultaneously": true
+    },
+    "section_types": [
+        "intro",
+        "summary",
+        "content",
+        "example",
+        "quiz",
+        "memory",
+        "recap"
+    ],
+    "renderer_decision_rules": {
+        "manim": [
+            "math",
+            "vectors",
+            "geometry",
+            "graphs",
+            "numerical_physics_examples"
+        ],
+        "wan_video": [
+            "biology_processes",
+            "physical_phenomena",
+            "chemistry_reactions",
+            "conceptual_fields",
+            "recap_storytelling"
+        ]
+    },
+    "avatar_gesture_rules": {
+        "gesture_scope": "semantic_only",
+        "allowed_gestures": [
+            "point_left",
+            "point_right",
+            "point_center",
+            "open_palms",
+            "nod",
+            "emphasize",
+            "idle"
+        ],
+        "gesture_binding": "per_narration_segment",
+        "no_engine_specific_names": true
+    },
+    "section_structure": {
+        "common_fields": [
+            "section_id",
+            "section_type",
+            "title",
+            "renderer",
+            "renderer_reasoning",
+            "layout",
+            "narration",
+            "narration_segments"
+        ]
+    },
+    "narration_segments": {
+        "required_fields": [
+            "id",
+            "text",
+            "duration_seconds"
+        ],
+        "optional_fields": [
+            "gesture_hint"
+        ]
+    },
+    "gesture_hint": {
+        "type": "one_of_allowed_gestures",
+        "intent": "string"
+    },
+    "content_section_rules": {
+        "minimum_narration_words": 150,
+        "maximum_narration_words": 250,
+        "must_have_visual_beats": true
+    },
+    "visual_beat_structure": {
+        "segment_id": "matches narration_segment.id",
+        "scene_setup": "initial state of the scene",
+        "objects_and_properties": "all objects, positions, colors, sizes",
+        "motion_sequence": "step-by-step animation description",
+        "labels_and_text": "all visible labels and symbols",
+        "purpose": "pedagogical goal of this beat",
+        "duration_seconds": "float"
+    },
+    "example_section_rules": {
+        "must_have_example_steps": true,
+        "example_steps": [
+            "identify_known_quantities",
+            "draw_geometry",
+            "apply_formula",
+            "solve_stepwise",
+            "state_conclusion"
+        ],
+        "renderer": "manim",
+        "each_step_requires_visual_beat": true
+    },
+    "manim_scene_spec": {
+        "coordinate_system": {
+            "type": "cartesian",
+            "origin": [
+                0,
+                0
+            ],
+            "scale": 1.0
+        },
+        "objects": [
+            {
+                "type": "point_charge | shape | graph_element",
+                "id": "string",
+                "position": [
+                    0,
+                    0
+                ],
+                "properties": {}
+            }
+        ],
+        "forces": [
+            {
+                "id": "string",
+                "on": "object_id",
+                "direction": "towards:object_id | away_from:object_id",
+                "label": "string",
+                "color": "string"
+            }
+        ],
+        "equations": [
+            {
+                "id": "string",
+                "latex": "string",
+                "position": [
+                    0,
+                    0
+                ]
+            }
+        ],
+        "animation_sequence": [
+            {
+                "action": "appear | draw_force | show_equation | transform | emphasize",
+                "target": "object_or_equation_id"
+            }
+        ]
+    },
+    "quiz_handling_rules": {
+        "one_question_per_section": true,
+        "answer_hidden_initially": true,
+        "solution_revealed_stepwise": true,
+        "visual_style": "flash_card_or_blackboard"
+    },
+    "memory_section_rules": {
+        "format": "flashcards",
+        "flashcard_limit": 5,
+        "acronym_based": true
+    },
+    "recap_section_rules": {
+        "renderer": "wan_video",
+        "scene_count": 5,
+        "scene_narration_words_range": [
+            60,
+            100
+        ],
+        "storytelling_mode": true,
+        "no_text_slides": true,
+        "mental_movie_goal": true
+    },
+    "validation_rules": {
+        "hard_fail_conditions": [
+            "content_or_example_narration_below_minimum",
+            "missing_visual_beats",
+            "example_without_step_visualization",
+            "formula_mentioned_but_not_visualized",
+            "vague_visual_language_detected",
+            "manim_section_without_scene_spec"
+        ],
+        "soft_warn_conditions": [
+            "intro_summary_memory_recap_length_variation"
+        ]
+    },
+    "traceability": {
+        "generation_trace_required": true,
+        "render_prompts_logged": true,
+        "renderer_decisions_logged": true,
+        "validation_results_logged": true
+    }
+}

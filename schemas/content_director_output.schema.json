@@ -1,0 +1,179 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ContentDirectorOutput",
+  "description": "Schema for Pass 1a: Content Director output - intro/summary/content/example/quiz sections only",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Lesson title"
+    },
+    "sections": {
+      "type": "array",
+      "description": "Lesson sections (Intro, Summary, Content, Example, Quiz ONLY - NO memory/recap)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "section_id": {
+            "type": "string",
+            "description": "Unique section identifier"
+          },
+          "section_type": {
+            "type": "string",
+            "enum": ["intro", "summary", "content", "example", "quiz"],
+            "description": "Section type - memory and recap are handled by Recap Director"
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title"
+          },
+          "renderer": {
+            "type": "string",
+            "enum": ["remotion", "manim", "video"],
+            "description": "Renderer to use for this section"
+          },
+          "renderer_reasoning": {
+            "type": "string",
+            "description": "Brief explanation for renderer choice"
+          },
+          "layout": {
+            "type": "object",
+            "properties": {
+              "avatar_position": {
+                "type": "string",
+                "enum": ["left", "right", "center", "hidden"],
+                "description": "Avatar position on screen"
+              },
+              "avatar_width_percent": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Avatar width as percentage of screen"
+              },
+              "content_zone": {
+                "type": "string",
+                "description": "Content zone dimensions"
+              },
+              "avatar_zone": {
+                "type": "string",
+                "description": "Avatar zone dimensions"
+              }
+            },
+            "required": ["avatar_position", "avatar_width_percent"]
+          },
+          "narration": {
+            "type": "object",
+            "properties": {
+              "full_text": {
+                "type": "string",
+                "description": "Complete narration text for TTS"
+              },
+              "segments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "segment_id": {
+                      "type": "string",
+                      "description": "Unique segment identifier"
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "Narration text for this segment (TTS only, not displayed)"
+                    },
+                    "duration_estimate": {
+                      "type": "number",
+                      "description": "Estimated duration in seconds (will be replaced by actual TTS duration)"
+                    },
+                    "display_directives": {
+                      "type": "object",
+                      "properties": {
+                        "text_layer": {
+                          "type": "string",
+                          "enum": ["show", "hide", "highlight"],
+                          "description": "Text layer visibility"
+                        },
+                        "visual_layer": {
+                          "type": "string",
+                          "enum": ["show", "hide", "replace"],
+                          "description": "Visual layer visibility"
+                        },
+                        "avatar_layer": {
+                          "type": "string",
+                          "enum": ["show", "hide", "gesture_only"],
+                          "description": "Avatar layer visibility"
+                        }
+                      },
+                      "required": ["text_layer", "visual_layer", "avatar_layer"]
+                    },
+                    "visual_content": {
+                      "type": "object",
+                      "description": "Content to display on screen (NOT narrated)",
+                      "properties": {
+                        "bullet_points": {
+                          "type": "array",
+                          "items": { "type": "string" },
+                          "description": "Bullet points to display"
+                        },
+                        "formula": {
+                          "type": "string",
+                          "description": "LaTeX formula to display"
+                        },
+                        "labels": {
+                          "type": "array",
+                          "items": { "type": "string" },
+                          "description": "Labels for diagrams"
+                        },
+                        "steps": {
+                          "type": "array",
+                          "items": { "type": "string" },
+                          "description": "Step-by-step instructions"
+                        },
+                        "image_id": {
+                          "type": "string",
+                          "description": "Reference to an image asset"
+                        }
+                      }
+                    },
+                    "avatar_gesture": {
+                      "type": "string",
+                      "description": "Avatar gesture for this segment"
+                    }
+                  },
+                  "required": ["segment_id", "text", "display_directives"]
+                }
+              }
+            },
+            "required": ["full_text", "segments"]
+          },
+          "visual_beats": {
+            "type": "array",
+            "description": "Visual beats for manim/video renderers",
+            "items": {
+              "type": "object",
+              "properties": {
+                "beat_id": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "manim_scene_spec": {
+                  "type": "object",
+                  "description": "Manim scene specification (required if renderer=manim)"
+                },
+                "video_prompt": {
+                  "type": "string",
+                  "description": "Video generation prompt (required if renderer=video)"
+                }
+              },
+              "required": ["beat_id", "description"]
+            }
+          }
+        },
+        "required": ["section_id", "section_type", "renderer", "narration"]
+      }
+    }
+  },
+  "required": ["sections"]
+}

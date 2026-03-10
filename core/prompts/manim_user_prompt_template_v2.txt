@@ -1,0 +1,26 @@
+Generate a complete, executable Manim script for the following section.
+
+**Section Title**: {section_title}
+
+=== NARRATION SCHEDULE (Use strictly for timing) ===
+{narration_segments}
+
+=== VISUAL PLAN ===
+{visual_description}
+
+=== MATHEMATICAL CONTENT ===
+- Main formulas: {formulas}
+- Key terms: {key_terms}
+
+=== REQUIREMENTS ===
+1. **Output**: Full Python code (`import manim`, `class MainScene(Scene)`, `def construct(self)`).
+2. **Timing**: Total duration must happen exactly as scheduled.
+   - Use `self.wait()` to pad time between animations.
+   - `run_time` + `wait` = Segment Duration.
+3. **Anti-Overlap (Temporal)**: Do NOT start length animations that exceed the segment audio.
+4. **Anti-Overlap (Spatial)**:
+   - Use `FadeOut(VGroup(obj1, obj2))` to clear screen before new major concepts.
+   - Use `.next_to(target, DOWN/RIGHT)` to place text. Avoid hardcoded coords that might overlap.
+   - Ensure text is readable (font size > 30).
+5. **Structure**: You MUST start each segment's code with a comment: `# Segment X`.
+6. **Code Only**: Return ONLY the python code. No markdown formatting.

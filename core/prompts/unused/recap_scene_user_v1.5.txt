@@ -1,0 +1,33 @@
+Create 5 detailed video prompts for the recap section:
+
+Subject: {subject}
+
+## KEY CONCEPTS TO VISUALIZE:
+{key_concepts}
+
+## SOURCE CONTENT:
+{source_markdown}
+
+## INSTRUCTIONS:
+
+1. Create exactly 5 video prompts, one for each major concept
+2. Each prompt MUST be 80-150 words and UNDER 800 CHARACTERS (API hard limit)
+3. Be extremely specific - describe exact visuals, no vague phrases
+4. Use visual metaphors that make abstract concepts concrete
+5. prompt_id must be 1, 2, 3, 4, 5 in order
+
+## CHARACTER CONTINUITY REQUIREMENT:
+
+- Define your characters in character_registry FIRST
+- Use the EXACT SAME character names and descriptions in ALL 5 prompts
+- DO NOT change character appearance between scenes (same hair, clothing, etc.)
+- Example: If scene 1 has "Dr. Patel in blue scrubs", ALL scenes must use "Dr. Patel in blue scrubs"
+
+## LENGTH REQUIREMENT (CRITICAL):
+
+Each prompt is validated INDIVIDUALLY:
+- Minimum: 80 words
+- Maximum: 150 words / 800 characters
+- Prompts over 800 characters WILL BE REJECTED
+
+Output ONLY the JSON structure with character_registry and 5 video prompts.

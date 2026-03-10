@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "render_spec.schema.json",
+  "title": "RenderSpec",
+  "description": "Output from RendererSpecAgent - renderer-specific instructions",
+  "type": "object",
+  "properties": {
+    "section_id": {
+      "type": "string",
+      "description": "References the section"
+    },
+    "renderer": {
+      "type": "string",
+      "enum": ["manim", "video", "remotion", "none"],
+      "description": "Which renderer this spec is for"
+    },
+    "manim_scene_spec": {
+      "type": "object",
+      "description": "Manim renderer specification",
+      "properties": {
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "type": {"type": "string"},
+              "properties": {"type": "object"}
+            },
+            "required": ["id", "type"]
+          }
+        },
+        "animation_sequence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "object_id": {"type": "string"},
+              "animation": {"type": "string"},
+              "timing": {"type": "object"}
+            },
+            "required": ["object_id", "animation"]
+          }
+        }
+      },
+      "required": ["objects", "animation_sequence"]
+    },
+    "video_prompts": {
+      "type": "array",
+      "description": "Video generation prompts (WAN/Kie.ai)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "beat_id": {
+            "type": "integer",
+            "description": "References visual beat"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 100,
+            "description": "Detailed video prompt (300+ words for recap)"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "minimum": 3
+          },
+          "style": {
+            "type": "string",
+            "description": "Visual style hint"
+          }
+        },
+        "required": ["beat_id", "prompt", "duration_seconds", "style"]
+      }
+    },
+    "remotion_scene_spec": {
+      "type": "object",
+      "description": "Remotion renderer specification",
+      "properties": {
+        "template": {
+          "type": "string",
+          "description": "Template name to use"
+        },
+        "props": {
+          "type": "object",
+          "description": "Props to pass to template"
+        }
+      },
+      "required": ["template", "props"]
+    }
+  },
+  "required": ["section_id", "renderer"],
+  "additionalProperties": false
+}

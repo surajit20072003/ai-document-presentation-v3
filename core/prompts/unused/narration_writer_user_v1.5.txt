@@ -1,0 +1,39 @@
+Write the TTS narration for this section:
+
+## SECTION BLUEPRINT:
+{section_blueprint}
+
+## SOURCE CONTENT:
+{source_markdown}
+
+## QUIZ QUESTIONS (only for quiz sections):
+{quiz_questions}
+
+## STEP-BY-STEP INSTRUCTIONS:
+
+**Step 1: Plan Your Segments**
+- Review the section blueprint to understand the section type and learning goals
+- Decide how many segments you need (max 5 for most sections, exactly 5 for recap)
+- Plan what each segment will say
+
+**Step 2: Write Each Segment**
+- Write the text for each segment (one coherent thought per segment)
+- Calculate duration_seconds: (word_count / 130) * 60
+
+**Step 3: Build full_text BY CONCATENATION (CRITICAL)**
+- Take segment[1].text + " " + segment[2].text + " " + ... 
+- This concatenation IS your full_text - copy it exactly
+- DO NOT write a separate summary for full_text
+
+**Step 4: Validate Before Output**
+- Count words in full_text
+- Count total words across all segment texts
+- These MUST match (within 5 words) or your output will be REJECTED
+
+**Step 5: Output JSON**
+- For QUIZ sections: Include [pause X seconds] segments between Q&A
+- Add gesture_hints where appropriate
+
+Remember: This is AUDIO narration only. Do not include bullet points, formulas, or visual content in the text.
+
+Output ONLY the JSON structure with your narration.

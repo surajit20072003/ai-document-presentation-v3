@@ -1,0 +1,21 @@
+Create video generation prompts for this section:
+
+## SECTION INFO:
+Section ID: {section_id}
+Is Recap: {is_recap}
+
+## VISUAL BEATS:
+{visual_beats}
+
+## NARRATION SUMMARY:
+{narration_summary}
+
+## INSTRUCTIONS:
+
+1. Create one video prompt per visual beat
+2. For recap sections: each prompt MUST be 200+ words
+3. For other sections: each prompt should be 100+ words
+4. Be extremely specific - no vague or generic descriptions
+5. Focus on visualizing the educational concept
+
+Output ONLY the JSON structure with your video prompts.

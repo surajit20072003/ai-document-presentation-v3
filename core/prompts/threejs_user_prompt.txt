@@ -1,0 +1,56 @@
+Generate a complete Three.js animation scene that VISUALLY ILLUSTRATES the avatar's narration below.
+
+=== PRIMARY INPUT: WHAT AVATAR IS SAYING ===
+This is the MOST IMPORTANT input. Your animation MUST directly show/illustrate
+what the avatar is narrating — word by word, segment by segment.
+
+Full narration text:
+"{narration_full_text}"
+
+=== NARRATION TIMELINE (HARD SYNC — match these exact timestamps) ===
+{narration_timeline}
+
+RULE: For each segment above, show a visual that ILLUSTRATES that segment's words.
+Example: If segment says "a squared plus b squared equals c squared" → show the formula + triangle.
+If segment says "the hypotenuse is the longest side" → highlight/animate the hypotenuse.
+
+=== SECTION DETAILS ===
+Title: {section_title}
+Total Duration: {segment_duration_seconds} seconds
+Complexity: {complexity}
+Key Terms (highlight in gold): {key_terms}
+
+=== VISUAL STYLE GUIDE (secondary — use as inspiration only) ===
+{threejs_spec}
+
+=== SYNC REQUIREMENTS ===
+1. Animation MUST run for exactly {segment_duration_seconds} seconds (= real avatar MP4 duration), then FREEZE.
+2. VSYNC-002 — USE PROPORTIONAL TIMING, not hardcoded seconds:
+   The narration timeline gives you per-segment start/end times estimated from TTS.
+   The actual avatar video may be a slightly different total length.
+   Therefore, calculate each segment's start/end as a FRACTION of totalDuration:
+
+   // Compute proportions from the narration timeline durations:
+   var SEG_DUR = [ {{seg1_dur}}, {{seg2_dur}}, ... ];   // fill from timeline
+   var total   = SEG_DUR.reduce(function(a,b){{return a+b;}}, 0) || totalDuration;
+   var t0 = 0; var cuts = SEG_DUR.map(function(d){{ var c=t0; t0+=d/total*totalDuration; return c; }});
+   // Then in animate():
+   // if (e >= cuts[0] && e < cuts[1]) {{ showSegment1(e - cuts[0]); }}
+   // if (e >= cuts[1] && e < cuts[2]) {{ showSegment2(e - cuts[1]); }}
+
+3. Each segment's visuals MUST be visible in that segment's proportional time window.
+4. Key terms must appear in gold (0xf6c44e) when they are spoken.
+5. Background: 0x0d1117 (dark, always).
+6. IF YOU SET `visible = false` initially, YOU MUST SET `visible = true` in `animate()` when that object's segment arrives, otherwise nothing will appear!
+6. Text labels ONLY via makeLabel() / canvas texture — no FontLoader.
+7. All geometry within safe zone: X[-6,6] Y[-3.5,3.5] Z[-5,5].
+8. initScene(container, totalDuration, params) — exact signature.
+9. return {{ onResize, onPinchZoom, dispose }} — all 3 hooks.
+10. Use getElapsed() with params.getTime() for clock — see system prompt.
+
+=== ANIMATION STYLE ===
+- Use animateDraw() for lines, fadeIn() for labels
+- Objects build progressively — never all at once
+- Each segment: fade in new objects, hold, then transition to next
+
+Output ONLY the JavaScript code. No markdown. No explanation.

@@ -1,0 +1,25 @@
+Create lesson sections for this {subject} content at {grade} level.
+
+## Topic Blocks from Chunker
+{topics_json}
+
+## Your Task
+Create a complete lesson with these sections:
+1. **intro**: Welcome students, preview what they'll learn
+2. **summary**: Key takeaways (can come early in lesson)
+3. **content**: Main teaching content (1-3 sections based on topics)
+4. **example**: Worked example with step-by-step explanation
+5. **quiz**: 2-3 knowledge check questions
+
+## Requirements
+- Write engaging narration for Indian Grade 10 students
+- Include visual_content for each segment (bullet_points, formulas, labels)
+- Follow display_directive rules: text_layer and visual_layer cannot both be "show"
+- Use appropriate renderer for each section type
+- Estimate duration at ~130 words per minute
+
+## DO NOT Generate
+- memory section (Recap Director handles this)
+- recap section (Recap Director handles this)
+
+Output valid JSON only.

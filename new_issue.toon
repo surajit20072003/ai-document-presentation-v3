@@ -1,0 +1,121 @@
+{
+  "issues": [
+    {
+      "id": "ISS-001",
+      "title": "Manim Retry from Dashboard - Code Generation Quality Issue",
+      "priority": "HIGH",
+      "status": "FIXED",
+      "affected_job": "30d668e2",
+      "affected_sections": [5, 7, 14, 16],
+      "symptom": "Manim retry from Dashboard triggers code regeneration, but video rendering fails with ValueError.",
+      "root_cause": "LLM-generated Manim code has bugs. Example: RightAngle() called with collinear lines (Line(R,P) and Line(R,ORIGIN) where R=P*0.6), causing 'The lines are parallel' error.",
+      "affected_files": [
+        "core/agents/manim_code_generator.py"
+      ],
+      "fix": {
+        "description": "Improve Manim code generation prompt to include constraint about RightAngle requiring perpendicular lines. Add post-generation validation to catch collinear line issues.",
+        "changes": [
+          {
+            "file": "core/agents/manim_code_generator.py",
+            "action": "MODIFY",
+            "detail": "Add to LLM prompt: 'When creating RightAngle, ensure the two lines are perpendicular, not parallel or collinear. Verify coordinates before using RightAngle.'"
+          }
+        ]
+      },
+      "verification": "Retry manim_codegen for section 7, check generated code for RightAngle usage, run manim_render."
+    },
+    {
+      "id": "ISS-002",
+      "title": "Images Not Displaying in Teach Mode",
+      "priority": "HIGH",
+      "status": "FIXED",
+      "symptom": "Images defined in presentation.json visual_beats are not displayed during Teach phase in player.",
+      "root_cause": "Two bugs in player_v2.js: (1) Line 783 forces .jpg/.jpeg to .png breaking valid .jpg files. (2) Lines 1385-1388 use '===' instead of '<=' hiding previously revealed beats including images.",
+      "affected_files": [
+        "player/player_v2.js"
+      ],
+      "fix": {
+        "description": "Trust presentation.json paths and show all revealed beats during Teach phase.",
+        "changes": [
+          {
+            "file": "player/player_v2.js",
+            "action": "MODIFY",
+            "line": 783,
+            "before": "const newImgPath = imgPath.replace(/\\.(jpg|jpeg)$/i, '.png');",
+            "after": "const newImgPath = imgPath; // V2.6 FIX: Trust presentation.json"
+          },
+          {
+            "file": "player/player_v2.js",
+            "action": "MODIFY",
+            "line": 1385,
+            "before": "} else if (beatIndex === activeBeatIndex) {",
+            "after": "} else if (beatIndex <= activeBeatIndex) {"
+          }
+        ]
+      },
+      "verification": "Open player for job with images, play through Teach phase, verify images appear and persist."
+    },
+    {
+      "id": "ISS-003",
+      "title": "Markdown Content Display Issues",
+      "priority": "MEDIUM",
+      "status": "FIXED",
+      "symptom": "Markdown tables and formatted text not rendering with proper styling.",
+      "root_cause": "Markdown styles ARE included in player_v2.css (lines 267-355). Display issue likely caused by ISS-002 hiding content. marked.js is correctly loaded via CDN.",
+      "affected_files": [
+        "player/player_v2.js",
+        "player/player_v2.css"
+      ],
+      "fix": {
+        "description": "No CSS changes needed. Fixing ISS-002 should resolve this. If issue persists, verify marked.js is parsing correctly by adding console.log in sanitizeMarkdown.",
+        "changes": []
+      },
+      "verification": "After fixing ISS-002, open Summary or Content section, verify tables have colored headers and borders."
+    },
+    {
+      "id": "ISS-004",
+      "title": "Avatar Generation Stalls - Only Partial Avatars Downloaded",
+      "priority": "HIGH",
+      "status": "FIXED",
+      "affected_job": "30d668e2",
+      "missing_sections": [15, 16, 17, 18, 19, 20],
+      "completed_sections": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+      "symptom": "Avatar generation from Dashboard generates first 14 sections, then stops. Avatars may be generated on server but not downloaded/polled.",
+      "root_cause_hypothesis": [
+        "HTTP request timeout during long-running job",
+        "_retry_avatar_generation polls sequentially (5 min timeout per section) - 6 sections = 30 min max, could timeout",
+        "Server-side avatar API may return unexpected status not handled by polling loop",
+        "Dashboard 'Generate Avatar' button makes single request, API returns before all complete"
+      ],
+      "affected_files": [
+        "api/app.py",
+        "core/agents/avatar_generator.py"
+      ],
+      "fix": {
+        "description": "Dashboard 'Generate Avatar' uses /job/<id>/regenerate_failed_avatars or retry_phase with avatar_generation phase. The _retry_avatar_generation function processes sequentially with polling. For remaining sections, manually retry via curl or fix background processing.",
+        "changes": [
+          {
+            "file": "api/app.py",
+            "action": "INVESTIGATE",
+            "detail": "Check if _retry_avatar_generation is being called correctly for all missing sections. Add logging to track which sections are being processed."
+          },
+          {
+            "file": "api/app.py",
+            "action": "MODIFY (optional)",
+            "detail": "Consider making avatar generation async with background polling, storing task_ids in a status file, and exposing a separate endpoint to check/resume."
+          }
+        ],
+        "workaround": "Run retry manually: curl -X POST 'http://localhost:5005/job/30d668e2/retry_phase' -H 'Content-Type: application/json' -d '{\"phase\":\"avatar_generation\", \"section_ids\":[15,16,17,18,19,20]}'"
+      },
+      "verification": "After manual retry, check avatars directory for section_15-20_avatar.mp4 files."
+    }
+  ],
+  "summary": {
+    "total_issues": 4,
+    "high_priority": 3,
+    "medium_priority": 1,
+    "recommended_fix_order": ["ISS-002", "ISS-004", "ISS-001", "ISS-003"]
+  },
+  "created_at": "2026-01-23T16:35:00+05:30",
+  "job_under_analysis": "30d668e2"
+}

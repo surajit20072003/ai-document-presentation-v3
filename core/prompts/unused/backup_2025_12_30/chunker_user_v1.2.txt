@@ -1,0 +1,19 @@
+Split the following textbook Markdown into clean teaching chunks.
+
+TEXTBOOK MARKDOWN:
+{markdown_content}
+
+RESPONSE FORMAT (use EXACTLY this structure):
+{
+  "chunks": [
+    {
+      "chunk_id": 1,
+      "title": "Concept Title",
+      "content": "Original textbook content preserved exactly...",
+      "chunk_type": "concept | example | exercise | summary"
+    }
+  ]
+}
+
+CRITICAL: The top-level key MUST be "chunks". Not "sections", "parts", or "content".
+Output JSON only. No extra text.

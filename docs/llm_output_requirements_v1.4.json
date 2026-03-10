@@ -1,0 +1,450 @@
+{
+  "spec_version": "v1.4",
+  "description": "Deterministic Educational Film Engine - Split Director Architecture",
+  "last_updated": "2025-12-22",
+  "resolves": "ISS-080 (Director LLM Fails v1.3 Structural Validation Consistently)",
+
+  "pipeline_architecture": {
+    "pass_0_smart_chunker": {
+      "model": "google/gemini-2.5-pro",
+      "role": "Extract logical topics with metadata from markdown",
+      "inputs": ["raw_markdown", "subject"],
+      "outputs": "topics.json with source_topic and topics array",
+      "output_format": {
+        "source_topic": "Main subject of the document",
+        "topics": [
+          {
+            "topic_id": "t1",
+            "title": "Topic title",
+            "concept_type": "process|definition|example|formula|theory|fact",
+            "source_blocks": [1, 2, 3],
+            "key_terms": ["term1", "term2"],
+            "has_formula": false,
+            "suggested_renderer": "remotion|manim|video"
+          }
+        ]
+      },
+      "retries": {
+        "structural": 2,
+        "semantic": 0
+      },
+      "prompts": ["smart_chunker_system_v1.4.txt", "smart_chunker_user_v1.4.txt"]
+    },
+    "pass_1a_content_director": {
+      "model": "google/gemini-2.5-pro",
+      "role": "Generate lesson structure sections with avatar, timing, visuals",
+      "inputs": ["topics from Pass 0", "subject", "grade"],
+      "outputs": "content_sections.json",
+      "generates": ["intro", "summary", "content", "example", "quiz"],
+      "does_not_generate": ["memory", "recap"],
+      "retries": {
+        "structural": 4,
+        "semantic": 2
+      },
+      "prompts": ["content_director_system_v1.4.txt", "content_director_user_v1.4.txt"],
+      "validation": {
+        "structural": [
+          "sections array present",
+          "section_type valid (intro|summary|content|example|quiz)",
+          "narration.segments array present",
+          "display_directives on every segment",
+          "renderer field present"
+        ],
+        "semantic": [
+          "intro avatar visible with width >= 50%",
+          "content narration >= 100 words",
+          "text_layer and visual_layer not both 'show'"
+        ]
+      }
+    },
+    "pass_1b_recap_director": {
+      "model": "google/gemini-2.5-pro",
+      "role": "Generate memory and recap sections with full context",
+      "inputs": ["full_markdown (NOT chunked)", "subject", "grade"],
+      "outputs": "recap_sections.json",
+      "generates": ["memory", "recap"],
+      "does_not_generate": ["intro", "summary", "content", "example", "quiz"],
+      "retries": {
+        "structural": 2,
+        "semantic": 1
+      },
+      "prompts": ["recap_director_system_v1.4.txt", "recap_director_user_v1.4.txt"],
+      "validation": {
+        "structural": [
+          "exactly 2 sections (memory + recap)",
+          "memory has exactly 5 flashcards",
+          "recap has exactly 5 video_prompts",
+          "memory renderer = remotion",
+          "recap renderer = video"
+        ],
+        "semantic": [
+          "recap avatar_position = hidden",
+          "recap avatar_layer = hide in all segments",
+          "recap narration 300-500 words",
+          "each video_prompt >= 300 words"
+        ]
+      }
+    },
+    "merge_step": {
+      "model": "none (deterministic Python)",
+      "role": "Combine Content Director + Recap Director outputs",
+      "inputs": ["content_sections.json", "recap_sections.json"],
+      "outputs": "presentation.json (v1.3 schema compliant, spec_version v1.4)",
+      "operations": [
+        "Combine sections: content_sections + [memory, recap]",
+        "Assign sequential section_ids",
+        "Preserve all fields from both outputs",
+        "Set spec_version: v1.4",
+        "Add generation metadata"
+      ],
+      "retries": "none - deterministic"
+    },
+    "pass_1_5_tts_duration": {
+      "model": "none (Narakeet API + mutagen)",
+      "role": "Generate TTS audio and measure actual durations",
+      "inputs": ["presentation.json with segments"],
+      "outputs": "presentation.json with updated duration_seconds",
+      "process": [
+        "For each segment, call Narakeet TTS API",
+        "Inspect MP3 metadata using mutagen.mp3.MP3",
+        "Update duration_seconds with audio.info.length",
+        "Calculate section total_duration_seconds"
+      ],
+      "fallback": "If Narakeet fails, estimate at 130 words/minute",
+      "benefits": [
+        "Microsecond-accurate timing",
+        "No playback needed for measurement",
+        "Audio files cached for later use"
+      ]
+    },
+    "three_tier_validation": {
+      "tier_1_structural": [
+        "All required fields present",
+        "Section types valid",
+        "display_directives on every segment",
+        "Renderer fields present"
+      ],
+      "tier_2_semantic": [
+        "Mutual exclusion (text_layer + visual_layer not both 'show')",
+        "Memory has exactly 5 flashcards",
+        "Recap has exactly 5 video prompts",
+        "Recap avatar hidden",
+        "Recap narration 300-500 words",
+        "Each video_prompt >= 300 words"
+      ],
+      "tier_3_quality_lint": [
+        "Vague language detection (warnings only)",
+        "Duration sanity checks (warnings only)"
+      ],
+      "on_failure": "HARD FAIL (no fallbacks)"
+    },
+    "pass_2_renderers": {
+      "role": "Deterministic rendering - NO creative LLM decisions",
+      "remotion": {
+        "model": "anthropic/claude-sonnet-4",
+        "use_for": ["intro", "summary", "memory", "quiz"],
+        "outputs": "remotion_scene_spec"
+      },
+      "manim": {
+        "model": "anthropic/claude-sonnet-4",
+        "use_for": ["math", "physics", "graphs", "geometry"],
+        "outputs": "manim_scene_spec"
+      },
+      "video": {
+        "model": "google/gemini-2.5-pro",
+        "use_for": ["biology", "chemistry", "physical phenomena", "recap"],
+        "outputs": "video_prompts (already in presentation.json from directors)"
+      }
+    },
+    "pass_3_player": {
+      "role": "DUMB execution layer",
+      "follows": ["display_directives", "layout instructions", "timing"],
+      "restrictions": ["no layout decisions", "no timing decisions", "no pedagogy decisions"]
+    }
+  },
+
+  "core_principles": {
+    "player_is_dumb": true,
+    "one_primary_attention_layer_at_a_time": true,
+    "teach_then_show": true,
+    "everything_is_timed": true,
+    "dense_text_and_complex_visuals_never_simultaneous": true,
+    "split_cognitive_load": true,
+    "targeted_retries": true
+  },
+
+  "v1_4_key_changes": {
+    "split_director_architecture": {
+      "description": "Single Director split into Content Director + Recap Director",
+      "content_director": "intro/summary/content/example/quiz (does NOT generate memory/recap)",
+      "recap_director": "memory (5 flashcards) + recap (5 video scenes, 300+ word prompts)",
+      "benefit": "Each director has focused rules = better LLM compliance"
+    },
+    "tts_duration_measurement": {
+      "description": "Pass 1.5 generates actual TTS and measures duration",
+      "implementation": "Narakeet API + mutagen MP3 metadata inspection",
+      "benefit": "Microsecond-accurate timing without playback"
+    },
+    "json_repair_pre_validation": {
+      "steps": [
+        "Strip markdown code fences",
+        "Fix trailing commas",
+        "Close unclosed brackets"
+      ],
+      "timing": "Applied BEFORE validation to salvage malformed LLM output"
+    },
+    "targeted_retry_matrix": {
+      "smart_chunker": {"structural": 2, "semantic": 0},
+      "content_director": {"structural": 4, "semantic": 2},
+      "recap_director": {"structural": 2, "semantic": 1}
+    }
+  },
+
+  "mandatory_section_order": [
+    "intro",
+    "summary",
+    "content",
+    "example",
+    "quiz",
+    "memory",
+    "recap"
+  ],
+
+  "section_types": {
+    "intro": {
+      "required": true,
+      "hard_fail_if_missing": true,
+      "generator": "content_director",
+      "renderer": "remotion",
+      "avatar": {
+        "visibility": "visible",
+        "position": "center_or_overlay",
+        "width_percent_min": 50
+      }
+    },
+    "summary": {
+      "required": true,
+      "hard_fail_if_missing": true,
+      "generator": "content_director",
+      "renderer": "remotion",
+      "avatar": {
+        "visibility": "visible",
+        "position": "center_or_side",
+        "width_percent_min": 35
+      }
+    },
+    "content": {
+      "required": true,
+      "generator": "content_director",
+      "minimum_narration_words": 100,
+      "renderer_options": ["manim", "video", "remotion"],
+      "avatar": {
+        "visibility": "visible",
+        "position": "side",
+        "width_percent_min": 30,
+        "width_percent_max": 40
+      }
+    },
+    "example": {
+      "required_if_present_in_source": true,
+      "generator": "content_director",
+      "minimum_narration_words": 100,
+      "must_be_visualized_step_by_step": true,
+      "renderer_options": ["manim", "video"],
+      "avatar": {
+        "visibility": "side_small_or_gesture_only",
+        "width_percent_max": 30
+      }
+    },
+    "quiz": {
+      "required": false,
+      "generator": "content_director",
+      "renderer": "remotion",
+      "avatar": {
+        "visibility": "hidden_or_minimal"
+      }
+    },
+    "memory": {
+      "required": true,
+      "generator": "recap_director",
+      "flashcard_count_exact": 5,
+      "renderer": "remotion",
+      "mnemonic_style": "R-A-S (first letters form memorable word/phrase)",
+      "flashcard_structure": {
+        "mnemonic_letter": "string",
+        "concept": "string",
+        "definition": "string"
+      },
+      "avatar": {
+        "visibility": "optional"
+      }
+    },
+    "recap": {
+      "required": true,
+      "generator": "recap_director",
+      "scene_count_exact": 5,
+      "per_scene_prompt_words_min": 300,
+      "total_narration_words_min": 300,
+      "total_narration_words_max": 500,
+      "renderer": "video",
+      "video_prompt_structure": {
+        "beat_id": "string",
+        "prompt": "string (300+ words, cinematic)",
+        "duration_estimate": "number",
+        "concept_title": "string"
+      },
+      "avatar": {
+        "visibility": "hidden",
+        "position": "hidden",
+        "avatar_layer": "hide"
+      }
+    }
+  },
+
+  "display_directives": {
+    "description": "Required for EVERY narration segment (same as v1.3)",
+    "required": true,
+    "hard_fail_if_missing": true,
+    "structure": {
+      "text_layer": {
+        "action": ["show", "hide", "highlight"],
+        "mutual_exclusion": "Cannot be 'show' when visual_layer is 'show'"
+      },
+      "visual_layer": {
+        "action": ["show", "hide", "replace"],
+        "mutual_exclusion": "Cannot be 'show' when text_layer is 'show'"
+      },
+      "avatar_layer": {
+        "action": ["show", "hide", "gesture_only"]
+      }
+    },
+    "rule": "Text MUST hide BEFORE complex visuals appear"
+  },
+
+  "narration_segment_structure": {
+    "required_fields": [
+      "segment_id",
+      "text",
+      "duration_seconds",
+      "display_directives"
+    ],
+    "optional_fields": [
+      "gesture_hint",
+      "word_count",
+      "visual_content"
+    ],
+    "two_channel_separation": {
+      "narration_channel": {
+        "field": "text",
+        "purpose": "Audio narration via TTS",
+        "display": "NEVER shown on screen"
+      },
+      "display_channel": {
+        "field": "visual_content",
+        "purpose": "Structured content for screen display",
+        "structure": {
+          "bullet_points": [
+            {"level": 1, "text": "Main point (max 80 chars)"},
+            {"level": 2, "text": "Sub-point (max 80 chars)"}
+          ],
+          "formula": "Optional LaTeX formula",
+          "labels": ["Optional", "label", "array"]
+        }
+      }
+    }
+  },
+
+  "video_prompt_requirements": {
+    "minimum_words": 300,
+    "must_include": [
+      "Specific camera movements (pan, zoom, dolly)",
+      "Lighting details (warm/cool, time of day)",
+      "Color palette and atmosphere",
+      "Specific visual elements and their placement",
+      "Motion and transitions",
+      "Indian context where appropriate"
+    ],
+    "forbidden": [
+      "Vague phrases like 'show a diagram'",
+      "Infographic descriptions",
+      "Text overlays or labels",
+      "Abstract representations"
+    ]
+  },
+
+  "banned_phrases_in_visual_beats": [
+    "appropriate animation",
+    "suitable visual",
+    "relevant content",
+    "necessary elements",
+    "various objects",
+    "etc",
+    "and so on",
+    "properly animated",
+    "correctly displayed",
+    "accordingly",
+    "as needed",
+    "as required",
+    "generic visual",
+    "typical animation",
+    "standard display",
+    "some kind of",
+    "some sort of",
+    "a type of",
+    "appropriate visual",
+    "suitable animation",
+    "relevant visual",
+    "clear diagram"
+  ],
+
+  "hard_fail_validation_rules": {
+    "structure_checks": [
+      {"rule": "intro section missing", "action": "FAIL"},
+      {"rule": "summary section missing", "action": "FAIL"},
+      {"rule": "memory section missing", "action": "FAIL"},
+      {"rule": "recap section missing", "action": "FAIL"},
+      {"rule": "narration segment missing display_directives", "action": "FAIL"}
+    ],
+    "memory_checks": [
+      {"rule": "memory section does not have exactly 5 flashcards", "action": "FAIL"}
+    ],
+    "recap_checks": [
+      {"rule": "recap section does not have exactly 5 video_prompts", "action": "FAIL"},
+      {"rule": "recap avatar not hidden", "action": "FAIL"},
+      {"rule": "recap narration < 300 words", "action": "FAIL"},
+      {"rule": "recap narration > 500 words", "action": "FAIL"},
+      {"rule": "any video_prompt < 300 words", "action": "FAIL"}
+    ],
+    "display_directive_checks": [
+      {"rule": "text_layer and visual_layer both 'show'", "action": "FAIL"}
+    ],
+    "avatar_checks": [
+      {"rule": "intro avatar not visible or < 50% width", "action": "FAIL"},
+      {"rule": "recap avatar visible", "action": "FAIL"}
+    ]
+  },
+
+  "file_structure": {
+    "core_modules": [
+      "core/smart_chunker.py",
+      "core/content_director.py",
+      "core/recap_director.py",
+      "core/merge_step.py",
+      "core/tts_duration.py",
+      "core/pipeline_v14.py",
+      "core/json_repair.py"
+    ],
+    "prompts": [
+      "core/prompts/smart_chunker_system_v1.4.txt",
+      "core/prompts/smart_chunker_user_v1.4.txt",
+      "core/prompts/content_director_system_v1.4.txt",
+      "core/prompts/content_director_user_v1.4.txt",
+      "core/prompts/recap_director_system_v1.4.txt",
+      "core/prompts/recap_director_user_v1.4.txt"
+    ],
+    "documentation": [
+      "docs/llm_output_requirements_v1.4.json",
+      "docs/full_details_v1.4_plan.md"
+    ]
+  }
+}

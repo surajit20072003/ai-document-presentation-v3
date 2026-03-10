@@ -1,0 +1,55 @@
+Create Memory and Recap sections for this lesson:
+
+## SUBJECT:
+{subject}
+
+## KEY CONCEPTS:
+{key_concepts}
+
+## SOURCE CONTENT:
+{source_markdown}
+
+---
+
+## STEP-BY-STEP INSTRUCTIONS:
+
+**Step 1: Identify Top 3 Takeaways**
+- Review the source content
+- Select the 3 MOST IMPORTANT concepts students must remember
+- Plan a mnemonic or memory technique for each
+
+**Step 2: Create Memory Flashcards**
+- Create exactly 3 flashcards
+- Each flashcard: front (question/term) + back (answer with mnemonic)
+- Use Indian analogies where helpful
+
+**Step 3: Write Memory Narration**
+- Write 30-100 words total
+- Split into exactly 3 segments
+- Use "3 Keys to Remember" format
+
+**Step 4: Plan Recap Story**
+- Create a narrative arc connecting all 5 concepts
+- Use Indian setting (Mumbai, village, school, cricket field)
+- Each scene should visually represent one concept
+
+**Step 5: Write Video Prompts**
+- Exactly 5 prompts, IDs 1-5
+- Each prompt: 80-150 words, max 800 characters
+- Include: setting, action, visual details, concept connection
+- NO banned phrases (etc, beautiful, amazing, various)
+
+**Step 6: Write Recap Narration**
+- Write 150-350 words total
+- Split into exactly 5 segments (one per video)
+- Use storyteller voice with Indian flavor
+
+**Step 7: Validate Before Output**
+- Memory: 3 flashcards + 3 segments
+- Recap: 5 video prompts + 5 segments
+- full_text = concatenation of segments for both
+- Video prompts: 80-150 words, max 800 chars each
+
+---
+
+Output ONLY the JSON structure. No markdown, no extra text.

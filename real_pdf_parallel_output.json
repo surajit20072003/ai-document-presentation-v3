@@ -1,0 +1,128 @@
+{
+  "title": "Arithmetic Progressions (Mock from PDF)",
+  "sections": [
+    {
+      "section_type": "intro",
+      "text": "Welcome to the lesson on AP..."
+    },
+    {
+      "section_type": "content",
+      "title": "Introduction to AP",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narration for Introduction to AP..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Introduction to AP",
+        "end": "End of section"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Understanding Common Difference",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narration for Understanding Common Difference..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Understanding Common Difference",
+        "end": "End of section"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "nth Term Formula",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narration for nth Term Formula..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "nth Term Formula",
+        "end": "End of section"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Sum of First n Terms",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narration for Sum of First n Terms..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Sum of First n Terms",
+        "end": "End of section"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Solved Examples",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narration for Solved Examples..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Solved Examples",
+        "end": "End of section"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Practice Problems",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narration for Practice Problems..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Practice Problems",
+        "end": "End of section"
+      }
+    },
+    {
+      "section_type": "content",
+      "title": "Summary",
+      "renderer": "video",
+      "narration": {
+        "segments": [
+          {
+            "text": "Narration for Summary..."
+          }
+        ]
+      },
+      "markdown_pointer": {
+        "start": "Summary",
+        "end": "End of section"
+      }
+    },
+    {
+      "section_type": "summary",
+      "bullets": [
+        "Point 1",
+        "Point 2"
+      ]
+    }
+  ]
+}

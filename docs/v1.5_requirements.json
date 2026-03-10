@@ -1,0 +1,694 @@
+  {
+  "spec_version": "v1.5",
+  "title": "Split Agent Architecture - Single Source of Truth",
+  "description": "Refactored pipeline with small, focused agents replacing mega-Directors while preserving presentation.json schema",
+  "created": "2025-12-23",
+  "status": "phase_4_complete",
+
+  "guiding_principles": {
+    "P1": "Presentation layer (player.js, presentation.json schema) MUST NOT change",
+    "P2": "Only LLM layer and orchestration change - display will display",
+    "P3": "Each agent has ONE focused responsibility with small output schema",
+    "P4": "Fail-fast with targeted retries per agent",
+    "P5": "Deterministic merge step assembles agent outputs into presentation.json",
+    "P6": "All field names in final output match existing v1.3 schema exactly",
+    "P7_CONTENT_INTEGRITY": "Display ONLY content from source document - nothing added, nothing removed. Agents structure/format source content but do NOT invent facts or add placeholder data."
+  },
+
+  "architecture_comparison": {
+    "v1.4_current": {
+      "agents": 3,
+      "flow": "SmartChunker → ContentDirector (8 sections) → RecapDirector (2 sections) → Merge → Renderers → TTS",
+      "problems": [
+        "ContentDirector emits 50+ tightly coupled fields in one call",
+        "High retry cascades - one bad field fails entire output",
+        "LLM struggles with complex nested schema",
+        "Different section types have different requirements but same prompt"
+      ]
+    },
+    "v1.5_proposed": {
+      "agents": 6,
+      "flow": "Chunker → SectionPlanner → NarrationWriter → VisualSpecArtist → RendererSpecAgent → Merge → TTS",
+      "benefits": [
+        "Each agent focuses on 5-10 fields max",
+        "Retry scope is per-agent, not entire presentation",
+        "Matches proven V3 pipeline architecture",
+        "Easier to debug and tune individual agents"
+      ]
+    }
+  },
+
+  "phases": [
+    {
+      "phase_id": "PHASE-0",
+      "name": "Requirements & Contracts",
+      "status": "completed",
+      "requirements": [
+        {
+          "id": "REQ-001",
+          "title": "Create v1.5_requirements.json",
+          "description": "Single source of truth document with all requirements, phases, and status",
+          "status": "completed",
+          "files_created": ["docs/v1.5_requirements.json"],
+          "acceptance_criteria": [
+            "All phases documented",
+            "All agent contracts defined",
+            "All guardrails specified",
+            "Presentation.json field mapping complete"
+          ]
+        },
+        {
+          "id": "REQ-002",
+          "title": "Create agent contract schemas",
+          "description": "JSON schemas for each agent's input/output contract",
+          "status": "completed",
+          "files_created": [
+            "schemas/v1.5/section_blueprint.schema.json",
+            "schemas/v1.5/section_narration.schema.json",
+            "schemas/v1.5/section_visuals.schema.json",
+            "schemas/v1.5/render_spec.schema.json"
+          ],
+          "acceptance_criteria": [
+            "Each schema is minimal (5-15 fields)",
+            "Schemas compose to full presentation.json",
+            "Validation functions created for each"
+          ]
+        },
+        {
+          "id": "REQ-003",
+          "title": "Update replit.md with V1.5 reference",
+          "description": "Point to v1.5_requirements.json as single source of truth",
+          "status": "completed",
+          "files_modified": ["replit.md"],
+          "acceptance_criteria": [
+            "V1.5 architecture documented",
+            "Reference to requirements file added",
+            "Critical rules updated"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "PHASE-1",
+      "name": "Agent Prompts & Contracts",
+      "status": "completed",
+      "requirements": [
+        {
+          "id": "REQ-010",
+          "title": "Section Planner Agent",
+          "description": "Takes topics from Chunker, outputs section blueprints with metadata",
+          "status": "open",
+          "files_created": [
+            "core/agents/section_planner.py",
+            "core/prompts/section_planner_system_v1.5.txt",
+            "core/prompts/section_planner_user_v1.5.txt"
+          ],
+          "input_contract": {
+            "topics": "array from SmartChunker",
+            "subject": "string",
+            "grade": "string"
+          },
+          "output_contract": {
+            "sections": [
+              {
+                "section_id": "string (e.g., section_1)",
+                "section_type": "intro|summary|content|example|quiz|memory|recap",
+                "title": "string",
+                "source_topics": ["t1", "t2"],
+                "learning_goals": ["string"],
+                "suggested_renderer": "manim|remotion|video|none",
+                "renderer_reasoning": "string",
+                "avatar_visibility": "required|optional|hidden",
+                "avatar_position": "left|right|center|hidden",
+                "estimated_duration_seconds": "number"
+              }
+            ]
+          },
+          "validation": {
+            "structural": ["sections array present", "all required fields"],
+            "semantic": ["section_type valid", "exactly 1 intro", "exactly 1 summary"]
+          },
+          "retries": {"structural": 2, "semantic": 1}
+        },
+        {
+          "id": "REQ-011",
+          "title": "Narration Writer Agent",
+          "description": "Takes one SectionBlueprint, outputs narration with segments",
+          "status": "open",
+          "files_created": [
+            "core/agents/narration_writer.py",
+            "core/prompts/narration_writer_system_v1.5.txt",
+            "core/prompts/narration_writer_user_v1.5.txt"
+          ],
+          "input_contract": {
+            "section_blueprint": "SectionBlueprint object",
+            "source_markdown": "relevant markdown content"
+          },
+          "output_contract": {
+            "section_id": "string",
+            "narration": {
+              "full_text": "string (complete narration)",
+              "segments": [
+                {
+                  "segment_id": "number",
+                  "text": "string (TTS text)",
+                  "duration_seconds": "number (estimated)",
+                  "gesture_hint": "string (optional)"
+                }
+              ]
+            }
+          },
+          "validation": {
+            "structural": ["full_text present", "segments array", "segment_id sequential"],
+            "semantic": ["intro 50-150 words", "content 100-300 words", "recap 300-500 words"]
+          },
+          "retries": {"structural": 2, "semantic": 1},
+          "critical_rule": "narration.segments[].text is for TTS audio ONLY - not screen display"
+        },
+        {
+          "id": "REQ-012",
+          "title": "Visual Spec Artist Agent",
+          "description": "Takes SectionBlueprint + Narration, outputs visual_beats and display_directives",
+          "status": "open",
+          "files_created": [
+            "core/agents/visual_spec_artist.py",
+            "core/prompts/visual_spec_artist_system_v1.5.txt",
+            "core/prompts/visual_spec_artist_user_v1.5.txt"
+          ],
+          "input_contract": {
+            "section_blueprint": "SectionBlueprint object",
+            "narration": "NarrationOutput object",
+            "source_markdown": "relevant markdown content"
+          },
+          "output_contract": {
+            "section_id": "string",
+            "visual_beats": [
+              {
+                "beat_id": "string (e.g., 'beat_1')",
+                "segment_id": "number (references narration segment_id)",
+                "visual_beat_type": "string (diagram|formula|process|video_clip|text_only|animation)",
+                "description": "string (10+ chars describing visual)",
+                "symbolic_overlay": {
+                  "enabled": "boolean",
+                  "content": ["string (max 4 items)"],
+                  "max_words": "number (max 4)"
+                }
+              }
+            ],
+            "segment_enrichments": [
+              {
+                "segment_id": "number",
+                "visual_content": {
+                  "bullet_points": [{"level": 1, "text": "string (max 80 chars)"}],
+                  "formula": "LaTeX string (optional)",
+                  "labels": ["string"]
+                },
+                "display_directives": {
+                  "text_layer": "show|hide|swap",
+                  "visual_layer": "show|hide|replace",
+                  "avatar_layer": "show|hide|gesture_only"
+                }
+              }
+            ]
+          },
+          "schema_compliance_note": "visual_beats MUST match presentation_v1.3.schema.json visual_beat definition exactly",
+          "validation": {
+            "structural": ["visual_beats array with beat_id/segment_id/visual_beat_type/description", "segment_enrichments for each segment"],
+            "semantic": ["text_layer and visual_layer not both show", "beat count matches segment count", "description >= 10 chars"]
+          },
+          "retries": {"structural": 2, "semantic": 1},
+          "critical_rule": "visual_content is for SCREEN DISPLAY - extracted from source document, not rewritten"
+        },
+        {
+          "id": "REQ-013",
+          "title": "Renderer Spec Agent",
+          "description": "Takes visual_beats, outputs renderer-specific specs (manim_scene_spec or video_prompts)",
+          "status": "open",
+          "files_created": [
+            "core/agents/renderer_spec_agent.py",
+            "core/prompts/manim_spec_system_v1.5.txt",
+            "core/prompts/video_prompt_system_v1.5.txt"
+          ],
+          "input_contract": {
+            "section_id": "string",
+            "renderer": "manim|video|remotion",
+            "visual_beats": "array from VisualSpecArtist",
+            "narration_summary": "string"
+          },
+          "output_contract_manim": {
+            "section_id": "string",
+            "manim_scene_spec": {
+              "objects": [{"id": "string", "type": "string", "properties": {}}],
+              "animation_sequence": [{"object_id": "string", "animation": "string", "timing": {}}]
+            }
+          },
+          "output_contract_video": {
+            "section_id": "string",
+            "video_prompts": [
+              {
+                "beat_id": "number",
+                "prompt": "string (300+ words for recap)",
+                "duration_seconds": "number",
+                "style": "string"
+              }
+            ]
+          },
+          "output_contract_remotion": {
+            "section_id": "string",
+            "remotion_scene_spec": {
+              "template": "string",
+              "props": {}
+            }
+          },
+          "validation": {
+            "structural": ["spec object present", "correct format per renderer"],
+            "semantic": {
+              "video": ["each prompt >= 300 words", "no vague phrases (etc, and more)"],
+              "manim": ["objects array", "animation_sequence array"],
+              "remotion": ["template present"]
+            }
+          },
+          "retries": {"structural": 2, "semantic": 2}
+        },
+        {
+          "id": "REQ-014",
+          "title": "Memory Flashcard Agent",
+          "description": "Specialized agent for memory section - outputs exactly 5 flashcards",
+          "status": "open",
+          "files_created": [
+            "core/agents/memory_flashcard_agent.py",
+            "core/prompts/memory_flashcard_system_v1.5.txt"
+          ],
+          "input_contract": {
+            "source_markdown": "full document markdown",
+            "subject": "string"
+          },
+          "output_contract": {
+            "section_id": "memory",
+            "section_type": "memory",
+            "title": "Remember This!",
+            "flashcards": [
+              {
+                "flashcard_id": "number (1-5)",
+                "front": "string (question/term)",
+                "back": "string (answer/definition)",
+                "category": "string"
+              }
+            ]
+          },
+          "validation": {
+            "structural": ["exactly 5 flashcards"],
+            "semantic": ["front/back meaningful", "covers key concepts"]
+          },
+          "retries": {"structural": 2, "semantic": 1}
+        },
+        {
+          "id": "REQ-015",
+          "title": "Recap Scene Agent",
+          "description": "Specialized agent for recap section - outputs exactly 5 video prompts (300+ words each)",
+          "status": "open",
+          "files_created": [
+            "core/agents/recap_scene_agent.py",
+            "core/prompts/recap_scene_system_v1.5.txt"
+          ],
+          "input_contract": {
+            "source_markdown": "full document markdown",
+            "subject": "string",
+            "key_concepts": "array from memory flashcards"
+          },
+          "output_contract": {
+            "section_id": "recap",
+            "section_type": "recap",
+            "title": "Visual Recap",
+            "narration": {
+              "full_text": "string (300-500 words total)",
+              "segments": [{"segment_id": "number", "text": "string", "duration_seconds": "number"}]
+            },
+            "video_prompts": [
+              {
+                "beat_id": "number (0-4)",
+                "prompt": "string (300+ words)",
+                "duration_seconds": "number",
+                "style": "cinematic educational"
+              }
+            ]
+          },
+          "validation": {
+            "structural": ["exactly 5 video_prompts", "narration present"],
+            "semantic": ["each prompt >= 300 words", "no vague phrases", "avatar hidden"]
+          },
+          "retries": {"structural": 2, "semantic": 2}
+        }
+      ]
+    },
+    {
+      "phase_id": "PHASE-2",
+      "name": "Orchestration & Merge",
+      "status": "completed",
+      "requirements": [
+        {
+          "id": "REQ-020",
+          "title": "Pipeline Orchestrator V1.5",
+          "description": "Orchestrates all agents in sequence, manages state between agents",
+          "status": "open",
+          "files_created": ["core/pipeline_v15.py"],
+          "flow": [
+            "1. SmartChunker → topics.json",
+            "2. SectionPlanner(topics) → section_blueprints[]",
+            "3. FOR EACH section_blueprint:",
+            "   3a. NarrationWriter(blueprint) → narration",
+            "   3b. VisualSpecArtist(blueprint, narration) → visuals",
+            "   3c. IF renderer != 'none': RendererSpecAgent(visuals) → render_spec",
+            "4. MemoryFlashcardAgent(full_markdown) → memory_section",
+            "5. RecapSceneAgent(full_markdown, memory.flashcards) → recap_section",
+            "6. MergeStep(all_outputs) → presentation.json",
+            "7. TTS(presentation) → audio files + updated durations",
+            "8. RendererExecutor(presentation) → video files"
+          ],
+          "state_management": {
+            "per_section_artifacts": {
+              "blueprint": "SectionBlueprint",
+              "narration": "NarrationOutput",
+              "visuals": "VisualOutput",
+              "render_spec": "RenderSpec (optional)"
+            },
+            "global_artifacts": {
+              "topics": "from Chunker",
+              "memory_section": "from MemoryAgent",
+              "recap_section": "from RecapAgent"
+            }
+          }
+        },
+        {
+          "id": "REQ-021",
+          "title": "Merge Step V1.5",
+          "description": "Deterministic merge of all agent outputs into presentation.json",
+          "status": "open",
+          "files_created": ["core/merge_step_v15.py"],
+          "input": {
+            "section_artifacts": "array of per-section artifacts",
+            "memory_section": "MemoryOutput",
+            "recap_section": "RecapOutput"
+          },
+          "output": "presentation.json matching v1.3 schema",
+          "operations": [
+            "1. Order sections: intro, summary, content[], example, memory, recap",
+            "2. Assign sequential section_ids (1, 2, 3...)",
+            "3. FOR EACH section artifact:",
+            "   3a. Build avatar_layout from blueprint.avatar_*",
+            "   3b. Copy narration object directly",
+            "   3c. Build visual_beats from visuals output",
+            "   3d. Merge display_directives into segments",
+            "   3e. Attach render_spec (manim_scene_spec or video_prompts)",
+            "4. Add global metadata (spec_version, avatar_global, etc.)",
+            "5. Validate against v1.3 schema"
+          ],
+          "field_mapping": {
+            "blueprint.section_type": "section.section_type",
+            "blueprint.title": "section.title",
+            "blueprint.suggested_renderer": "section.renderer",
+            "blueprint.avatar_visibility": "section.avatar_layout.visibility",
+            "blueprint.avatar_position": "section.avatar_layout.position",
+            "narration.full_text": "section.narration.full_text",
+            "narration.segments[].segment_id": "section.narration.segments[].segment_id",
+            "narration.segments[].text": "section.narration.segments[].text",
+            "narration.segments[].duration_seconds": "section.narration.segments[].duration_seconds",
+            "narration.segments[].gesture_hint": "section.narration.segments[].gesture_hint",
+            "visuals.segment_enrichments[].visual_content": "MERGE INTO section.narration.segments[].visual_content",
+            "visuals.segment_enrichments[].display_directives": "MERGE INTO section.narration.segments[].display_directives",
+            "visuals.visual_beats": "section.visual_beats (copy directly - already matches schema)",
+            "render_spec.manim_scene_spec": "section.manim_scene_spec",
+            "render_spec.video_prompts": "section.video_prompts",
+            "render_spec.remotion_scene_spec": "section.remotion_scene_spec"
+          },
+          "merge_algorithm": [
+            "1. Create section shell from blueprint",
+            "2. Copy narration.full_text and narration.segments[]",
+            "3. FOR EACH segment in narration.segments:",
+            "   - Find matching segment_enrichment by segment_id",
+            "   - Add visual_content from enrichment",
+            "   - Add display_directives from enrichment",
+            "4. Copy visual_beats array directly (already schema-compliant)",
+            "5. Attach render_spec based on renderer type",
+            "6. Validate merged section against v1.3 schema"
+          ]
+        },
+        {
+          "id": "REQ-022",
+          "title": "Narration Sync Handler",
+          "description": "Ensures visual_beats sync correctly with narration segments",
+          "status": "open",
+          "files_created": ["core/narration_sync.py"],
+          "sync_rules": [
+            "1. Each visual_beat.segment_id references narration segment_id",
+            "2. display_directives (in segments) control what shows during each segment",
+            "3. TTS pass updates segment.duration_seconds with actual audio length",
+            "4. Player reads segment.duration_seconds for playback timing",
+            "5. Player reads segment.display_directives to show/hide layers"
+          ],
+          "timing_flow": {
+            "pre_tts": "LLM estimates duration based on word count (130 WPM)",
+            "post_tts": "Narakeet generates audio, mutagen measures actual duration",
+            "final": "Segments have actual duration_seconds from audio"
+          },
+          "critical_invariants": [
+            "visual_beat[i].segment_id must exist in narration.segments",
+            "Every segment must have display_directives after merge",
+            "sum(segment.duration_seconds) = section total duration"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "PHASE-3",
+      "name": "TTS & Renderer Integration",
+      "status": "completed",
+      "requirements": [
+        {
+          "id": "REQ-030",
+          "title": "TTS Duration Pass (unchanged)",
+          "description": "Generate audio and update durations - no changes needed",
+          "status": "open",
+          "files_modified": [],
+          "note": "Existing tts_duration.py works with presentation.json, no changes required"
+        },
+        {
+          "id": "REQ-031",
+          "title": "Renderer Executor Updates",
+          "description": "Accept pre-compiled render specs from RendererSpecAgent",
+          "status": "open",
+          "files_modified": ["core/renderer_executor.py"],
+          "changes": [
+            "1. Skip LLM calls if manim_scene_spec/video_prompts already present",
+            "2. Validate render specs before execution",
+            "3. Enforce minimum word count for video_prompts (300 words)",
+            "4. Add clear error messages for missing specs"
+          ]
+        },
+        {
+          "id": "REQ-032",
+          "title": "Renderer Policy Enforcement",
+          "description": "Ensure correct renderer assignment per section type",
+          "status": "open",
+          "files_modified": ["core/merge_step_v15.py"],
+          "policies": {
+            "intro": {"renderer": "none", "reason": "text-only welcome"},
+            "summary": {"renderer": "none", "reason": "text-only objectives"},
+            "content": {"renderer": "dynamic", "options": ["manim", "video", "remotion"]},
+            "example": {"renderer": "dynamic", "options": ["manim", "video"]},
+            "memory": {"renderer": "none", "reason": "flashcard display only"},
+            "recap": {"renderer": "video", "reason": "always WAN video"}
+          }
+        }
+      ]
+    },
+    {
+      "phase_id": "PHASE-4",
+      "name": "API & Dashboard Wiring",
+      "status": "completed",
+      "requirements": [
+        {
+          "id": "REQ-040",
+          "title": "API Endpoint for V1.5",
+          "description": "New endpoint /api/v15/generate that uses V1.5 pipeline",
+          "status": "open",
+          "files_modified": ["api/app.py"],
+          "endpoint": {
+            "route": "/api/v15/generate",
+            "method": "POST",
+            "body": {
+              "markdown": "string",
+              "subject": "string",
+              "grade": "string",
+              "skip_wan": "boolean (optional)",
+              "tts_provider": "narakeet|estimate"
+            },
+            "response": {
+              "job_id": "string",
+              "status": "processing|completed|failed",
+              "presentation": "presentation.json",
+              "analytics": "cost and token summary"
+            }
+          }
+        },
+        {
+          "id": "REQ-041",
+          "title": "Job Manager Integration",
+          "description": "V1.5 pipeline integrates with existing job queue",
+          "status": "open",
+          "files_modified": ["core/job_manager.py"],
+          "changes": [
+            "Add pipeline_version field to job",
+            "Update status callbacks for new agent phases",
+            "Track per-agent costs in analytics"
+          ]
+        },
+        {
+          "id": "REQ-042",
+          "title": "Dashboard Pipeline Selector",
+          "description": "Allow user to choose V1.4 or V1.5 pipeline from dashboard",
+          "status": "open",
+          "files_modified": ["templates/dashboard.html"],
+          "changes": [
+            "Add dropdown: Pipeline Version (V1.4, V1.5)",
+            "Update form submission to use selected endpoint"
+          ]
+        }
+      ]
+    }
+  ],
+
+  "guardrails": {
+    "G1": {
+      "title": "Presentation Schema Immutability",
+      "description": "presentation.json schema (v1.3) MUST NOT change",
+      "enforcement": "Validate all merged output against schemas/presentation_v1.3.schema.json",
+      "on_violation": "HARD FAIL - pipeline aborts"
+    },
+    "G2": {
+      "title": "Player Code Freeze",
+      "description": "player.js and related frontend files MUST NOT change",
+      "enforcement": "No files in player/ directory modified during V1.5 implementation",
+      "on_violation": "Code review rejection"
+    },
+    "G3": {
+      "title": "Two-Channel Separation",
+      "description": "Narration text (TTS) and visual_content (screen) are separate",
+      "enforcement": "Validation checks narration.segments[].text != visual_content fields",
+      "on_violation": "Semantic validation failure"
+    },
+    "G4": {
+      "title": "Display Directive Mutual Exclusion",
+      "description": "text_layer and visual_layer cannot both be 'show'",
+      "enforcement": "Validation on every segment",
+      "on_violation": "Semantic validation failure"
+    },
+    "G5": {
+      "title": "Renderer Spec Required for Non-None Renderers",
+      "description": "If renderer != 'none', must have corresponding spec",
+      "enforcement": {
+        "manim": "manim_scene_spec with objects and animation_sequence",
+        "video": "video_prompts with 300+ word prompts",
+        "remotion": "remotion_scene_spec"
+      },
+      "on_violation": "Render failure"
+    },
+    "G6": {
+      "title": "Idempotent Agent Retries",
+      "description": "Each agent can be retried independently without affecting others",
+      "enforcement": "Agent outputs are pure functions of inputs",
+      "on_violation": "Architecture violation"
+    }
+  },
+
+  "presentation_json_field_preservation": {
+    "description": "Exact mapping of V1.5 agent outputs to presentation.json fields",
+    "root_fields": {
+      "spec_version": "set to 'v1.5' (player ignores this, uses v1.3 schema)",
+      "presentation_id": "generated UUID",
+      "subject": "from input",
+      "grade": "from input",
+      "chapter_title": "from first topic title",
+      "avatar_global": {
+        "style": "teacher",
+        "default_position": "right",
+        "default_width_percent": 30,
+        "gesture_enabled": true
+      }
+    },
+    "section_fields": {
+      "section_id": "sequential integer (1, 2, 3...)",
+      "section_type": "from SectionPlanner",
+      "title": "from SectionPlanner",
+      "renderer": "from SectionPlanner (enforced by merge step)",
+      "avatar_layout": {
+        "visibility": "from SectionPlanner.avatar_visibility",
+        "mode": "derived from section_type",
+        "position": "from SectionPlanner.avatar_position",
+        "width_percent": "default 30, intro 50+"
+      },
+      "narration": {
+        "full_text": "from NarrationWriter",
+        "segments": {
+          "segment_id": "from NarrationWriter",
+          "text": "from NarrationWriter (TTS only)",
+          "duration_seconds": "from TTS pass (actual audio length)",
+          "gesture_hint": "from NarrationWriter (optional)",
+          "visual_content": "from VisualSpecArtist",
+          "display_directives": "from VisualSpecArtist"
+        }
+      },
+      "visual_beats": {
+        "source": "VisualSpecArtist",
+        "required_fields": ["beat_id (string)", "segment_id (number)", "visual_beat_type (string)", "description (string 10+ chars)"],
+        "optional_fields": ["symbolic_overlay"]
+      },
+      "manim_scene_spec": "from RendererSpecAgent (if renderer=manim)",
+      "video_prompts": "from RendererSpecAgent (if renderer=video)",
+      "remotion_scene_spec": "from RendererSpecAgent (if renderer=remotion)"
+    }
+  },
+
+  "narration_sync_architecture": {
+    "description": "How narration timing syncs with visuals",
+    "flow": [
+      "1. NarrationWriter outputs segments with estimated duration (word_count / 130 * 60)",
+      "2. VisualSpecArtist outputs visual_beats with segment_id references",
+      "3. VisualSpecArtist outputs segment_enrichments with visual_content + display_directives",
+      "4. MergeStep combines: narration.segments[] + segment_enrichments[]",
+      "5. TTS Pass generates audio, measures actual duration via mutagen",
+      "6. TTS Pass updates segment.duration_seconds with actual audio length",
+      "7. Player reads segment.duration_seconds for playback timing",
+      "8. Player reads segment.display_directives to show/hide layers at correct times"
+    ],
+    "key_invariants": [
+      "sum(segment.duration_seconds) = section total duration",
+      "visual_beat[i].segment_id must exist in narration.segments[]",
+      "segment_enrichments[i].segment_id matches segment[i].segment_id",
+      "Every segment has display_directives after merge"
+    ]
+  },
+
+  "testing_strategy": {
+    "unit_tests": [
+      "Each agent validates its output schema",
+      "MergeStep outputs valid v1.3 presentation.json",
+      "Field mapping correctness"
+    ],
+    "integration_tests": [
+      "Full pipeline produces playable presentation",
+      "Audio files generated correctly",
+      "Renderer specs execute without errors"
+    ],
+    "regression_tests": [
+      "V1.5 output identical structure to V1.4",
+      "Player renders V1.5 output without changes"
+    ]
+  },
+
+  "migration_notes": {
+    "backward_compatibility": "V1.4 pipeline remains available at /api/v14/generate",
+    "forward_path": "Once V1.5 stable, V1.4 can be deprecated",
+    "rollback": "Dashboard can switch between V1.4 and V1.5"
+  }
+}

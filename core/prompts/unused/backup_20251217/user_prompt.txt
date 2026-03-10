@@ -1,0 +1,199 @@
+Create a COMPLETE Presentation Plan JSON from the given Markdown.
+
+INPUT:
+- Subject: {subject}
+- Grade: {grade}
+- Markdown content:
+{markdown_content}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION GENERATION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You MUST generate sections in this order:
+
+1. intro
+2. summary
+3. content (multiple)
+4. example (multiple, if present in markdown)
+5. memory
+6. recap
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION TYPES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each section MUST include:
+
+- section_type: intro | summary | content | example | memory | recap
+- id: unique integer
+- title: descriptive title
+- renderer: manim | wan_video
+- narration: full narration text
+- narration_segments: array of timed text segments
+- visual_beats: array of renderer instructions (one per segment)
+- layout: content and avatar positioning
+- gesture_hints: avatar animation cues
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONTENT SECTION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For section_type = "content":
+
+- Narration must be ≥150 words.
+- Break narration into logical teaching segments.
+- EACH narration segment MUST have a visual beat.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXAMPLE SECTION RULES (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For section_type = "example":
+
+- Renderer MUST be manim (unless biological).
+- Visualize the example step-by-step.
+- Each step = one visual beat.
+- Show:
+  • geometry with coordinates
+  • symbols with values
+  • vectors with magnitudes
+  • intermediate calculation results
+
+Examples must NEVER be explained only in words.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VISUAL BEAT FORMAT (STRICT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each visual beat MUST be decomposed into FIVE REQUIRED FIELDS.
+ALL fields are MANDATORY and must be non-empty.
+
+- segment_id: integer matching narration_segments[].id
+
+- scene_setup: Describe the initial visual scene in 2-3 sentences.
+  What is the background? What coordinate system? What starting state?
+
+- objects_and_properties: List ALL objects with their colors, sizes, positions.
+  Example: "A red arrow (10 units long) at origin pointing right. A blue circle (radius 2) at position (5,3)."
+
+- motion_sequence: Describe animation step-by-step, in order.
+  Example: "First, axes fade in. Then, the arrow grows from origin. Finally, the label appears."
+
+- labels_and_text: List EVERY label, symbol, text, and WHERE it appears.
+  Example: "Label 'F=10N' above the arrow. Label 'Origin' at (0,0). Axis labels 'x' and 'y'."
+
+- pedagogical_focus: Explain what the learner should understand from this visual.
+  Example: "Student should understand that force has both magnitude and direction."
+
+If ANY field is missing or too short, the output is INVALID.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONCRETE VISUAL BEAT EXAMPLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{
+  "segment_id": 1,
+  "scene_setup": "A 2D Cartesian coordinate plane with x-axis from -5 to 5 and y-axis from -5 to 5. Grid lines are light gray. Background is white. Origin is marked with a small black dot.",
+  "objects_and_properties": "A blue velocity vector arrow, 3 units in magnitude, starting at origin (0,0) and pointing at 30 degrees above x-axis, ending at approximately (2.6, 1.5). Two dashed gray projection lines: one vertical from (2.6, 1.5) to (2.6, 0), one horizontal from (2.6, 1.5) to (0, 1.5). A red angle arc at origin showing the 30-degree angle.",
+  "motion_sequence": "First, the coordinate axes fade in with grid. Then, the velocity vector grows from the origin outward to its full length. Next, the dashed projection lines draw themselves. Finally, all component labels appear simultaneously.",
+  "labels_and_text": "Label 'O' at the origin. Label 'v = 3 m/s' above the blue arrow tip. Label 'vx = 2.6 m/s' below the x-axis at x=1.3. Label 'vy = 1.5 m/s' to the left of the y-projection. Label '30°' inside the angle arc. Axis labels 'x' and 'y' at the ends.",
+  "pedagogical_focus": "Students should understand that any velocity vector can be decomposed into independent horizontal (x) and vertical (y) components using trigonometry. The visual shows that vx = v*cos(30°) and vy = v*sin(30°)."
+}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BANNED PATTERNS (VALIDATION FAILURE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These will cause VALIDATION FAILURE:
+- Missing ANY of the 5 required fields
+- Empty or single-sentence fields
+- Vague phrases like "show clearly", "animate smoothly", "visualize the concept"
+- scene_setup that doesn't describe background/coordinate system
+- objects_and_properties that doesn't list colors and positions
+- motion_sequence that doesn't describe step-by-step order
+- labels_and_text that doesn't specify WHERE labels appear
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LAYOUT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Decide:
+- content position and width
+- avatar position and size
+- overlay vs side layout
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT SCHEMA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{
+  "chapter_title": "string",
+  "subject": "{subject}",
+  "grade": "{grade}",
+  "language": "en-IN",
+  "sections": [
+    {{
+      "section_type": "content | example",
+      "id": 1,
+      "title": "Section Title",
+      "renderer": "manim | wan_video",
+      "narration": "Full narration text...",
+      "narration_segments": [
+        {{
+          "id": 1,
+          "text": "First segment text...",
+          "duration": 4
+        }}
+      ],
+      "visual_beats": [
+        {{
+          "segment_id": 1,
+          "scene_setup": "A 2D coordinate plane with x-axis from -5 to 5 and y-axis from -5 to 5. White background with light gray grid lines.",
+          "objects_and_properties": "Two perpendicular black axis lines. Small black dot at origin. Tick marks every 1 unit on both axes.",
+          "motion_sequence": "First, the x-axis draws itself left to right. Then, the y-axis draws itself bottom to top. Finally, the grid and labels fade in.",
+          "labels_and_text": "Label 'x' at right end of x-axis. Label 'y' at top of y-axis. Label 'O' at origin.",
+          "pedagogical_focus": "Establish the coordinate system that will be used throughout this lesson for vector representation."
+        }}
+      ],
+      "layout": {{
+        "content_zone": {{ "position": "left", "width_percent": 65 }},
+        "avatar_zone": {{ "mode": "side", "position": "right", "width_percent": 35 }}
+      }},
+      "gesture_hints": [
+        {{ "time": 1.0, "action": "point_to_screen" }}
+      ]
+    }}
+  ]
+}}
+
+For memory sections, also include:
+"flashcards": [
+  {{ "question": "What is X?", "answer": "Y" }}
+]
+
+For recap sections, also include:
+"recap_scenes": [
+  {{ "scene": 1, "description": "Scene visual...", "concept_title": "Key Concept" }}
+]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITY GATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before outputting, verify EACH visual beat has ALL 5 fields:
+1. scene_setup: Does it describe background and coordinate system?
+2. objects_and_properties: Does it list ALL objects with colors and positions?
+3. motion_sequence: Does it describe step-by-step animation order?
+4. labels_and_text: Does it list WHERE each label appears?
+5. pedagogical_focus: Does it explain what the student learns?
+
+If ANY field is missing or too short, REWRITE that visual beat.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Return ONLY valid JSON.
+No explanations.
+No markdown code blocks.

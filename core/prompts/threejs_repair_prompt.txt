@@ -1,0 +1,24 @@
+The following Three.js code has an error. Fix it and return the corrected, complete JavaScript file.
+
+=== BROKEN CODE ===
+{code}
+
+=== ERROR LOG ===
+{error_log}
+
+=== FIX INSTRUCTIONS ===
+1. Read the error carefully. Fix ONLY what is broken.
+2. Do NOT redesign the scene — keep the same visual intent.
+3. Ensure the fix does not introduce new errors.
+4. Return the COMPLETE file (not just the changed part).
+
+=== VALIDATION CHECKLIST (check before outputting) ===
+□ function initScene(container, totalDuration) present
+□ return { onResize, onPinchZoom, dispose } — all 3 present
+□ No import statements
+□ No alert(), no console.error()
+□ Animation freeze logic at totalDuration is intact
+□ dispose() removes renderer.domElement from container
+□ All objects within X[-6,6] Y[-3.5,3.5] Z[-5,5]
+
+Output ONLY the corrected JavaScript code. No markdown. No explanation.

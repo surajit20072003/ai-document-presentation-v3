@@ -1,0 +1,123 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+player/assets/videos/*.mp4
+player/assets/audio/*.mp3
+player/assets/presentation.json
+player/assets/generation_trace.json
+*.log
+*.tmp
+
+
+# Manim media
+media/
+
+# Job data
+player/jobs/
+
+# Remotion (excluded completely - not part of this project)
+remotion_player/
+remotion-player-implementation.md
+
+# Debug files
+# Debug files
+debug_llm_chunk*.txt
+llm_parse_fail.txt
+
+# Additional Testing & Custom logs
+test_outputs/
+test_output/
+test_inputs/
+test_content/
+test_docs/
+reports/
+debug*.json
+local*.json
+fail*.json
+llm_debug*.json
+job_*.json
+*presentation*.json
+!player/assets/presentation.json
+
+local*.txt
+debug*.txt
+test_out*.txt
+test_results*.txt
+*_report.txt
+git_status*.txt
+validation*.txt
+*.bat
+*.ps1
+
+# Generated & Ad-hoc scripts/files
+tests/
+tools/
+scripts/
+utilities/
+attached_assets/
+.local/
+5f7e5f05/
+*.js.bak*
+*.css.bak*
+*.html.bak*
+api/app.py*bak*
+player/player_v2_backup*
+player/player_v2_bk*
+player/*back*
+*test*.py
+*debug*.py
+*fix*.py
+*repair*.py
+*retry*.py
+*verify*.py
+*validate*.py
+*poc*.py
+*recover*.py
+*trigger*.py
+*inspect*.py
+*check*.py
+*analyze*.py
+*generate*.py
+*render_*.py
+*read_*.py

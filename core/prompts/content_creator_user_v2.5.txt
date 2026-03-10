@@ -1,0 +1,67 @@
+Create synchronized narration and visual specifications for this section:
+
+## SECTION BLUEPRINT:
+{section_blueprint}
+
+## YOUR BUDGETS FOR THIS SECTION (MUST FOLLOW):
+- Word Count: {word_min} to {word_max} words
+- Segment Count: {segment_min} to {segment_max} segments
+- Q&A to Cover: {qa_count} questions (if quiz section)
+- Concepts to Cover: {concept_count} concepts (if content section)
+
+CRITICAL: Your narration MUST be between {word_min}-{word_max} words.
+CRITICAL: You MUST have {segment_min}-{segment_max} segments.
+QUIZ RULE: If this is a QUIZ, you MUST have exactly {qa_count} * 3 segments.
+
+## SOURCE CONTENT:
+{source_markdown}
+
+## QUIZ QUESTIONS (if applicable):
+{quiz_questions}
+
+## IMAGES AVAILABLE:
+{images_list}
+
+---
+
+## STEP-BY-STEP INSTRUCTIONS:
+
+**Step 1: Identify Section Type**
+- Read the section_type from blueprint
+- Switch to appropriate persona (Namaste intro, quizmaster for quiz, etc.)
+
+**Step 2: Plan Your Segments**
+- Decide segment count based on section type
+- Plan what each segment will narrate and display
+- **QUIZ:** Check strict 3-Step Dance (Intro -> Pause -> Reveal) for each question.
+
+**Step 3: Create Coupled Visual+Narration**
+For EACH segment, create simultaneously:
+- narration.segments[i].text = what teacher SAYS
+- visual_beats[i] = what appears on SCREEN
+- segment_enrichments[i] = display settings
+
+**Step 4: Handle Special Content**
+- Q&A pairs → display_format: "flashcard"
+- Formulas → preserve LaTeX exactly from source
+- Images → reference by image_id from source
+
+**Step 5: Build full_text BY CONCATENATION**
+- Take segment[1].text + " " + segment[2].text + ...
+- This concatenation IS your full_text - copy it exactly
+- DO NOT write a separate summary
+
+**Step 6: Verify Avatar Always Visible**
+- Every segment_enrichment.display_directives.avatar_layer must be "show" or "gesture_only"
+- NEVER set avatar_layer to "hide"
+
+**Step 7: Validate Before Output**
+- Count words in full_text
+- Count total words in all segment texts
+- They MUST match (±5 words)
+- Verify beat count = segment count
+- Verify each segment has corresponding enrichment
+
+---
+
+Output ONLY the JSON structure. No markdown, no extra text.

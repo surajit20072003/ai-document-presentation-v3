@@ -1,0 +1,504 @@
+Create a COMPLETE Presentation Plan JSON from the given Markdown.
+
+INPUT:
+- Subject: {subject}
+- Grade: {grade}
+- Markdown content:
+{markdown_content}
+
+╔══════════════════════════════════════════════════════════════════╗
+║  CRITICAL COMPLIANCE CHECKLIST - VERIFY BEFORE OUTPUTTING        ║
+╠══════════════════════════════════════════════════════════════════╣
+║  □ RECAP: 5 scenes, each with 60-100 word narration              ║
+║  □ RECAP TOTAL: 300-500 words across all 5 scenes                ║
+║  □ RECAP: Include "word_count" field in EACH recap_scene         ║
+║  □ CONTENT: Each section has 150-250 word narration              ║
+║  □ VISUAL BEATS: No vague phrases - use specific coordinates     ║
+║  □ DISPLAY FITNESS: Max 4 text lines, max 12 words per line      ║
+║  □ GESTURES: Only use: point_left, point_right, point_center,    ║
+║              open_palms, nod, emphasize, idle                    ║
+║  □ FLASHCARDS: EXACTLY 5 acronym-based (A-B-C-D-E)               ║
+║  □ EXAMPLE SECTIONS: Follow 5-step structure                     ║
+╚══════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION GENERATION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You MUST generate sections in this order:
+
+1. intro
+2. summary
+3. content (multiple)
+4. example (multiple, if present in markdown)
+5. memory
+6. recap
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION TYPES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each section MUST include:
+
+- section_type: intro | summary | content | example | memory | recap | quiz
+- section_id: unique integer
+- title: descriptive title
+- renderer: manim | wan_video
+- renderer_reasoning: why this renderer was chosen
+- narration: full narration text
+- narration_segments: array of timed text segments
+- visual_beats: array of renderer instructions (one per segment)
+- layout: content and avatar positioning
+- gesture_hints: avatar animation cues
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONTENT SECTION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For section_type = "content":
+
+- Narration must be ≥150 words.
+- Break narration into logical teaching segments.
+- EACH narration segment MUST have a visual beat.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXAMPLE SECTION RULES (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For section_type = "example":
+
+- Renderer MUST be manim (unless biological).
+- Visualize the example step-by-step.
+- Each step = one visual beat.
+- MUST follow the 5-step example structure:
+  1. identify_known_quantities - List given values and unknowns
+  2. draw_geometry - Create visual representation with coordinates
+  3. apply_formula - Show the relevant formula/equation
+  4. solve_stepwise - Calculate step by step
+  5. state_conclusion - Final answer with units
+- Show:
+  • geometry with coordinates
+  • symbols with values
+  • vectors with magnitudes
+  • intermediate calculation results
+
+Examples must NEVER be explained only in words.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VISUAL BEAT FORMAT (STRICT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each visual beat MUST be decomposed into FIVE REQUIRED FIELDS.
+ALL fields are MANDATORY and must be non-empty.
+
+- segment_id: integer matching narration_segments[].id
+
+- scene_setup: Describe the initial visual scene in 2-3 sentences.
+  What is the background? What coordinate system? What starting state?
+
+- objects_and_properties: List ALL objects with their colors, sizes, positions.
+  Example: "A red arrow (10 units long) at origin pointing right. A blue circle (radius 2) at position (5,3)."
+
+- motion_sequence: Describe animation step-by-step, in order.
+  Example: "First, axes fade in. Then, the arrow grows from origin. Finally, the label appears."
+
+- labels_and_text: List EVERY label, symbol, text, and WHERE it appears.
+  Example: "Label 'F=10N' above the arrow. Label 'Origin' at (0,0). Axis labels 'x' and 'y'."
+
+- purpose: Explain what the learner should understand from this visual.
+  Example: "Student should understand that force has both magnitude and direction."
+
+- duration_seconds: Float indicating how long this visual beat should display.
+
+If ANY field is missing or too short, the output is INVALID.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONCRETE VISUAL BEAT EXAMPLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{
+  "segment_id": 1,
+  "scene_setup": "A 2D Cartesian coordinate plane with x-axis from -5 to 5 and y-axis from -5 to 5. Grid lines are light gray. Background is white. Origin is marked with a small black dot.",
+  "objects_and_properties": "A blue velocity vector arrow, 3 units in magnitude, starting at origin (0,0) and pointing at 30 degrees above x-axis, ending at approximately (2.6, 1.5). Two dashed gray projection lines: one vertical from (2.6, 1.5) to (2.6, 0), one horizontal from (2.6, 1.5) to (0, 1.5). A red angle arc at origin showing the 30-degree angle.",
+  "motion_sequence": "First, the coordinate axes fade in with grid. Then, the velocity vector grows from the origin outward to its full length. Next, the dashed projection lines draw themselves. Finally, all component labels appear simultaneously.",
+  "labels_and_text": "Label 'O' at the origin. Label 'v = 3 m/s' above the blue arrow tip. Label 'vx = 2.6 m/s' below the x-axis at x=1.3. Label 'vy = 1.5 m/s' to the left of the y-projection. Label '30°' inside the angle arc. Axis labels 'x' and 'y' at the ends.",
+  "purpose": "Students should understand that any velocity vector can be decomposed into independent horizontal (x) and vertical (y) components using trigonometry. The visual shows that vx = v*cos(30°) and vy = v*sin(30°).",
+  "duration_seconds": 12.0
+}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STANDALONE BEAT RULE (CRITICAL FOR MANIM)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each visual beat renders as a SEPARATE video file. The player switches between them.
+Therefore, each beat's manim_scene_spec must be a COMPLETE SNAPSHOT of what's visible.
+
+EXAMPLE - Explaining a Triangle with vertices A, B, C:
+
+Beat 1 (narration: "Consider triangle ABC"):
+{{
+  "segment_id": 1,
+  "manim_scene_spec": {{
+    "objects": [
+      {{ "id": "triangle", "type": "polygon", "vertices": [[0,3], [-2,0], [2,0]], "properties": {{ "color": "blue" }} }}
+    ],
+    "animation_sequence": [{{ "action": "draw", "target": "triangle", "duration": 2.0 }}]
+  }}
+}}
+→ Renders: topic_5_beat_0.mp4 (just the triangle)
+
+Beat 2 (narration: "Vertex A is at the top"):
+{{
+  "segment_id": 2,
+  "manim_scene_spec": {{
+    "objects": [
+      {{ "id": "triangle", "type": "polygon", "vertices": [[0,3], [-2,0], [2,0]], "properties": {{ "color": "blue" }} }},
+      {{ "id": "highlight_a", "type": "circle", "position": [0, 3], "properties": {{ "color": "yellow", "radius": 0.3 }} }},
+      {{ "id": "label_a", "type": "label", "position": [0, 3.5], "properties": {{ "text": "A" }} }}
+    ],
+    "animation_sequence": [
+      {{ "action": "appear", "target": "triangle", "duration": 0.5 }},
+      {{ "action": "highlight", "target": "highlight_a", "duration": 1.0 }},
+      {{ "action": "appear", "target": "label_a", "duration": 0.5 }}
+    ]
+  }}
+}}
+→ Renders: topic_5_beat_1.mp4 (triangle + A highlighted + label)
+
+Beat 3 (narration: "B and C form the base"):
+{{
+  "segment_id": 3,
+  "manim_scene_spec": {{
+    "objects": [
+      {{ "id": "triangle", "type": "polygon", "vertices": [[0,3], [-2,0], [2,0]], "properties": {{ "color": "blue" }} }},
+      {{ "id": "label_a", "type": "label", "position": [0, 3.5], "properties": {{ "text": "A" }} }},
+      {{ "id": "highlight_b", "type": "circle", "position": [-2, 0], "properties": {{ "color": "green", "radius": 0.3 }} }},
+      {{ "id": "label_b", "type": "label", "position": [-2, -0.5], "properties": {{ "text": "B" }} }},
+      {{ "id": "highlight_c", "type": "circle", "position": [2, 0], "properties": {{ "color": "green", "radius": 0.3 }} }},
+      {{ "id": "label_c", "type": "label", "position": [2, -0.5], "properties": {{ "text": "C" }} }}
+    ],
+    "animation_sequence": [
+      {{ "action": "appear", "target": "triangle", "duration": 0.3 }},
+      {{ "action": "appear", "target": "label_a", "duration": 0.3 }},
+      {{ "action": "highlight", "target": "highlight_b", "duration": 0.8 }},
+      {{ "action": "highlight", "target": "highlight_c", "duration": 0.8 }},
+      {{ "action": "appear", "target": "label_b", "duration": 0.3 }},
+      {{ "action": "appear", "target": "label_c", "duration": 0.3 }}
+    ]
+  }}
+}}
+→ Renders: topic_5_beat_2.mp4 (triangle + A label + B/C highlighted + labels)
+
+RULE: Each beat includes ALL objects from prior beats that should still be visible.
+The LLM decides what persists; the renderer just executes each beat independently.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BANNED PATTERNS (VALIDATION FAILURE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These will cause VALIDATION FAILURE:
+- Missing ANY of the 5 required fields
+- Empty or single-sentence fields
+- scene_setup that doesn't describe background/coordinate system
+- objects_and_properties that doesn't list colors and positions
+- motion_sequence that doesn't describe step-by-step order
+- labels_and_text that doesn't specify WHERE labels appear
+
+BANNED VAGUE PHRASES (will FAIL validation):
+- "clear diagrams" → Instead: "right-angled triangle ABC at origin"
+- "labeled components" → Instead: "label 'A' at vertex (0,3)"  
+- "visual aids" → Instead: "a blue arrow from origin to (3,0)"
+- "fade in elements sequentially" → Instead: "first the triangle appears, then vertex A highlights"
+- "highlight key terms" → Instead: "the word 'hypotenuse' in yellow at position (2,2)"
+- "animate transitions" → Instead: "the equation transforms: sin(30°) → 1/2"
+- "display topic title" → Instead: "title 'Pythagorean Theorem' at top center"
+- "key terms highlighted" → Instead: "label 'opposite' in red next to side BC"
+- "step-by-step annotations" → Instead: "step 1 label appears, then step 2 arrow draws"
+
+The validator checks for these exact phrases. Replace them with SPECIFIC descriptions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LAYOUT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Decide:
+- content position and width
+- avatar position and size
+- overlay vs side layout
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT SCHEMA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{
+  "chapter_title": "string",
+  "subject": "{subject}",
+  "grade": "{grade}",
+  "language": "en-IN",
+  "sections": [
+    {{
+      "section_type": "content | example",
+      "section_id": 1,
+      "title": "Section Title",
+      "renderer": "manim | wan_video",
+      "renderer_reasoning": "Why this renderer is appropriate for this content",
+      "narration": "Full narration text...",
+      "narration_segments": [
+        {{
+          "id": 1,
+          "text": "First segment text...",
+          "duration_seconds": 4.0,
+          "gesture_hint": "point_left | point_right | point_center | open_palms | nod | emphasize | idle"
+        }}
+      ],
+      "visual_beats": [
+        {{
+          "segment_id": 1,
+          "scene_setup": "A 2D coordinate plane with x-axis from -5 to 5 and y-axis from -5 to 5. White background with light gray grid lines.",
+          "objects_and_properties": "Two perpendicular black axis lines. Small black dot at origin. Tick marks every 1 unit on both axes.",
+          "motion_sequence": "First, the x-axis draws itself left to right. Then, the y-axis draws itself bottom to top. Finally, the grid and labels fade in.",
+          "labels_and_text": "Label 'x' at right end of x-axis. Label 'y' at top of y-axis. Label 'O' at origin.",
+          "purpose": "Establish the coordinate system that will be used throughout this lesson for vector representation.",
+          "duration_seconds": 8.0
+        }}
+      ],
+      "layout": {{
+        "content_zone": {{ "position": "left", "width_percent": 65 }},
+        "avatar_zone": {{ "mode": "side", "position": "right", "width_percent": 35 }}
+      }},
+      "gesture_hints": [
+        {{ "time": 1.0, "action": "point_to_screen" }}
+      ]
+    }}
+  ]
+}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MEMORY SECTION RULES (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For section_type = "memory":
+
+- MUST include EXACTLY 5 mnemonic flashcards (acronym-based A-B-C-D-E)
+- Each flashcard uses a MNEMONIC device (acronym, rhyme, visual association)
+- Format: letter + concept title + memorable explanation
+- Renderer: NONE (text-only display with animations)
+
+"flashcards": [
+  {{
+    "letter": "A",
+    "title": "Acceleration Formula",
+    "mnemonic": "A = F/m - 'Apple Falls on Me' - Force divided by mass gives acceleration",
+    "explanation": "Remember Newton's apple! The heavier the object (more mass), the less it accelerates for the same force."
+  }},
+  {{
+    "letter": "B", 
+    "title": "Balanced Forces",
+    "mnemonic": "B for Balance = Zero motion change - 'Both sides Equal'",
+    "explanation": "When forces balance like a seesaw, objects stay still or keep moving at constant speed."
+  }},
+  {{
+    "letter": "C",
+    "title": "Contact Forces",
+    "mnemonic": "C for Contact = Touch required - 'Can't push without touching'",
+    "explanation": "Friction, tension, normal force all need physical contact between objects."
+  }},
+  {{
+    "letter": "D",
+    "title": "Direction Matters",
+    "mnemonic": "D for Direction - 'Decide which way' - Force is a vector",
+    "explanation": "Forces have both magnitude AND direction. A push left is different from a push right!"
+  }},
+  {{
+    "letter": "E",
+    "title": "Equal and Opposite",
+    "mnemonic": "E for Equal - 'Every action has reaction' - Newton's Third Law",
+    "explanation": "When you push a wall, the wall pushes back with equal force in opposite direction."
+  }}
+]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUIZ SECTION RULES (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For section_type = "quiz":
+
+- ONE question per quiz section
+- Answer is hidden initially, revealed stepwise
+- Visual style: flashcard or blackboard layout
+- Renderer: NONE (text-only display)
+
+REQUIRED quiz object structure:
+"quiz": {{
+  "question": {{
+    "text": "What is the SI unit of force?",
+    "difficulty": "easy | medium | hard"
+  }},
+  "choices": [
+    {{ "id": "A", "text": "Kilogram", "rationale": "Kilogram is a unit of mass, not force" }},
+    {{ "id": "B", "text": "Newton", "rationale": "Correct! Newton (N) is the SI unit of force" }},
+    {{ "id": "C", "text": "Joule", "rationale": "Joule is a unit of energy, not force" }},
+    {{ "id": "D", "text": "Watt", "rationale": "Watt is a unit of power, not force" }}
+  ],
+  "correct_choice_id": "B",
+  "answer_reveal": {{
+    "initial_state": "Question and all choices visible, answer hidden",
+    "reveal_steps": [
+      {{
+        "step_id": 1,
+        "title": "Think about it",
+        "explanation": "Pause and consider each option. What do you know about force?",
+        "visual_cue": "Highlight question"
+      }},
+      {{
+        "step_id": 2,
+        "title": "Eliminate wrong answers",
+        "explanation": "Kilogram measures mass, Joule measures energy, Watt measures power.",
+        "visual_cue": "Dim choices A, C, D"
+      }},
+      {{
+        "step_id": 3,
+        "title": "Reveal answer",
+        "explanation": "Newton is the correct answer! Named after Isaac Newton, it measures force.",
+        "visual_cue": "Highlight choice B with green"
+      }}
+    ]
+  }},
+  "visual_style": "flashcard"
+}}
+
+Quiz narration_segments must align with reveal_steps.
+Each reveal step maps to one narration segment.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RECAP SECTION RULES (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For section_type = "recap":
+
+- MUST include EXACTLY 5 recap scenes covering the ENTIRE chapter
+- Each scene summarizes ONE KEY CONCEPT from the chapter
+- Renderer: wan_video (generates 5 short conceptual videos)
+- Each scene will become a separate WAN video
+
+*** WORD COUNT REQUIREMENT (CRITICAL) ***
+- TOTAL narration across ALL 5 scenes: 300-500 words
+- Each scene narration: 60-100 words
+- This ensures 50-100 seconds of total recap audio
+- Count your words before outputting!
+
+*** SUBJECT-ADAPTIVE VISUALIZATION RULES ***
+A) BIOLOGY/PROCESS: Show the actual process (cell splitting, plant growing)
+B) MATH/PHYSICS: Use PHYSICAL ANALOGY (weighing scale for equations, water pipe for current)
+C) HISTORY: Re-enact the scene (court of emperor, independence rally)
+
+*** ART STYLE (MANDATORY) ***
+ALL wan_prompts MUST start with:
+"Flat vector illustration, bright colors, Indian educational textbook style, purple and blue gradient background."
+
+*** CHARACTER CONSISTENCY (CRITICAL) ***
+If a character appears in multiple scenes, describe them EXACTLY the same way each time:
+- "Boy in blue school uniform with black hair" (same in every scene)
+- "Elderly shopkeeper in white kurta with grey beard" (same in every scene)
+
+*** RECAP NARRATION REQUIREMENT (CRITICAL) ***
+- Each scene's "narration" field MUST be 60-100 words (NOT one sentence!)
+- The narration explains the concept shown in the video
+- TTS will combine ALL scene narrations for the recap audio
+- If narrations are too short, the recap video will have mismatched timing!
+
+EXAMPLE - Math (using analogy) with FULL narration and word_count:
+"recap_scenes": [
+  {{
+    "scene": 1,
+    "concept_title": "What is a Linear Equation?",
+    "description": "Use weighing scale analogy - both sides must balance",
+    "wan_prompt": "Flat vector illustration, bright colors, Indian educational textbook style, purple and blue gradient background. A traditional Indian market weighing scale (tarazu) with 'x + 5' on left pan and '10' on right pan, perfectly balanced. Small equation 'x + 5 = 10' in corner.",
+    "narration": "Imagine a traditional weighing scale, called a tarazu, perfectly balanced with weights on both sides. A linear equation works exactly like this - whatever you have on the left side must equal what is on the right side. When we write x plus five equals ten, we are saying these two quantities are perfectly balanced. This balance is the heart of algebra, and understanding it helps you solve any equation.",
+    "word_count": 72
+  }},
+  {{
+    "scene": 2,
+    "concept_title": "Solving for x",
+    "description": "Remove weights from both sides equally",
+    "wan_prompt": "Flat vector illustration, bright colors, Indian educational textbook style, purple and blue gradient background. Same weighing scale, hand removing '5' from left side and '5' from right side simultaneously. Arrow showing 'x = 5' result.",
+    "narration": "To find the value of x, we need to isolate it on one side of the scale. The trick is simple - whatever we do to one side, we must do to the other side too. If we remove five from the left pan, we must also remove five from the right pan. This keeps our scale balanced. After removing five from both sides, we see that x alone equals five. This is how we solve linear equations!",
+    "word_count": 81
+  }},
+  ... (3 more scenes, each with 60-100 word narration and word_count field)
+],
+"recap_total_word_count": 380
+
+EXAMPLE - Biology (showing process) with FULL narration:
+"recap_scenes": [
+  {{
+    "scene": 1,
+    "concept_title": "Cell Division Begins",
+    "description": "Show amoeba starting to stretch",
+    "wan_prompt": "Flat vector illustration, bright colors, Indian educational textbook style, purple and blue gradient background. A friendly Amoeba character with visible nucleus, beginning to stretch in the middle. Label 'Binary Fission' in corner.",
+    "narration": "Let us watch how a single-celled organism like an amoeba reproduces. The amoeba does not need a partner - it simply splits into two identical copies. This process is called binary fission. First, the amoeba begins to stretch in the middle. You can see its single nucleus, which contains all the genetic information. This stretching is the first visible sign that cell division is about to begin.",
+    "word_count": 68
+  }}
+]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VIDEO-NARRATION TIMING SYNC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For content and example sections with videos:
+
+- Total animation duration MUST approximately match narration segment duration
+- Each animation step should align with what's being spoken
+- Include "display_mode" to control text/video swap:
+  - "text_primary": Show text content, video plays in background
+  - "video_primary": Video takes center stage, text fades
+  - "video_only": Full-screen video, no text
+
+"visual_beats": [
+  {{
+    "segment_id": 1,
+    "display_mode": "video_primary",
+    "video_start_time": 0.0,
+    "video_duration": 12.0,
+    ...other fields...
+  }}
+]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITY GATE (MANDATORY SELF-CHECK)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before outputting, you MUST verify EACH visual beat passes these checks:
+
+STRUCTURE CHECK - Each beat has ALL 5 fields:
+1. scene_setup: Does it describe background and coordinate system?
+2. objects_and_properties: Does it list ALL objects with colors and positions?
+3. motion_sequence: Does it describe step-by-step animation order?
+4. labels_and_text: Does it list WHERE each label appears?
+5. pedagogical_focus: Does it explain what the student learns?
+
+BANNED PHRASE CHECK - Scan each field for these phrases (WILL FAIL):
+- "clear diagrams", "labeled components", "visual aids"
+- "fade in elements sequentially", "highlight key terms"
+- "animate transitions", "display topic title"
+- "key terms highlighted", "step-by-step annotations"
+
+If you find ANY banned phrase, REPLACE it with specific details:
+- What EXACT shape/object? (e.g., "triangle ABC with vertices...")
+- What EXACT position? (e.g., "at coordinates (3, 4)")
+- What EXACT animation? (e.g., "the triangle draws itself clockwise starting from vertex A")
+
+MANIM SPEC CHECK - For renderer="manim":
+- Does manim_scene_spec have objects array with coordinates?
+- Does each object have id, type, position, and properties?
+- Does animation_sequence list specific actions with durations?
+
+If ANY check fails, REWRITE that visual beat before outputting.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Return ONLY valid JSON.
+No explanations.
+No markdown code blocks.

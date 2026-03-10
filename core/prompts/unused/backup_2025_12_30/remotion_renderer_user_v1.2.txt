@@ -1,0 +1,25 @@
+Generate a remotion_scene_spec from the following input.
+
+INPUT:
+- Narration text
+- Narration timing
+- Visual beats
+- Layout instructions
+
+REQUIREMENTS:
+- duration_frames = narration_duration × fps (use 30 fps)
+- No invented visuals.
+
+SECTION DATA:
+{section_json}
+
+Output JSON only. Structure:
+{
+  "section_id": number,
+  "remotion_scene_spec": {
+    "fps": 30,
+    "duration_frames": number,
+    "elements": [...],
+    "background": {...}
+  }
+}

@@ -1,0 +1,53 @@
+Generate Manim v0.19.0 animation code synchronized to narration segments.
+
+**Manim Version**: v0.19.0 (verify all methods are current)
+
+**Section**: {section_title}
+
+**Narration Segments with Timing**:
+{narration_segments}
+
+**Visual Requirements**:
+{visual_description}
+
+**Mathematical Content**:
+- Main formulas: {formulas}
+- Key terms to label: {key_terms}
+- Axes ranges: x_range=[{x_min}, {x_max}], y_range=[{y_min}, {y_max}]
+
+**Animation Guidelines**:
+- Total duration: {total_duration} seconds
+- **CRITICAL: Maximum 4 narration segments to prevent truncation**
+- If more than 4 segments provided, merge them or skip less important ones
+- Each animation block MUST match its narration segment duration EXACTLY
+- Use timing comments showing narration sync
+- Create actual Manim objects (no Dot() placeholders)
+- Use smooth, educational pacing
+- **Combine objects in VGroup and animations in single self.play() to reduce code length**
+
+**Geometric Accuracy Requirements**:
+- All mathematical objects MUST use axes.c2p(x, y) for positioning
+- Verify formulas are mathematically correct
+- Shapes must be proportional to their mathematical values
+- Use axes.x_axis.unit_size and axes.y_axis.unit_size for sizing
+- Never use raw UP/DOWN/LEFT/RIGHT for mathematical objects
+
+**Code Requirements**:
+- Use ONLY verified v0.19.0 syntax
+- If unsure about a method, use basic shapes instead
+- Test mentally: "Would this run in v0.19.0?"
+- Prefer simple, reliable patterns over complex helpers
+
+**Self-Check Questions Before Generating**:
+1. **[TRUNCATION CHECK] Are there ≤4 segments? Estimated lines ≤70?**
+2. Are all coordinates on mathematical objects using axes.c2p()?
+3. Does the formula produce the expected geometric shape?
+4. Are object sizes proportional to the math (not arbitrary)?
+5. Do axes ranges show the relevant mathematical domain?
+6. Are all methods valid in Manim v0.19.0?
+7. **Can I combine objects/animations to reduce code length?**
+
+**Special Requirements**:
+{special_requirements}
+
+Generate construct() method body code only, with timing comments for each segment.
