@@ -161,10 +161,50 @@ def run_v3_pipeline(
     log("save_json", f"Saved presentation.json ({pres_path.stat().st_size} bytes)")
 
     # ─────────────────────────────────────────────
+    # Phase 3.3: Avatar Generation (section clips)
+    # MOVED UP: Generates MP4s so we have exact real duration for Three.js.
+    # ─────────────────────────────────────────────
+    if skip_avatar:
+        log("avatar", "Skipping avatar generation (skip_avatar=True).")
+    else:
+        avatar_api_url = os.environ.get("AVATAR_API_URL")
+        if not avatar_api_url:
+            log("avatar", "⚠️ AVATAR_API_URL not set — skipping avatar generation.")
+        else:
+            try:
+                from core.agents.avatar_generator import AvatarGenerator
+                from core.analytics import AnalyticsTracker
+                
+                log("avatar", "Phase 3.3: Starting avatar generation for all sections...")
+                avatar_gen = AvatarGenerator(api_url=avatar_api_url)
+                
+                languages = [language] if language else [None]
+                avatar_gen.submit_parallel_job(
+                    presentation=presentation,
+                    job_id=job_id,
+                    output_dir=str(output_path),
+                    tracker=tracker,
+                    languages=languages,
+                    speaker=speaker,
+                )
+                log("avatar", "✅ Avatar generation complete.")
+                
+                # RE-LOAD presentation.json to get the avatar_duration_seconds
+                try:
+                    with open(pres_path, "r", encoding="utf-8") as f:
+                        presentation = json.load(f)
+                    log("avatar", "Reloaded presentation.json with avatar durations.")
+                except Exception as e:
+                    logger.warning(f"[V3] Could not reload presentation after avatar gen: {e}")
+
+            except Exception as e:
+                logger.warning(f"[V3] Avatar generation error (non-fatal): {e}")
+                log("avatar", f"⚠️ Avatar error (non-fatal): {e}")
+
+    # ─────────────────────────────────────────────
     # Phase 3.5: Three.js Code Generation
-    # Runs after duration estimation. Generates .js files using
-    # proportional SEG_DUR[] timing (VSYNC-002). Phase 3.6 will
-    # correct these values using real avatar MP4 durations.
+    # Runs after Avatar generation. Generates .js files using the
+    # exactly known actual duration. Proportions it for multiple beats.
     # ─────────────────────────────────────────────
     if skip_threejs:
         log("threejs_gen", "Skipping Three.js generation (skip_threejs=True).")
@@ -210,28 +250,37 @@ def run_v3_pipeline(
                     for seg in narration_segments
                 ) if narration_segments else None
 
-                # SYNC FIX (Cause 2): each beat gets its OWN duration slice,
-                # not the entire section total.  Split narration segments evenly
-                # across beats so each .js file matches its avatar audio window.
-                # When there is only 1 beat (most common), all narration segments
-                # belong to it and the full total is correct.
+                # SYNC FIX (Cause 2 & Avatar-First): calculate actual per-beat duration.
+                # Use real exact avatar_duration_seconds from Phase 3.3 if available, else TTS estimate.
+                total_avatar_sec = section.get("avatar_duration_seconds", None)
+                
                 def _beat_duration(beat_idx: int, spec: dict) -> float:
+                    # 1. Start with the "gold standard" total time (either exact MP4 or TTS estimate fallback)
+                    base_total_sec = total_avatar_sec if total_avatar_sec is not None else (total_narration_secs or spec.get("segment_duration_seconds", 20))
+                    
                     if total_narration_secs is not None and narration_segments:
                         if total_beats == 1:
-                            # 1 beat = whole section duration (original behaviour, correct)
-                            return total_narration_secs
-                        # Multi-beat: divide narration segments evenly across beats
+                            # 1 beat = whole time
+                            return base_total_sec
+                        
+                        # Multi-beat: calculate mathematical proportion of words/tts duration assigned to this beat
                         segs_per_beat = max(1, len(narration_segments) // total_beats)
                         start_seg = beat_idx * segs_per_beat
-                        # Last beat gets any remainder
                         end_seg = start_seg + segs_per_beat if beat_idx < total_beats - 1 else len(narration_segments)
                         beat_segs = narration_segments[start_seg:end_seg]
                         if beat_segs:
-                            return sum(
+                            beat_tts_sum = sum(
                                 seg.get("duration_seconds") or seg.get("duration", 5.0)
                                 for seg in beat_segs
                             )
-                    # Fallback: use LLM estimate from spec
+                            # Proportion = (this beat's TTS slice / total TTS) * actual total avatar time
+                            proportion = beat_tts_sum / total_narration_secs if total_narration_secs > 0 else (1/total_beats)
+                            return base_total_sec * proportion
+                    
+                    # Fallback to evenly distributing the total time
+                    if total_beats > 1:
+                        return base_total_sec / total_beats
+                        
                     return spec.get("segment_duration_seconds", 20)
 
                 for beat_idx, spec in enumerate(segment_specs):
@@ -315,36 +364,8 @@ def run_v3_pipeline(
         log("threejs_gen", "✅ presentation.json updated with Three.js file paths.")
 
     # ─────────────────────────────────────────────
-    # Phase 5: Avatar Generation (section clips)
+    # (Phase 5 Avatar Generation was moved up to Phase 3.3)
     # ─────────────────────────────────────────────
-    if skip_avatar:
-        log("avatar", "Skipping avatar generation (skip_avatar=True).")
-    else:
-        avatar_api_url = os.environ.get("AVATAR_API_URL")
-        if not avatar_api_url:
-            log("avatar", "⚠️ AVATAR_API_URL not set — skipping avatar generation.")
-        else:
-            try:
-                from core.agents.avatar_generator import AvatarGenerator
-                from core.analytics import AnalyticsTracker
-
-                log("avatar", "Starting avatar generation for all sections...")
-                avatar_gen = AvatarGenerator(api_url=avatar_api_url)
-
-                languages = [language] if language else [None]
-                avatar_gen.submit_parallel_job(
-                    presentation=presentation,
-                    job_id=job_id,
-                    output_dir=str(output_path),
-                    tracker=tracker,
-                    languages=languages,
-                    speaker=speaker,
-                )
-                log("avatar", "✅ Avatar generation complete.")
-
-            except Exception as e:
-                logger.warning(f"[V3] Avatar generation error (non-fatal): {e}")
-                log("avatar", f"⚠️ Avatar error (non-fatal): {e}")
 
     # ─────────────────────────────────────────────
     # Phase 3.6: Three.js Timing Enforcement (VSYNC-001)

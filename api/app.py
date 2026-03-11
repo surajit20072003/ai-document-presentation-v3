@@ -90,13 +90,13 @@ def setup_job_folder(job_output_dir: Path, pipeline_version: str = ""):
         dst = job_output_dir / dst_name
         if src.exists() and not dst.exists():
             shutil.copy(str(src), str(dst))
-    # V3: also copy player_v3.html
+    # V3: always overwrite player_v3.html so latest fixes are present
     if pipeline_version == "v3":
         v3_src = PLAYER_DIR / "player_v3.html"
         v3_dst = job_output_dir / "player_v3.html"
-        if v3_src.exists() and not v3_dst.exists():
+        if v3_src.exists():
             shutil.copy(str(v3_src), str(v3_dst))
-            logger.info(f"[V3] Copied player_v3.html to {v3_dst}")
+            logger.info(f"[V3] Synced player_v3.html to {v3_dst}")
 
 @app.route("/sanity_check.html")
 def serve_sanity_check():
@@ -4585,6 +4585,9 @@ def serve_job_assets(job_id, filename):
     job_dir = JOBS_DIR / job_id
     if not job_dir.exists():
         return jsonify({"error": "Job not found"}), 404
+    # player_v3.html always served from master so fixes are instantly live
+    if filename == "player_v3.html":
+        return send_from_directory(PLAYER_DIR, "player_v3.html")
     # Check if file exists in job folder
     if (job_dir / filename).exists():
         return send_from_directory(job_dir, filename)

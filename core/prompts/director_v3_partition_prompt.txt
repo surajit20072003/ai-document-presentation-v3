@@ -167,7 +167,8 @@ Return a JSON object with this exact structure:
         "narration": {
           "question_script": "Here is your question: What is the ratio called when Opposite is divided by Hypotenuse? Is it A: cosine, B: sine, C: tangent, or D: secant?",
           "correct_script": "Excellent! That is correct. Sine is defined as Opposite divided by Hypotenuse — SOH in SOH-CAH-TOA.",
-          "wrong_script": "Not quite. The correct answer is B: Sine. Remember SOH — Sine equals Opposite over Hypotenuse."
+          "wrong_script": "Not quite. The correct answer is B: Sine. Remember SOH — Sine equals Opposite over Hypotenuse.",
+          "option_reveal_seconds": [3.5, 5.8, 8.1, 10.4]
         }
       }
     }
@@ -183,8 +184,9 @@ Return a JSON object with this exact structure:
 | `key_terms` | 2-5 terms from this section that appear in gold in Three.js. Required for threejs sections. |
 | `complexity` | `simple` (1 shape, 1 label), `medium` (2-4 objects, multiple reveals), `complex` (full animated diagram). Choose based on content depth. |
 | `threejs_spec` | **Required** for every `renderer: "threejs"` segment_spec. Minimum 100 words. Describe: objects, colours, animation order, timing cues, labels. |
-| `understanding_quiz` | **ALWAYS REQUIRED** on every content/example section. No exceptions. 4 options (A/B/C/D), 1 correct key, 1 explanation, plus `narration` with `question_script`, `correct_script`, `wrong_script`. |
+| `understanding_quiz` | **ALWAYS REQUIRED** on every content/example section. No exceptions. 4 options (A/B/C/D), 1 correct key, 1 explanation, plus `narration` with `question_script`, `correct_script`, `wrong_script`, and `option_reveal_seconds`. |
 | `understanding_quiz.narration` | Required. 3 avatar scripts. `question_script`: avatar reads the question aloud. `correct_script`: avatar reacts positively and explains. `wrong_script`: avatar corrects and explains. |
+| `understanding_quiz.narration.option_reveal_seconds` | **Required.** Array of 4 floats — the second within the `question_script` clip when each option (A, B, C, D) should visually appear on screen. Estimate from word count at ~130 wpm: count words before "Is it A:", then words between each option label. Example: question intro is 14 words (~6.5s), then each option ~2s apart → `[6.5, 8.5, 10.5, 12.5]`. |
 | `image_mode` | Optional. Set when source has an image. One of: `video_reference`, `texture`, `interactive_hotspot`. Must always accompany `image_source`. |
 | `image_source` | Required if `image_mode` is set. Path/URL to the source image file. |
 | `text_layer` | **Always `"hide"` in V3.** No text overlays. |
@@ -219,7 +221,8 @@ When generating a quiz SECTION (not the understanding_quiz embedded in a content
       "narration": {
         "question_script": "Here is your question: What is the ratio of Opposite to Hypotenuse? Options: A: cosine, B: sine, C: tangent, D: secant.",
         "correct_script": "Excellent! That is correct. Sine equals Opposite over Hypotenuse — the S in SOH-CAH-TOA.",
-        "wrong_script": "Not quite. The correct answer is B: Sine. Remember SOH — Sine equals Opposite over Hypotenuse."
+        "wrong_script": "Not quite. The correct answer is B: Sine. Remember SOH — Sine equals Opposite over Hypotenuse.",
+        "option_reveal_seconds": [3.5, 5.5, 7.5, 9.5]
       }
     }
   ]

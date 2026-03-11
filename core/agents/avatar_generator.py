@@ -582,7 +582,14 @@ class AvatarGenerator:
                         # Get duration from status if available
                         duration = 0.0
                         try:
-                            duration = float(raw.get("result", {}).get("data", {}).get("video_duration", 0.0))
+                            raw_duration = float(raw.get("result", {}).get("data", {}).get("video_duration", 0.0))
+                            # BUGFIX: API returns duration in milliseconds, not seconds.
+                            # Sanity check: if value > 1000, it must be in ms — convert to seconds.
+                            if raw_duration > 1000:
+                                duration = raw_duration / 1000.0
+                                logger.info(f"[AVATAR] Converted duration from ms to s: {raw_duration}ms -> {duration:.2f}s")
+                            else:
+                                duration = raw_duration
                         except:
                             pass
 
@@ -925,6 +932,11 @@ class AvatarGenerator:
                                 vimeo_url = raw.get("vimeo_url")
                                 b2_url = raw.get("b2_url")
                                 duration = float(raw.get("result", {}).get("data", {}).get("video_duration", 0.0))
+                                # THREEJS-001 FIX: HeyGen API returns duration in milliseconds.
+                                # The primary poll loop (line ~589) already has this guard — apply it here too.
+                                if duration > 1000:
+                                    duration = duration / 1000.0
+                                    logger.info(f"[AVATAR-ALL] Converted duration ms→s: {duration*1000:.0f}ms → {duration:.2f}s")
                             except:
                                 duration = 0.0
                                 
