@@ -20,8 +20,21 @@ Total Duration: {segment_duration_seconds} seconds
 Complexity: {complexity}
 Key Terms (highlight in gold): {key_terms}
 
-=== VISUAL STYLE GUIDE (secondary — use as inspiration only) ===
+=== VISUAL CHOREOGRAPHY GUIDE (WHAT to show — from Director) ===
+The Director has described WHAT objects to show and in what order.
+Read this carefully — it tells you which geometry, labels, and animations belong in this scene.
+
 {threejs_spec}
+
+⚠️ PRIORITY RULE — WHEN vs WHAT:
+- threejs_spec tells you WHAT to animate (which objects, which labels, which sequence).
+- narration_timeline (above) tells you WHEN to animate it (exact timing windows).
+- If threejs_spec suggests timing that conflicts with narration_timeline — narration_timeline WINS.
+- Every visual reveal MUST match the moment the avatar speaks that concept.
+- Example: if spec says "show sine formula at 5s" but narration says avatar mentions sine
+  at segment 3 (starting at 14s) — show it at 14s, not 5s.
+- Map each object/label in the spec to the narration segment that mentions it.
+  Then reveal it in that segment's CUTS window.
 
 === SYNC REQUIREMENTS ===
 1. Animation MUST run for exactly {segment_duration_seconds} seconds (= real avatar MP4 duration), then FREEZE.
@@ -52,5 +65,9 @@ Key Terms (highlight in gold): {key_terms}
 - Use animateDraw() for lines, fadeIn() for labels
 - Objects build progressively — never all at once
 - Each segment: fade in new objects, hold, then transition to next
+- Use pulse() on key objects when the avatar emphasises them (see system prompt)
+- Every narration segment must have at least ONE new visual element appearing in it
+- Map the spec's described objects to narration segments — reveal each object
+  in the segment where the avatar first mentions it, not before
 
 Output ONLY the JavaScript code. No markdown. No explanation.

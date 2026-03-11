@@ -20,5 +20,7 @@ The following Three.js code has an error. Fix it and return the corrected, compl
 □ Animation freeze logic at totalDuration is intact
 □ dispose() removes renderer.domElement from container
 □ All objects within X[-6,6] Y[-3.5,3.5] Z[-5,5]
+□ No object visible at t=0 — all revealed via animateDraw() or fadeIn()
+□ Each narration segment has at least one new visual element appearing in it
 
 Output ONLY the corrected JavaScript code. No markdown. No explanation.

@@ -182,6 +182,31 @@ You MUST create dynamic, engaging, step-by-step "chalkboard-style" drawing anima
 - PROGRESSIVE REVEAL. Ensure animations explicitly force slow drawing of lines, geometry, and labels over the duration. Avoid "popping" static shapes. Use `animateDraw` extensively for ALL geometry outlines/lines/arcs.
 - USE THE FULL DURATION: Fill the segment time with continuous or staggered visual changes. If a segment is 10s, have an element draw, then another, then another, keeping visual density high throughout.
 
+=== NARRATION-DRIVEN CHOREOGRAPHY (MANDATORY) ===
+The user prompt gives you a narration_timeline with exact segment windows (CUTS).
+The threejs_spec describes WHAT objects exist. You decide WHEN each appears based on the narration.
+
+RULE: Map every object in the spec to the narration segment that first mentions it.
+Reveal that object in that segment's CUTS window — not before, not after.
+
+HOW TO MAP:
+1. Read each narration segment text carefully.
+2. For each segment, identify which objects/labels from the spec are first spoken about.
+3. Reveal those objects using animateDraw() or fadeIn() at the start of that CUTS window.
+4. Use pulse() on objects the avatar is currently emphasising (key terms spoken in gold).
+
+EXAMPLE MAPPING:
+  Segment 1 text: "A right triangle has three sides"
+  → Reveal: triangle lines (animateDraw each side)
+  Segment 2 text: "The hypotenuse is the longest side opposite the right angle"
+  → Reveal: hypotenuse highlight (color change to gold) + label "Hypotenuse"
+  → pulse(hypotenuseLineObj) while avatar says "hypotenuse"
+  Segment 3 text: "Sine equals opposite divided by hypotenuse"
+  → Reveal: formula label "sin θ = opp/hyp" in gold
+  → fadeIn formula, then pulse it
+
+NEVER reveal an object before the narration segment that introduces it.
+
 === ANIMATION HELPERS ===
 
 // Progressively reveal a line by animating drawRange
@@ -224,6 +249,20 @@ function makeArc(x, y, radius, startAngle, endAngle, color, lw) {
   // Important: push line z slightly forward (e.g., 0.1) so it doesn't z-fight if on a plane
   line.position.z = 0.1; 
   return line;
+}
+
+// Pulse/scale a mesh to draw attention when avatar emphasises it (like Manim's Indicate).
+// Returns a closure — create BEFORE animate(), call INSIDE animate() with local elapsed.
+// Example: var pulseHyp = pulse(lineAC, 0.6); — call pulseHyp(e - CUTS[2]) in segment 3.
+function pulse(mesh, durationSec) {
+  durationSec = durationSec || 0.5;
+  return function(localElapsed) {
+    if (localElapsed < 0) return;
+    // One smooth scale-up then scale-back cycle
+    var t = (localElapsed % (durationSec * 2)) / durationSec;
+    var s = 1.0 + 0.18 * Math.sin(Math.PI * Math.min(t, 1.0));
+    mesh.scale.set(s, s, s);
+  };
 }
 
 === SAFE ZONE (MANDATORY) ===
