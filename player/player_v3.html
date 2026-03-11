@@ -209,37 +209,65 @@
                 /* above .scene (z:3) so WebGL canvas is not blocked by HTML layer */
         }
 
-        /* Subtitles */
+        /* Subtitles — karaoke strip at bottom */
         #subtitle-overlay {
-            position: absolute;
-            bottom: 72px;
+            position: fixed;
+            bottom: 56px;       /* sits just above the bottom bar */
             left: 50%;
             transform: translateX(-50%);
-            width: 60%;
-            max-width: 600px;
+            width: 70%;
+            max-width: 800px;
             text-align: center;
             pointer-events: none;
-            z-index: 50;
+            z-index: 55;        /* above av-overlay(60) is intentional—subtitle readable on avatar */
             display: none;
+            padding: 4px 0;
         }
 
+        /* individual word tokens */
+        .sub-word {
+            display: inline;
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 1.6;
+            padding: 0 2px;
+            transition: color 0.1s, text-shadow 0.1s;
+            text-shadow:
+                0 0 8px rgba(0,0,0,1),
+                0 0 16px rgba(0,0,0,0.9),
+                1px 1px 3px rgba(0,0,0,1),
+                -1px -1px 3px rgba(0,0,0,1);
+        }
+        /* spoken (past/active) words */
+        .sub-word.spoken {
+            color: #fff;
+        }
+        /* currently active word = gold highlight */
+        .sub-word.active {
+            color: var(--gold);
+            text-shadow:
+                0 0 12px rgba(246,196,78,0.6),
+                0 0 8px rgba(0,0,0,1),
+                1px 1px 3px rgba(0,0,0,1);
+        }
+        /* future (not yet spoken) words — dim */
+        .sub-word.future {
+            color: rgba(255,255,255,0.35);
+        }
+
+        /* fallback .subtitle-text for non-karaoke mode */
         .subtitle-text {
             display: inline-block;
             background: transparent;
             color: #fff;
-            font-size: 24px;
-            line-height: 1.55;
-            padding: 0 8px;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
-            /* Strong multi-layer shadow makes text readable on any background */
+            font-size: 20px;
+            line-height: 1.6;
+            font-weight: 600;
             text-shadow:
-                0 0 6px rgba(0, 0, 0, 0.95),
-                0 0 12px rgba(0, 0, 0, 0.9),
+                0 0 8px rgba(0, 0, 0, 1),
+                0 0 16px rgba(0, 0, 0, 0.9),
                 1px 1px 3px rgba(0, 0, 0, 1),
                 -1px -1px 3px rgba(0, 0, 0, 1);
-            font-weight: 600;
         }
 
         /* Layer 3: Scene content (intro/summary/memory/quiz etc.) */
@@ -909,8 +937,32 @@
                 <input type="range" id="dev-three" min="0.5" max="2.0" step="0.1" value="1.0" style="width:120px">
             </label>
 
-            <label style="display:flex; align-items:center; gap:8px;">
+            <label style="display:flex; align-items:center; gap:8px; margin-top:4px;">
                 <input type="checkbox" id="dev-raw"> Show Raw AV Video
+            </label>
+
+            <hr style="border-color:rgba(255,255,255,0.08); margin:14px 0;">
+            <div style="font-size:11px; color:var(--gold); margin-bottom:8px; letter-spacing:.05em;">SUBTITLES</div>
+
+            <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>Font Size (<span id="dev-sub-size-val">20</span>px)</span>
+                <input type="range" id="dev-sub-size" min="12" max="36" step="1" value="20" style="width:120px">
+            </label>
+            <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>Bottom pos (<span id="dev-sub-pos-val">56</span>px)</span>
+                <input type="range" id="dev-sub-pos" min="40" max="200" step="2" value="56" style="width:120px">
+            </label>
+            <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>Width (<span id="dev-sub-width-val">70</span>%)</span>
+                <input type="range" id="dev-sub-width" min="20" max="100" step="5" value="70" style="width:120px">
+            </label>
+            <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>Mode</span>
+                <select id="dev-sub-mode" style="background:#0d1117;color:#e6edf3;border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 4px;font-size:11px;">
+                    <option value="karaoke">Karaoke (word-by-word)</option>
+                    <option value="full">Full sentence</option>
+                    <option value="off">Off</option>
+                </select>
             </label>
         </div>
 
@@ -1611,6 +1663,68 @@
         }
 
         // ══════════════════════════════════════════════════════════
+        // SUBTITLES: Karaoke Word-by-Word Renderer
+        // ══════════════════════════════════════════════════════════
+        var _karaokeTimer = null;
+        function renderSubtitleKaraoke(overlay, textEl, beatText, beatDur, sectionAtLoad) {
+            if (window.SUB_CONFIG.mode === 'off') {
+                overlay.style.display = 'none';
+                return;
+            }
+            if (window.SUB_CONFIG.mode === 'full') {
+                textEl.className = 'subtitle-text';
+                textEl.innerHTML = esc(beatText);
+                overlay.style.display = 'block';
+                return;
+            }
+            
+            // Karaoke Mode
+            textEl.className = ''; // remove monolithic class
+            overlay.style.display = 'block';
+            if (_karaokeTimer) clearInterval(_karaokeTimer);
+            
+            var words = beatText.split(/\s+/).filter(function(w) { return w.length > 0; });
+            if (words.length === 0) return;
+            
+            // Build HTML with span for each word
+            var html = words.map(function(w, i) {
+                // first word starts active, rest future
+                var cls = i === 0 ? 'sub-word active' : 'sub-word future';
+                return '<span class="' + cls + '" id="kw-' + i + '">' + esc(w) + '</span>';
+            }).join(' ');
+            
+            textEl.innerHTML = html;
+            
+            // Timer to reveal words across beat duration
+            // Cap speed so short beats with many words don't fly by invisibly
+            var wordDurMs = Math.max((beatDur * 1000) / words.length, 150); 
+            var currentWord = 0;
+            
+            _karaokeTimer = setInterval(function() {
+                if (curSec !== sectionAtLoad) {
+                    clearInterval(_karaokeTimer);
+                    return;
+                }
+                
+                // Mark previous word as spoken (white)
+                var prevEl = document.getElementById('kw-' + currentWord);
+                if (prevEl) prevEl.className = 'sub-word spoken';
+                
+                currentWord++;
+                
+                if (currentWord >= words.length) {
+                    clearInterval(_karaokeTimer);
+                    return;
+                }
+                
+                // Mark new word as active (gold)
+                var nextEl = document.getElementById('kw-' + currentWord);
+                if (nextEl) nextEl.className = 'sub-word active';
+                
+            }, wordDurMs);
+        }
+
+        // ══════════════════════════════════════════════════════════
         // VIDEO DYNAMIC LOADER (WITH SEQUENTIAL BEAT SUPPORT)
         // ══════════════════════════════════════════════════════════
         function loadVideoScene(sec, avatarDuration, _avBox) {
@@ -1659,14 +1773,13 @@
                 }, 2000);
                 timers.push(_stallCheck);
 
-                // SUBTITLES: Update text for this beat
+                // SUBTITLES: Karaoke word-by-word reveal for this beat
                 var subtitleEl = document.getElementById('subtitle-overlay');
                 var subtitleTextEl = document.getElementById('subtitle-text');
                 if (sec.narration && sec.narration.segments && sec.narration.segments[currentBeatIdx]) {
                     var beatText = sec.narration.segments[currentBeatIdx].text;
                     if (beatText && beatText.trim().length > 0) {
-                        subtitleTextEl.innerText = beatText;
-                        if (subtitleEl) subtitleEl.style.display = 'block';
+                        renderSubtitleKaraoke(subtitleEl, subtitleTextEl, beatText, beatDuration, sectionAtLoad);
                     } else {
                         if (subtitleEl) subtitleEl.style.display = 'none';
                     }
@@ -1801,14 +1914,13 @@
                                 };
                             }
 
-                            // SUBTITLES: Update text for this beat
+                            // SUBTITLES: Karaoke word-by-word reveal for this beat
                             var subtitleEl = document.getElementById('subtitle-overlay');
                             var subtitleTextEl = document.getElementById('subtitle-text');
                             if (sec.narration && sec.narration.segments && sec.narration.segments[currentBeatIdx]) {
                                 var beatText = sec.narration.segments[currentBeatIdx].text;
                                 if (beatText && beatText.trim().length > 0) {
-                                    subtitleTextEl.innerText = beatText;
-                                    if (subtitleEl) subtitleEl.style.display = 'block';
+                                    renderSubtitleKaraoke(subtitleEl, subtitleTextEl, beatText, beatDuration, sectionAtLoad);
                                 } else {
                                     if (subtitleEl) subtitleEl.style.display = 'none';
                                 }
@@ -2320,6 +2432,34 @@
                 vid.style.opacity = '0.01';
                 vid.style.width = '1px';
                 vid.style.height = '1px';
+            }
+        });
+
+        // ── DEV MODE: Subtitle Controls ──
+        window.SUB_CONFIG = { mode: 'karaoke' };
+        
+        document.getElementById('dev-sub-size').addEventListener('input', function (e) {
+            document.getElementById('dev-sub-size-val').textContent = e.target.value;
+            // Update individual karaoke words and fallback text
+            var style = document.createElement('style');
+            style.innerHTML = '.sub-word, .subtitle-text { font-size: ' + e.target.value + 'px !important; }';
+            document.head.appendChild(style);
+        });
+
+        document.getElementById('dev-sub-pos').addEventListener('input', function (e) {
+            document.getElementById('dev-sub-pos-val').textContent = e.target.value;
+            document.getElementById('subtitle-overlay').style.bottom = e.target.value + 'px';
+        });
+
+        document.getElementById('dev-sub-width').addEventListener('input', function (e) {
+            document.getElementById('dev-sub-width-val').textContent = e.target.value;
+            document.getElementById('subtitle-overlay').style.width = e.target.value + '%';
+        });
+
+        document.getElementById('dev-sub-mode').addEventListener('change', function (e) {
+            window.SUB_CONFIG.mode = e.target.value;
+            if (e.target.value === 'off') {
+                document.getElementById('subtitle-overlay').style.display = 'none';
             }
         });
 
