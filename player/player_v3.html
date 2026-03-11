@@ -1741,13 +1741,20 @@
 
             // Get durations for each beat
             var beatDurations = [];
-            var totalDur = (avatarDuration && isFinite(avatarDuration)) ? avatarDuration : (sec.segment_duration_seconds || sec.dur || 15);
+            var totalDur = (avatarDuration && isFinite(avatarDuration) && avatarDuration > 0) ? avatarDuration : (sec.segment_duration_seconds || sec.dur || 15);
             var avgDur = totalDur / files.length;
-
-            if (sec.narration && sec.narration.segments && sec.narration.segments.length === files.length) {
-                beatDurations = sec.narration.segments.map(function (s) { return s.duration_seconds || avgDur; });
-            } else {
-                for (var i = 0; i < files.length; i++) beatDurations.push(avgDur);
+            
+            for (var i = 0; i < files.length; i++) {
+                var d = avgDur;
+                // 1. Try to get duration from narration segments
+                if (sec.narration && sec.narration.segments && sec.narration.segments[i] && sec.narration.segments[i].duration_seconds) {
+                    d = sec.narration.segments[i].duration_seconds;
+                } 
+                // 2. Try to get duration from video_prompts (duration_hint) if narration is missing or 0
+                else if (sec.video_prompts && sec.video_prompts[i] && sec.video_prompts[i].duration_hint) {
+                    d = sec.video_prompts[i].duration_hint;
+                }
+                beatDurations.push(d);
             }
 
             // State for sequence playback
