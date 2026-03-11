@@ -632,7 +632,7 @@
         /* ── AVATAR OVERLAY ── */
         #av-overlay {
             position: fixed;
-            z-index: 50;
+            z-index: 60;  /* above quiz-overlay (52) so avatar shows during quiz */
             background: transparent;
             border: none;
             box-shadow: none;
@@ -1479,10 +1479,12 @@
 
             // ── C1: QUIZ SECTION BRANCH ────────────────────────────────
             if (secType === 'quiz') {
-                // Avatar must be visible and set to right-side layout during quiz
+                // Show avatar in right-side layout above the quiz card
+                wrap.setAttribute('data-sectype', 'quiz');
                 wrap.style.display = 'block';
+                window.dispatchEvent(new Event('resize')); // size canvas to match overlay
                 initQuizSection(sec);
-                return; // quiz section manages its own avatar + advance flow
+                return;
             }
             document.getElementById('quiz-overlay').style.display = 'none';
 
@@ -1703,6 +1705,9 @@
         // ══════════════════════════════════════════════════════════
         function loadThreejsScene(sec, avatarDuration, _avBox) {
             if (!_avBox) _avBox = { started: true };
+            // Subtitle must never overlap Three.js animations
+            var _subEl = document.getElementById('subtitle-overlay');
+            if (_subEl) _subEl.style.display = 'none';
             var threejsLayer = document.getElementById('threejs-layer');
             var sectionAtLoad = curSec;
 
