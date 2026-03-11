@@ -1327,10 +1327,8 @@
                 var ci = i % 5;
                 return '<div class="chip" style="color:' + colors[ci] + ';border-color:' + borders[ci] + '">' + esc(t) + '</div>';
             }).join('');
-            return '<div class="intro-icon">&#9651;</div>' +
-                '<div class="intro-title">' + esc(sec.title || 'Lesson') + '</div>' +
-                '<div class="intro-sub">' + esc(sec.narration && sec.narration.full_text ? sec.narration.full_text.substring(0, 200) + '...' : '') + '</div>' +
-                (chips ? '<div class="intro-chips">' + chips + '</div>' : '');
+            // INTRO — Avatar-only. No text/title/sub/chips rendered. Avatar fills entire screen.
+            return '';
         }
 
         function buildSummaryHTML(sec) {
@@ -1481,6 +1479,8 @@
 
             // ── C1: QUIZ SECTION BRANCH ────────────────────────────────
             if (secType === 'quiz') {
+                // Avatar must be visible and set to right-side layout during quiz
+                wrap.style.display = 'block';
                 initQuizSection(sec);
                 return; // quiz section manages its own avatar + advance flow
             }
@@ -1542,7 +1542,12 @@
                         var renderer = sec.renderer || 'none';
                         if (renderer === 'threejs') {
                             var hasJs = sec.threejs_file || (sec.threejs_files && sec.threejs_files.length > 0);
-                            if (hasJs) loadThreejsScene(sec, actualDur, box);
+                            if (hasJs) {
+                                // Hide subtitle while Three.js is active — avoid overlapping animations
+                                var subEl = document.getElementById('subtitle-overlay');
+                                if (subEl) subEl.style.display = 'none';
+                                loadThreejsScene(sec, actualDur, box);
+                            }
                         } else if (renderer === 'video' || renderer === 'wan_video' || sec.section_type === 'recap') {
                             loadVideoScene(sec, actualDur, box);
                         }
