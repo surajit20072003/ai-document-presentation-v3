@@ -240,6 +240,24 @@ A good threejs_spec describes:
 - What freezes at end (final static frame)
 - Camera distance: 8 units default (change only for complex 3D scenes)
 
+**⚠️ CRITICAL: EXPLICIT SECOND-LEVEL ANIMATION CHOREOGRAPHY REQUIRED**
+The `threejs_spec` MUST include explicit second-level animation choreography.
+Do NOT write vague specs like "show a triangle with labels".
+Instead write exactly what appears, when, in what order.
+
+GOOD EXAMPLE:
+"At 0s: draw side AB in teal over 2s. At 2s: draw side BC in rose over 2s.
+At 4s: draw hypotenuse AC in gold over 3s. At 7s: fade in label 'Hypotenuse' near AC.
+At 9s: draw angle arc at A in lavender. At 11s: fade in formula
+'sin θ = opposite / hypotenuse' in gold at centre. Duration 15s. Complexity medium."
+
+BAD EXAMPLE (will produce poor animation):
+"Show a right triangle with sine, cosine and tangent labels. Duration 15s."
+
+Rule: Every object, every label, every colour, every approximate timing — written explicitly.
+The code generator reads this spec and writes animation code from it directly.
+Vague spec = vague animation.
+
 ### VERBATIM INDEXING (FOR NARRATION SEGMENTS)
 - `start_phrase` and `end_phrase` in narration pointers: exact 5-8 words from source markdown
 - Include ALL markdown symbols exactly as they appear

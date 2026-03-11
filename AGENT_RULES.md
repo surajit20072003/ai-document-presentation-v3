@@ -14,11 +14,14 @@
 ## 2. THE "PLAN FIRST" RULE
 **Condition**: Any request involving code changes (Refactor, Feature, Debug).
 **Action**:
-1.  **Analyze**: Read files.
-2.  **Plan**: Create/Update `implementation_plan.md`.
-3.  **Confirm**: Ask "Do I have the go-ahead?"
-4.  **Implement**: ONLY after affirmative response.
-- **Reason**: Prevents "hallucinated" fixes and wasted token cycles.
+1.  **Analyze**: Deeply analyze the issue by reading files and research.
+2.  **Explain**: Clearly state the intended actions to the user.
+3.  **Brainstorm**: Run the plan through `@brainstorming` for validation and review.
+4.  **Formalize**: Generate a final atomic checklist using `@concise-planning`.
+5.  **Confirm**: Explicitly ask for user approval after these steps.
+6.  **Implement**: ONLY after affirmative response and following the plan exactly.
+**Note**: This protocol is NON-NEGOTIABLE.
+- **Reason**: Prevents "hallucinated" fixes, ensures architectural alignment, and reduces wasted token cycles.
 
 ## 3. THE "SINGLE SOURCE OF TRUTH" RULE
 **Condition**: modifying logic related to Presentation Structure or Pipeline Flow.
