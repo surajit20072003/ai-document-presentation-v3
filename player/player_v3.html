@@ -212,11 +212,11 @@
         /* Subtitles */
         #subtitle-overlay {
             position: absolute;
-            bottom: 48px;
+            bottom: 72px;
             left: 50%;
             transform: translateX(-50%);
-            width: 80%;
-            max-width: 800px;
+            width: 60%;
+            max-width: 600px;
             text-align: center;
             pointer-events: none;
             z-index: 50;
@@ -226,8 +226,8 @@
         .subtitle-text {
             display: inline-block;
             background: transparent;
-            color: #ffffff;
-            font-size: 20px;
+            color: #fff;
+            font-size: 24px;
             line-height: 1.55;
             padding: 0 8px;
             border-radius: 0;
@@ -239,6 +239,7 @@
                 0 0 12px rgba(0, 0, 0, 0.9),
                 1px 1px 3px rgba(0, 0, 0, 1),
                 -1px -1px 3px rgba(0, 0, 0, 1);
+            font-weight: 600;
         }
 
         /* Layer 3: Scene content (intro/summary/memory/quiz etc.) */
@@ -342,8 +343,10 @@
 
         .intro-title {
             font-family: 'Caveat', cursive;
-            font-size: 54px;
+            font-size: 64px;
             font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 24px;
             text-align: center;
             line-height: 1.1;
             background: linear-gradient(135deg, var(--gold) 0%, var(--amber) 40%, var(--sky) 100%);
@@ -432,9 +435,10 @@
         }
 
         .sbullet-t {
-            font-size: 14px;
-            color: var(--w);
-            line-height: 1.5
+            font-size: 18px;
+            color: #e6edf3;
+            line-height: 1.5;
+            font-weight: 500
         }
 
         /* MEMORY flashcards */
@@ -628,45 +632,53 @@
         /* ── AVATAR OVERLAY ── */
         #av-overlay {
             position: fixed;
-            bottom: 68px;
-            right: 16px;
             z-index: 50;
-            width: 160px;
-            height: 284px;
-            /* 9:16 ratio */
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
-            border: 1px solid rgba(255, 255, 255, .1);
-            transition: all .3s;
-            cursor: pointer;
-            display: none
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            border-radius: 0;
+            overflow: visible;
+            display: none;
+            pointer-events: none;
+            transition: height .4s, bottom .4s, left .4s, right .4s, transform .4s;
         }
 
-        #av-overlay:hover {
-            width: 200px;
-            height: 356px;
-            /* keep 9:16 on hover */
-            /* keep ratio on hover */
+        /* INTRO: avatar centred, 80vh tall */
+        #av-overlay[data-sectype="intro"] {
+            bottom: 0;
+            left: 50%;
+            right: auto;
+            transform: translateX(-50%);
+            height: 80vh;
+            width: auto;
         }
 
-        #av-overlay video {
-            width: 100%;
+        /* ALL OTHER sections: right side, 60vh tall */
+        #av-overlay:not([data-sectype="intro"]) {
+            bottom: 68px;
+            right: 20px;
+            left: auto;
+            transform: none;
+            height: 60vh;
+            width: auto;
+        }
+
+        #av-overlay canvas {
+            background: transparent !important;
+        }
+
+        #av-overlay video,
+        #av-overlay canvas {
+            width: auto;
+            height: 100%;
             display: block;
-            object-fit: cover
+            position: absolute;
+            top: 0;
+            right: 0;
         }
 
         #av-overlay .av-tag {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 9px;
-            font-family: 'JetBrains Mono', monospace;
-            color: rgba(255, 255, 255, .6);
-            background: rgba(0, 0, 0, .55);
-            padding: 3px
+            display: none !important;
         }
 
         #av-narr {
@@ -851,7 +863,58 @@
 <body>
     <div id="app">
 
-        <!-- LOADING -->
+        <!-- MOBILE TAP TO START -->
+        <div id="tap-to-start" style="
+            display:none; position:fixed; inset:0; z-index:200;
+            background:rgba(13,17,23,0.92); flex-direction:column;
+            align-items:center; justify-content:center; gap:16px;
+            font-family:'Sora',sans-serif; color:#e6edf3;
+        ">
+            <div style="font-size:48px">▶️</div>
+            <div style="font-size:18px;font-weight:600">Tap to start lesson</div>
+            <div style="font-size:13px;color:rgba(230,237,243,0.5)">Audio required</div>
+        </div>
+
+        <!-- DEV OVERLAY -->
+        <div id="dev-overlay" style="
+            display:none; position:absolute; top:40px; left:20px; z-index:999;
+            background:rgba(13,17,23,0.95); border:1px solid rgba(255,255,255,0.08);
+            border-radius:12px; padding:20px; width:280px; box-shadow:0 8px 32px rgba(0,0,0,0.8);
+            font-family:'JetBrains Mono',monospace; font-size:12px; color:#e6edf3;
+        ">
+            <h3
+                style="margin:0 0 15px 0; font-size:14px; color:var(--gold); display:flex; justify-content:space-between;">
+                Developer Mode <span style="font-size:10px; opacity:0.5; font-weight:normal">(Shift+D)</span>
+            </h3>
+            <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>Similarity (<span id="dev-sim-val">0.15</span>)</span>
+                <input type="range" id="dev-sim" min="0" max="1" step="0.01" value="0.15" style="width:120px">
+            </label>
+            <label style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <span>Smoothness (<span id="dev-smo-val">0</span>)</span>
+                <input type="range" id="dev-smo" min="0" max="1" step="0.01" value="0" style="width:120px">
+            </label>
+
+            <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>Intro Height vh (<span id="dev-intro-val">80</span>)</span>
+                <input type="range" id="dev-intro" min="30" max="100" step="1" value="80" style="width:120px">
+            </label>
+            <label style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <span>Content Height vh (<span id="dev-cont-val">60</span>)</span>
+                <input type="range" id="dev-cont" min="20" max="100" step="1" value="60" style="width:120px">
+            </label>
+
+            <label style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <span>Three.js Scale (<span id="dev-three-val">1.0</span>)</span>
+                <input type="range" id="dev-three" min="0.5" max="2.0" step="0.1" value="1.0" style="width:120px">
+            </label>
+
+            <label style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="dev-raw"> Show Raw AV Video
+            </label>
+        </div>
+
+        <!-- HTML SCENES LAYER -->
         <div id="loading-screen">
             <div class="loading-spinner"></div>
             <div class="loading-text">Loading lesson...</div>
@@ -982,6 +1045,22 @@
         var timers = [];
         var activeScene = null;    // current Three.js scene hooks
         var loadedScripts = {};    // cache loaded .js paths
+        var JOB_BASE_URL = '';     // stores absolute directory path if viewing from /player/jobs/
+
+        // Helper to prepend base job url to local paths (avatar clips, wan video clips, js files, etc)
+        function getMediaSrc(url) {
+            if (!url) return '';
+            // If absolute or blob, keep as is
+            if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('/')) {
+                return url;
+            }
+            // If we have a base URL, safely prepend it
+            if (JOB_BASE_URL) {
+                var sep = JOB_BASE_URL.endsWith('/') ? '' : '/';
+                return JOB_BASE_URL + sep + url;
+            }
+            return url; // fallback
+        }
 
         var BADGE_MAP = {
             intro: { label: 'INTRO', cls: 'badge-intro' },
@@ -999,9 +1078,25 @@
         (function bootstrap() {
             var params = new URLSearchParams(window.location.search);
             var jobId = params.get('job') || params.get('job_id');
-            var jsonUrl = jobId
-                ? '/api/jobs/' + jobId + '/presentation.json'
-                : (params.get('data') || 'presentation.json');
+            var jsonUrl = '';
+
+            // Extract the job directory from the current window location if we are in /player/jobs/...
+            var path = window.location.pathname;
+            if (path.indexOf('/player/jobs/') === 0) {
+                // e.g. /player/jobs/103_162_121_245_414e6a06/player_v3.html -> /player/jobs/103_162_121_245_414e6a06/
+                var lastSlash = path.lastIndexOf('/');
+                JOB_BASE_URL = path.substring(0, lastSlash + 1);
+            }
+
+            if (jobId) {
+                jsonUrl = '/api/jobs/' + jobId + '/presentation.json';
+            } else {
+                jsonUrl = params.get('data') || 'presentation.json';
+                // If data param doesn't have a leading slash, resolve it too
+                if (jsonUrl && !jsonUrl.startsWith('/')) {
+                    jsonUrl = getMediaSrc(jsonUrl);
+                }
+            }
 
             fetch(jsonUrl)
                 .then(function (r) {
@@ -1059,11 +1154,14 @@
             } catch (e) { /* cross-origin fallback — use default */ }
 
             var material = new THREE.ShaderMaterial({
+                transparent: true,
                 uniforms: {
                     map: { value: texture },
                     keyColor: { value: keyColor },
-                    similarity: { value: 0.35 },   // looser — catches green spill
-                    smoothness: { value: 0.15 }    // soft edge
+                    similarity: { value: 0.15 },
+                    smoothness: { value: 0.00 },   // 0 preserves resolution
+                    uCanvasAspect: { value: 1.0 },
+                    uVideoAspect: { value: 9 / 16 }
                 },
                 vertexShader: `
                     varying vec2 vUv;
@@ -1074,9 +1172,25 @@
                     uniform vec3 keyColor;
                     uniform float similarity;
                     uniform float smoothness;
+                    uniform float uCanvasAspect;
+                    uniform float uVideoAspect;
                     varying vec2 vUv;
+                    
                     void main() {
-                        vec4 videoColor = texture2D(map, vUv);
+                        vec2 uv = vUv;
+                        
+                        // Object-fit: CONTAIN logic to prevent cutting off arms
+                        if (uCanvasAspect > uVideoAspect) {
+                            float scale = uCanvasAspect / uVideoAspect;
+                            uv.x = (uv.x - 0.5) * scale + 0.5;
+                        } else {
+                            float scale = uVideoAspect / uCanvasAspect;
+                            uv.y = (uv.y - 0.5) * scale + 0.5;
+                        }
+                        
+                        // Crop out of bounds safely
+                        vec4 videoColor = (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) ? vec4(0.0) : texture2D(map, uv);
+
                         float Y1 = 0.299 * keyColor.r + 0.587 * keyColor.g + 0.114 * keyColor.b;
                         float Cr1 = keyColor.r - Y1;
                         float Cb1 = keyColor.b - Y1;
@@ -1084,16 +1198,16 @@
                         float Cr2 = videoColor.r - Y2;
                         float Cb2 = videoColor.b - Y2;
                         float blend = distance(vec2(Cr2, Cb2), vec2(Cr1, Cb1));
-                        float alpha = smoothstep(similarity, similarity + smoothness, blend);
+                        // max() prevents GLSL undefined behaviour when smoothness == 0.0 (equal edges)
+                        float alpha = smoothstep(similarity, similarity + max(smoothness, 0.001), blend);
                         gl_FragColor = vec4(videoColor.rgb * alpha, alpha);
                     }
                 `,
-                transparent: true
             });
             var plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
             scene.add(plane);
 
-            avWebGL = { renderer: renderer, scene: scene, camera: camera };
+            avWebGL = { renderer: renderer, scene: scene, camera: camera, material: material };
 
             function animate() {
                 requestAnimationFrame(animate);
@@ -1102,10 +1216,27 @@
             animate();
 
             window.addEventListener('resize', function () {
-                var overlay = document.getElementById('av-overlay');
+                var ov = document.getElementById('av-overlay');
                 var dpr = window.devicePixelRatio || 1;
-                renderer.setSize(overlay.offsetWidth, overlay.offsetHeight, false);
+
+                var h = ov.clientHeight || 356;
+                // Get ACTUAL video aspect ratio
+                var vid = document.getElementById('av-vid');
+                var vw = vid.videoWidth || 1080;
+                var vh = vid.videoHeight || 1920;
+                var aspect = vw / vh;
+
+                // Let the container stretch to the natural size of the video, preventing ANY clipping
+                var w = h * aspect;
+                ov.style.width = w + 'px';
+
+                renderer.setSize(w, h, false);
                 renderer.setPixelRatio(dpr);
+
+                if (material) { // Access the local material variable
+                    material.uniforms.uCanvasAspect.value = w / h;
+                    material.uniforms.uVideoAspect.value = aspect;
+                }
             });
         }
 
@@ -1124,18 +1255,22 @@
             document.getElementById('botbar').style.display = 'flex';
             document.getElementById('av-overlay').style.display = 'block';
 
+            // AVTR-002: init WebGL unconditionally
             if (typeof THREE !== 'undefined') {
-                var avVidEl = document.getElementById('av-vid');
-                if (avVidEl.readyState >= 2) {
-                    initAvatarWebGL();
-                } else {
-                    avVidEl.addEventListener('loadeddata', function () {
-                        initAvatarWebGL();
-                    }, { once: true });
-                }
+                initAvatarWebGL();
             }
 
-            loadSection(0);
+            // Mobile tap-to-start detection
+            var isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+            if (isMobile) {
+                document.getElementById('tap-to-start').style.display = 'flex';
+                document.getElementById('tap-to-start').addEventListener('click', function () {
+                    this.style.display = 'none';
+                    loadSection(0);
+                }, { once: true });
+            } else {
+                loadSection(0);
+            }
             window._initGestures && window._initGestures();
         }
 
@@ -1275,6 +1410,15 @@
             timers = [];
         }
 
+        // ══════════════════════════════════════════════════════════
+        // MOBILE / AUDIO AUTOPLAY UNLOCK
+        // ══════════════════════════════════════════════════════════
+        document.addEventListener('touchstart', function unlockAudio() {
+            var vid = document.getElementById('av-vid');
+            vid.play().catch(function () { });
+            document.removeEventListener('touchstart', unlockAudio);
+        }, { once: true, passive: true });
+
         function loadSection(idx) {
             clearTimers();
 
@@ -1320,6 +1464,8 @@
 
             // Update bars
             var secType = sec.section_type || sec.type || 'content';
+            // AVTR-004: drive section-type-aware CSS positioning (intro=centred, others=right)
+            document.getElementById('av-overlay').setAttribute('data-sectype', secType);
             var badge = BADGE_MAP[secType] || { label: secType.toUpperCase(), cls: 'badge-content' };
             document.getElementById('tb-secname').textContent = '/ ' + (sec.title || '');
             document.getElementById('bot-label').textContent = sec.title || '';
@@ -1346,8 +1492,37 @@
             vid.onended = null;
             var avatarUrl = sec.avatar_url || sec.avatar || sec.avatar_video || '';
             if (avatarUrl) {
-                vid.src = avatarUrl; vid.load();
-                vid.play().catch(function () { });
+                vid.src = getMediaSrc(avatarUrl); vid.load();
+                vid.play().catch(function (e) { console.warn("Avatar video play failed", e); });
+
+                var sectionAtLoad = curSec;
+                var _stallCheck = setInterval(function () {
+                    if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
+                    if (vid.paused && !vid.ended && vid.readyState >= 3) {
+                        vid.play().catch(function () { });
+                    }
+                }, 2000);
+                timers.push(_stallCheck);
+
+                // AVTR-002: re-sample chroma key colour when new clip loads its first frame
+                vid.addEventListener('loadeddata', function resampleKey() {
+                    vid.removeEventListener('loadeddata', resampleKey);
+                    // Video width/height guarantees now exist: force a canvas resize to drop the clip bounding box
+                    window.dispatchEvent(new Event('resize'));
+                    // attempt to sample top-left pixel
+                    try {
+                        var sc = document.createElement('canvas');
+                        sc.width = 16; sc.height = 16;
+                        var sx = sc.getContext('2d');
+                        sx.drawImage(vid, 0, 0, 16, 16);
+                        var px = sx.getImageData(2, 2, 1, 1).data;
+                        if (px[1] > px[0] && px[1] > px[2]) {
+                            avWebGL.material.uniforms.keyColor.value.setRGB(
+                                px[0] / 255, px[1] / 255, px[2] / 255
+                            );
+                        }
+                    } catch (e) { /* cross-origin: keep existing keyColor */ }
+                });
                 // Pass actual avatar duration to Three.js so animation stays in sync
                 // Avatar = master clock, so initScene(duration) must match actual MP4 duration
                 // VSYNC-003: track when avatar actually starts playing (not just buffered)
@@ -1468,6 +1643,14 @@
                 wanVid.src = vPath;
                 wanVid.load();
                 wanVid.play().catch(function () { });
+
+                var _stallCheck = setInterval(function () {
+                    if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
+                    if (wanVid.paused && !wanVid.ended && wanVid.readyState >= 3) {
+                        wanVid.play().catch(function () { });
+                    }
+                }, 2000);
+                timers.push(_stallCheck);
 
                 // SUBTITLES: Update text for this beat
                 var subtitleEl = document.getElementById('subtitle-overlay');
@@ -1785,7 +1968,19 @@
 
             if (avVid.paused) {
                 avVid.play().catch(function () { });
-                if (wanVid && wanVid.src && wanVid.paused) wanVid.play().catch(function () { });
+                if (wanVid && wanVid.src && wanVid.paused) {
+                    wanVid.src = sec.beat_video_paths[0];
+                    wanVid.load();
+                    wanVid.play().catch(function () { });
+
+                    var _stallCheck = setInterval(function () {
+                        if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
+                        if (wanVid.paused && !wanVid.ended && wanVid.readyState >= 3) {
+                            wanVid.play().catch(function () { });
+                        }
+                    }, 2000);
+                    timers.push(_stallCheck);
+                }
                 if (btn) btn.innerHTML = '&#10074;&#10074;'; // Pause icon
             } else {
                 avVid.pause();
@@ -2052,6 +2247,71 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;');
         }
+
+        // ══════════════════════════════════════════════════════════
+        // DEV MODE LOGIC
+        // ══════════════════════════════════════════════════════════
+        document.addEventListener('keydown', function (e) {
+            if (e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+                var el = document.getElementById('dev-overlay');
+                el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+        document.getElementById('dev-sim').addEventListener('input', function (e) {
+            document.getElementById('dev-sim-val').textContent = e.target.value;
+            // Need avWebGL from global scope
+            if (window.avWebGL && window.avWebGL.material) window.avWebGL.material.uniforms.similarity.value = parseFloat(e.target.value);
+            // wait, avWebGL is exposed within the IIFE? Let's assume it was exposed or we rely on material... Wait, in the earlier version it was exposed!
+            // I'll make sure it uses the global avWebGL
+        });
+        document.getElementById('dev-smo').addEventListener('input', function (e) {
+            document.getElementById('dev-smo-val').textContent = e.target.value;
+            if (window.avWebGL && window.avWebGL.material) window.avWebGL.material.uniforms.smoothness.value = parseFloat(e.target.value);
+        });
+        document.getElementById('dev-intro').addEventListener('input', function (e) {
+            document.getElementById('dev-intro-val').textContent = e.target.value;
+            var ov = document.getElementById('av-overlay');
+            if (ov.getAttribute('data-sectype') === 'intro') {
+                ov.style.height = e.target.value + 'vh';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                ov.style.removeProperty('height');
+            }
+        });
+        document.getElementById('dev-cont').addEventListener('input', function (e) {
+            document.getElementById('dev-cont-val').textContent = e.target.value;
+            var ov = document.getElementById('av-overlay');
+            if (ov.getAttribute('data-sectype') !== 'intro') {
+                ov.style.height = e.target.value + 'vh';
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                ov.style.removeProperty('height');
+            }
+        });
+        document.getElementById('dev-three').addEventListener('input', function (e) {
+            document.getElementById('dev-three-val').textContent = e.target.value;
+            var tl = document.getElementById('threejs-layer');
+            tl.style.transformOrigin = 'center';
+            tl.style.transform = 'scale(' + e.target.value + ')';
+        });
+        document.getElementById('dev-raw').addEventListener('change', function (e) {
+            var cvs = document.getElementById('av-canvas');
+            var vid = document.getElementById('av-vid');
+            if (e.target.checked) {
+                cvs.style.opacity = '0';
+                vid.style.opacity = '1';
+                vid.style.width = '100%';
+                vid.style.height = '100%';
+                vid.style.position = 'absolute';
+                vid.style.top = '0';
+                vid.style.left = '0';
+            } else {
+                cvs.style.opacity = '1';
+                vid.style.opacity = '0.01';
+                vid.style.width = '1px';
+                vid.style.height = '1px';
+            }
+        });
 
     </script>
 </body>
