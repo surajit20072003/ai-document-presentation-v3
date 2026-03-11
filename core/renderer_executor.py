@@ -542,6 +542,7 @@ def submit_wan_background_job(presentation: dict, output_dir: str, job_id: str, 
             for i, beat_obj in enumerate(kie_beats):
                 prompt = beat_obj.get("prompt") or beat_obj.get("wan_prompt") or ""
                 beat_id = beat_obj.get("beat_id", f"beat_{i}")
+                duration = int(beat_obj.get("duration_seconds") or beat_obj.get("duration_hint") or 5)
                 
                 # Check if file already exists (resume capability)
                 vid_filename = f"ltx_{job_id}_{beat_id}.mp4"
@@ -553,9 +554,9 @@ def submit_wan_background_job(presentation: dict, output_dir: str, job_id: str, 
                      continue
                      
                 try:
-                    print(f"[LTX-BG] ▶ Processing beat {i+1}/{len(kie_beats)}: {beat_id}")
+                    print(f"[LTX-BG] ▶ Processing beat {i+1}/{len(kie_beats)}: {beat_id} (duration={duration}s)")
                     print(f"[LTX-BG]   Prompt: {prompt[:80]}...")
-                    p = client.generate_video(prompt, output_path=str(out_path))
+                    p = client.generate_video(prompt, output_path=str(out_path), duration=duration)
                     results[beat_id] = p
                     print(f"[LTX-BG] ✓ Beat {beat_id} complete: {p}")
                 except Exception as e:

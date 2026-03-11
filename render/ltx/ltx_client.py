@@ -27,10 +27,14 @@ class LtxClient:
     def generate_video(self, prompt: str, width: int = 704, height: int = 480, 
                        num_frames: int = 25, frame_rate: int = 25, steps: int = 10,
                        guidance_scale: float = 3.0, seed: int = 42,
-                       output_path: Optional[str] = None) -> str:
+                       output_path: Optional[str] = None, duration: Optional[int] = None) -> str:
         """
         Generate a video using LTX API.
         """
+        if duration is not None:
+            num_frames = int(duration * frame_rate)
+            print(f"[LTX] Dynamic duration requested: {duration}s -> {num_frames} frames at {frame_rate}fps")
+            
         print(f"[LTX] Requesting video: {prompt[:60]}...")
         
         payload = {

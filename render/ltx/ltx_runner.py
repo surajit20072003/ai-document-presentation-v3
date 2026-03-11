@@ -85,11 +85,13 @@ def _render_ltx_beats(topic_id, topic_title, section_type, visual_beats, output_
         if use_precompiled:
             p_obj = video_prompts[i]
             prompt = p_obj if isinstance(p_obj, str) else p_obj.get("prompt", "")
+            duration = 5 if isinstance(p_obj, str) else int(p_obj.get("duration_seconds") or p_obj.get("duration_hint") or 5)
         else:
             # MVP: Assuming compiled or extraction logic from visual beats if needed
             # For strict LTX MVP, we might rely on video_prompts being present from LLM
             beat = visual_beats[i]
             prompt = beat.get("description", "") # simplified fallback
+            duration = 5
             
         output_path = str(Path(output_dir) / f"topic_{topic_id}_beat_{i}.mp4")
         
@@ -101,7 +103,7 @@ def _render_ltx_beats(topic_id, topic_title, section_type, visual_beats, output_
             continue
             
         try:
-            path = client.generate_video(prompt=prompt, output_path=output_path)
+            path = client.generate_video(prompt=prompt, output_path=output_path, duration=duration)
             video_paths.append(path)
         except Exception as e:
             print(f"[LTX] Failed beat {i}: {e}")
@@ -119,6 +121,7 @@ def _render_ltx_recap(topic_id, topic_title, recap_scenes, output_dir, dry_run, 
     
     for i, scene in enumerate(recap_scenes):
         prompt = scene.get("wan_prompt", "")
+        duration = int(scene.get("duration_seconds") or scene.get("duration_hint") or 15)
         output_path = str(Path(output_dir) / f"recap_{topic_id}_scene_{i+1}.mp4")
         
         if dry_run:
@@ -129,7 +132,7 @@ def _render_ltx_recap(topic_id, topic_title, recap_scenes, output_dir, dry_run, 
             continue
             
         try:
-            path = client.generate_video(prompt=prompt, output_path=output_path)
+            path = client.generate_video(prompt=prompt, output_path=output_path, duration=duration)
             video_paths.append(path)
         except Exception as e:
             print(f"[LTX] Failed recap scene {i+1}: {e}")
