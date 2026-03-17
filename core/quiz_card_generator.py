@@ -1,7 +1,7 @@
 """
 Quiz Card Generator — Phase 4.5
 ================================
-V3 Core Goal: Quiz sections display an interactive Three.js question card
+V3 Core Goal: Quiz sections display an interactive question card
 (A/B/C/D options) as the visual layer while the avatar reads the question.
 
 This is a PROGRAMMATIC generator — no LLM call needed.
@@ -10,9 +10,11 @@ The quiz card layout is always the same:
   - Question text centred (gold)
   - 4 option buttons (A/B/C/D) in a 2x2 grid
   - Hover highlight + selected state
-  - initScene(container, totalDuration, params) contract — same as Three.js scenes
-  - When student clicks an option, params.onInteract('click', {key, correct}) fires
-  - Player uses answer_revealed flag to show correct/wrong clip
+
+NOTE: In V3 (Manim edition), quiz cards are rendered by the player's
+buildQuizHTML() function using DOM elements. This generator still produces
+Three.js .js files for backward compatibility, but the player primarily
+uses its built-in HTML quiz card renderer.
 
 No LLM involved — pure Python string template filled from presentation.json data.
 """
@@ -350,6 +352,7 @@ def run_phase_4_5(
     Returns:
         Number of quiz card files generated
     """
+
     def _log(msg):
         logger.info(f"[PHASE 4.5] {msg}")
         if log_fn:
@@ -365,18 +368,20 @@ def run_phase_4_5(
     generated = 0
 
     for section in sections:
-        sec_id   = section.get("section_id", "?")
+        sec_id = section.get("section_id", "?")
         sec_type = section.get("section_type", "")
 
         # ── Understanding Quiz (embedded in content/example section) ──────
         uq = section.get("understanding_quiz")
         if uq and uq.get("question"):
-            q_text   = uq.get("question", "")
-            options  = uq.get("options", {})
-            correct  = uq.get("correct", uq.get("correct_option", ""))
+            q_text = uq.get("question", "")
+            options = uq.get("options", {})
+            correct = uq.get("correct", uq.get("correct_option", ""))
 
             if not options or not correct:
-                _log(f"  Sec {sec_id}: understanding_quiz missing options/correct — skipping")
+                _log(
+                    f"  Sec {sec_id}: understanding_quiz missing options/correct — skipping"
+                )
                 continue
 
             js_code = generate_quiz_card_js(
@@ -397,8 +402,8 @@ def run_phase_4_5(
         if sec_type == "quiz":
             questions = section.get("questions", [])
             for qi, q in enumerate(questions):
-                q_id    = q.get("question_id", f"q{qi+1}")
-                q_text  = q.get("question_text", q.get("question", ""))
+                q_id = q.get("question_id", f"q{qi + 1}")
+                q_text = q.get("question_text", q.get("question", ""))
                 options = q.get("options", {})
                 correct = q.get("correct_option", q.get("correct", ""))
 
@@ -422,12 +427,13 @@ def run_phase_4_5(
                 generated += 1
 
     _log(f"Phase 4.5 complete: {generated} quiz card file(s) generated.")
-    
+
     # Explicitly save to presentation.json so the quiz_threejs_file paths propagate back
     pres_path = output_path / "presentation.json"
     try:
         try:
             from core.locks import presentation_lock
+
             with presentation_lock:
                 with open(pres_path, "w", encoding="utf-8") as f:
                     json.dump(presentation, f, indent=2, ensure_ascii=False)

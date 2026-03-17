@@ -1,5 +1,5 @@
 """
-Local GPU Video Client — `38.247.187.26:8000`
+Local GPU Video Client — `69.197.145.4:8000`
 
 Used for non-biology/anatomy video generation (general scenes, etc.)
 Routing decision is made by the Director LLM at generation time via `use_local_gpu` field.
@@ -10,6 +10,7 @@ API Endpoints:
   GET  /status/<job_id>  → Poll status {"status": "pending|processing|completed|failed"}
   GET  /download/<job_id>→ Download completed video
 """
+
 import os
 import time
 import requests
@@ -19,10 +20,10 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-LOCAL_GPU_URL = os.environ.get("LOCAL_GPU_URL", "http://38.247.187.26:8000")
+LOCAL_GPU_URL = os.environ.get("LOCAL_GPU_URL", "http://69.197.145.4:8000")
 
-POLL_INTERVAL = 30      # seconds between status polls
-MAX_POLL_ATTEMPTS = 120 # 120 * 30s = 60 min (1 hour) max
+POLL_INTERVAL = 30  # seconds between status polls
+MAX_POLL_ATTEMPTS = 120  # 120 * 30s = 60 min (1 hour) max
 
 
 class LocalGPUClient:
@@ -65,7 +66,9 @@ class LocalGPUClient:
         if output_path:
             existing = Path(output_path)
             if existing.exists() and existing.stat().st_size > 10000:
-                print(f"[LocalGPU] SKIP: Valid file already exists ({existing.stat().st_size // 1024}KB): {output_path}")
+                print(
+                    f"[LocalGPU] SKIP: Valid file already exists ({existing.stat().st_size // 1024}KB): {output_path}"
+                )
                 return output_path
 
         try:
@@ -102,7 +105,9 @@ class LocalGPUClient:
                 timeout=30,
             )
             if resp.status_code != 200:
-                logger.error(f"[LocalGPU] Submit failed: {resp.status_code} — {resp.text[:200]}")
+                logger.error(
+                    f"[LocalGPU] Submit failed: {resp.status_code} — {resp.text[:200]}"
+                )
                 return None
 
             data = resp.json()
@@ -125,13 +130,15 @@ class LocalGPUClient:
                     timeout=15,
                 )
                 if resp.status_code != 200:
-                    logger.warning(f"[LocalGPU] Poll {attempt+1}: status {resp.status_code}")
+                    logger.warning(
+                        f"[LocalGPU] Poll {attempt + 1}: status {resp.status_code}"
+                    )
                     time.sleep(POLL_INTERVAL)
                     continue
 
                 data = resp.json()
                 status = data.get("status", "unknown")
-                print(f"[LocalGPU] Poll {attempt+1}/{MAX_POLL_ATTEMPTS}: {status}")
+                print(f"[LocalGPU] Poll {attempt + 1}/{MAX_POLL_ATTEMPTS}: {status}")
 
                 if status == "completed":
                     return True
@@ -146,7 +153,9 @@ class LocalGPUClient:
 
             time.sleep(POLL_INTERVAL)
 
-        logger.error(f"[LocalGPU] Job {job_id} timed out after {MAX_POLL_ATTEMPTS * POLL_INTERVAL}s")
+        logger.error(
+            f"[LocalGPU] Job {job_id} timed out after {MAX_POLL_ATTEMPTS * POLL_INTERVAL}s"
+        )
         return False
 
     def _download_video(self, job_id: str, output_path: Optional[str]) -> Optional[str]:

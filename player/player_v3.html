@@ -195,18 +195,25 @@
             object-fit: cover
         }
 
-        /* Layer 2: Three.js div — renderer:threejs */
-        #threejs-layer {
+        /* Layer 2: Manim video — renderer:manim */
+        #manim-layer {
             position: absolute;
             inset: 0;
             z-index: 2;
             display: none
         }
 
-        #threejs-layer.on {
+        #manim-layer.on {
             display: block;
             z-index: 4
-                /* above .scene (z:3) so WebGL canvas is not blocked by HTML layer */
+                /* above .scene (z:3) so video is not blocked by HTML layer */
+        }
+
+        #manim-vid {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #0d1117
         }
 
         /* Subtitles — karaoke strip at bottom */
@@ -707,7 +714,7 @@
         /* ALL OTHER sections: right side, 60vh tall */
         #av-overlay:not([data-sectype="intro"]) {
             bottom: 68px;
-            right: 20px;
+            right: 60px;
             left: auto;
             transform: none;
             height: 60vh;
@@ -893,7 +900,7 @@
             height: 240px
         }
     </style>
-    <!-- THREE.JS must load before any initScene() call -->
+    <!-- THREE.JS used for avatar green-screen (chroma key) WebGL shader only -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- TF HandPose: async, gesture controls silently disabled if camera denied -->
     <script>
@@ -956,7 +963,7 @@
             </label>
 
             <label style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                <span>Three.js Scale (<span id="dev-three-val">1.0</span>)</span>
+                <span>Manim Scale (<span id="dev-three-val">1.0</span>)</span>
                 <input type="range" id="dev-three" min="0.5" max="2.0" step="0.1" value="1.0" style="width:120px">
             </label>
 
@@ -1015,8 +1022,10 @@
             <div id="wan-layer">
                 <video id="wan-vid" autoplay muted playsinline loop></video>
             </div>
-            <!-- Layer 2: Three.js (renderer: "threejs") -->
-            <div id="threejs-layer"></div>
+            <!-- Layer 2: Manim video (renderer: "manim") -->
+            <div id="manim-layer">
+                <video id="manim-vid" muted playsinline></video>
+            </div>
             <!-- Layer 3: Scene content -->
             <div id="scenes-container"></div>
         </div>
@@ -1109,7 +1118,7 @@
         // ══════════════════════════════════════════════════════════
         // V3 PLAYER — Data-driven from presentation.json
         // Layer 1: WAN video (renderer:video)
-        // Layer 2: Three.js (renderer:threejs)
+        // Layer 2: Manim video (renderer:manim)
         // Layer 3: Structured HTML scenes (intro/summary/memory/quiz/recap)
         // Avatar .mp4 = MASTER CLOCK — avatar.onended drives section advance
         // ══════════════════════════════════════════════════════════
@@ -1118,8 +1127,6 @@
         var PRESENTATION = null;
         var curSec = 0;
         var timers = [];
-        var activeScene = null;    // current Three.js scene hooks
-        var loadedScripts = {};    // cache loaded .js paths
         var JOB_BASE_URL = '';     // stores absolute directory path if viewing from /player/jobs/
 
         // Helper to prepend base job url to local paths (avatar clips, wan video clips, js files, etc)
@@ -1164,7 +1171,9 @@
             }
 
             if (jobId) {
-                jsonUrl = '/api/jobs/' + jobId + '/presentation.json';
+                jsonUrl = '/player/jobs/' + jobId + '/presentation.json?t=' + Date.now();
+            } else if (JOB_BASE_URL) {
+                jsonUrl = JOB_BASE_URL + 'presentation.json?t=' + Date.now();
             } else {
                 jsonUrl = params.get('data') || 'presentation.json';
                 // If data param doesn't have a leading slash, resolve it too
@@ -1381,11 +1390,9 @@
             if (type === 'summary') return buildSummaryHTML(sec);
             if (type === 'memory') return buildMemoryHTML(sec);
             if (type === 'recap') return buildRecapHTML(sec);
-            // quiz with threejs: Three.js IS the visual — transparent overlay only
-            if (type === 'quiz' && renderer === 'threejs') return buildTransparentLabel(sec);
-            // quiz with no threejs: show quiz card
+            // quiz: show quiz card
             if (type === 'quiz') return buildQuizHTML(sec);
-            // content/example — Three.js or WAN fills screen; just show transparent label
+            // content/example — Manim or WAN fills screen; just show transparent label
             return buildTransparentLabel(sec);
         }
 
@@ -1499,20 +1506,11 @@
             var subtitleEl = document.getElementById('subtitle-overlay');
             if (subtitleEl) subtitleEl.style.display = 'none';
 
-            // Dispose live Three.js scene and clear canvas
-            if (activeScene) { try { activeScene.dispose(); } catch (e) { } activeScene = null; }
-            // FIX: declare threejsLayer BEFORE the _pointerCleanup guard that uses it
-            // (previously var was hoisted as undefined, causing _pointerCleanup TypeError)
-            var threejsLayer = document.getElementById('threejs-layer');
-            // GAP 3: clean up pointer listeners and interaction timer from previous scene
-            if (threejsLayer && typeof threejsLayer._pointerCleanup === 'function') {
-                try { threejsLayer._pointerCleanup(); } catch (e) { }
-                threejsLayer._pointerCleanup = null;
-            }
-            if (threejsLayer) {
-                threejsLayer.classList.remove('on');
-                threejsLayer.innerHTML = ''; // clear old canvas elements to prevent stacking
-            }
+            // Stop and hide Manim video layer
+            var manimLayer = document.getElementById('manim-layer');
+            var manimVid = document.getElementById('manim-vid');
+            if (manimLayer) manimLayer.classList.remove('on');
+            if (manimVid) { manimVid.pause(); manimVid.src = ''; }
 
             // Hide WAN video layer
             var wanLayer = document.getElementById('wan-layer');
@@ -1600,8 +1598,8 @@
                         }
                     } catch (e) { /* cross-origin: keep existing keyColor */ }
                 });
-                // Pass actual avatar duration to Three.js so animation stays in sync
-                // Avatar = master clock, so initScene(duration) must match actual MP4 duration
+                // Pass actual avatar duration to Manim so animation stays in sync
+                // Avatar = master clock, Manim video duration must match actual MP4 duration
                 // VSYNC-003: track when avatar actually starts playing (not just buffered)
                 var _avBox = { started: false };   // boxed so loadThreejsScene closure reads mutations
                 vid.onplay = (function (box) { return function () { box.started = true; }; })(_avBox);
@@ -1617,13 +1615,10 @@
                             ? vid.duration
                             : (_ttsRealDur || 15);
                         var renderer = sec.renderer || 'none';
-                        if (renderer === 'threejs') {
-                            var hasJs = sec.threejs_file || (sec.threejs_files && sec.threejs_files.length > 0);
-                            if (hasJs) {
-                                // Hide subtitle while Three.js is active — avoid overlapping animations
-                                var subEl = document.getElementById('subtitle-overlay');
-                                if (subEl) subEl.style.display = 'none';
-                                loadThreejsScene(sec, actualDur, box);
+                        if (renderer === 'manim') {
+                            var hasVid = sec.video_path || (sec.manim_video_paths && sec.manim_video_paths.length > 0);
+                            if (hasVid) {
+                                loadManimScene(sec, actualDur, box);
                             }
                         } else if (renderer === 'video' || renderer === 'wan_video' || sec.section_type === 'recap') {
                             loadVideoScene(sec, actualDur, box);
@@ -1632,7 +1627,7 @@
                 })(_avBox);
 
                 // SYNC FIX: if vid.duration was Infinity at loadedmetadata time (CDN stream),
-                // durationchange fires when the real duration becomes known. Reload Three.js
+                // durationchange fires when the real duration becomes known. Reload Manim
                 // scene with the corrected duration to prevent animation over/under-run.
                 vid.addEventListener('durationchange', (function (box, capturedSec) {
                     return function () {
@@ -1642,13 +1637,13 @@
                             loadVideoScene(capturedSec, vid.duration, box);
                             return;
                         }
-                        if (renderer !== 'threejs') return;
-                        var hasJs = capturedSec.threejs_file || (capturedSec.threejs_files && capturedSec.threejs_files.length > 0);
-                        if (!hasJs) return;
+                        if (renderer !== 'manim') return;
+                        var hasVid = capturedSec.video_path || (capturedSec.manim_video_paths && capturedSec.manim_video_paths.length > 0);
+                        if (!hasVid) return;
                         // Only reload if the corrected duration is meaningfully different from TTS estimate
                         var prev = _ttsRealDur || 15;
                         if (Math.abs(vid.duration - prev) > 1.5) {
-                            loadThreejsScene(capturedSec, vid.duration, box);
+                            loadManimScene(capturedSec, vid.duration, box);
                         }
                     };
                 })(_avBox, sec), { once: true });
@@ -1670,8 +1665,8 @@
                 }, fallbackDur * 1000));
 
                 var renderer = sec.renderer || 'none';
-                if (renderer === 'threejs') {
-                    loadThreejsScene(sec, fallbackDur, { started: true });
+                if (renderer === 'manim') {
+                    loadManimScene(sec, fallbackDur, { started: true });
                 } else if (renderer === 'video' || renderer === 'wan_video' || sec.section_type === 'recap') {
                     loadVideoScene(sec, fallbackDur, { started: true });
                 }
@@ -1844,158 +1839,273 @@
         }
 
         // ══════════════════════════════════════════════════════════
-        // THREE.JS DYNAMIC LOADER (WITH SEQUENTIAL BEAT SUPPORT)
+        // MANIM VIDEO LOADER (synced to avatar master clock) - FIXED V3
         // ══════════════════════════════════════════════════════════
-        function loadThreejsScene(sec, avatarDuration, _avBox) {
+        function loadManimScene(sec, avatarDuration, _avBox) {
             if (!_avBox) _avBox = { started: true };
-            // Subtitle must never overlap Three.js animations
-            var _subEl = document.getElementById('subtitle-overlay');
-            if (_subEl) _subEl.style.display = 'none';
-            var threejsLayer = document.getElementById('threejs-layer');
+            var manimLayer = document.getElementById('manim-layer');
+            var manimVid = document.getElementById('manim-vid');
+            var avVid = document.getElementById('av-vid');
             var sectionAtLoad = curSec;
 
-            // Determine if we have multiple beats or just one file
-            var files = sec.threejs_files && sec.threejs_files.length > 0 ? sec.threejs_files : (sec.threejs_file ? [sec.threejs_file] : []);
-            if (files.length === 0) return;
+            // Build segment-level beat video playlist (like V2)
+            var segments = sec.narration && sec.narration.segments ? sec.narration.segments : [];
+            var beatPlaylist = [];
+            var accumulatedTime = 0;
 
-            // Get durations for each beat from render_spec if available
-            var beatDurations = [];
-            if (sec.render_spec && sec.render_spec.segment_specs && sec.render_spec.segment_specs.length === files.length) {
-                beatDurations = sec.render_spec.segment_specs.map(function (s) { return s.segment_duration_seconds; });
-            } else {
-                // Fallback: divide total duration equally if no specific beat durations
-                var totalDur = (avatarDuration && isFinite(avatarDuration)) ? avatarDuration : (sec.segment_duration_seconds || sec.dur || 15);
-                var avgDur = totalDur / files.length;
-                for (var i = 0; i < files.length; i++) beatDurations.push(avgDur);
-            }
+            for (var i = 0; i < segments.length; i++) {
+                var seg = segments[i];
+                var duration = seg.duration_seconds || seg.duration || 10;
+                var segStartTime = accumulatedTime;
+                var segEndTime = accumulatedTime + duration;
 
-            // State for sequence playback
-            var currentBeatIdx = 0;
-            var accumulatedTime = 0; // Time elapsed in previous beats
-
-            function playNextBeat() {
-                if (curSec !== sectionAtLoad) return; // aborted
-                if (currentBeatIdx >= files.length) return; // all beats played
-
-                var jsPath = files[currentBeatIdx];
-                var beatDuration = beatDurations[currentBeatIdx];
-                var beatStartTime = accumulatedTime;
-
-                function runScene(sceneFn) {
-                    if (curSec !== sectionAtLoad) return;
-                    if (currentBeatIdx === 0) {
-                        threejsLayer.innerHTML = '';
-                        threejsLayer.classList.add('on');
-                    }
-
-                    try {
-                        if (typeof sceneFn === 'function') {
-                            var _lastAvTime = 0;
-                            var params = {
-                                getTime: function () {
-                                    if (!_avBox.started) return 0;
-                                    var v = document.getElementById('av-vid');
-                                    if (v && isFinite(v.currentTime) && v.currentTime > 0) {
-                                        _lastAvTime = v.currentTime;
-                                    }
-                                    // Make time relative to THIS beat's start time
-                                    return Math.max(0, _lastAvTime - beatStartTime);
-                                },
-                                imageSrc: (sec.render_spec && sec.render_spec.segment_specs && sec.render_spec.segment_specs[currentBeatIdx] ? sec.render_spec.segment_specs[currentBeatIdx].image_source : sec.image_source) || null
-                            };
-
-                            // Cleanup previous beat's DOM and scene if not the first beat
-                            if (activeScene && activeScene.dispose) {
-                                activeScene.dispose();
-                            }
-                            // Also clean up any pointer event listeners from previous beat
-                            if (threejsLayer._pointerCleanup) {
-                                threejsLayer._pointerCleanup();
-                                threejsLayer._pointerCleanup = null;
-                            }
-
-                            activeScene = sceneFn(threejsLayer, beatDuration, params);
-
-                            // Wiring pointer events
-                            var _mouseIsDown = false;
-                            function _getPointerNorm(e) {
-                                var r = threejsLayer.getBoundingClientRect();
-                                var src = (e.touches && e.touches.length) ? e.touches[0] : e;
-                                return {
-                                    nx: (src.clientX - r.left) / r.width,
-                                    ny: (src.clientY - r.top) / r.height
-                                };
-                            }
-                            function _dispatchMove(e) { if (activeScene && activeScene.onPointerMove) { var p = _getPointerNorm(e); activeScene.onPointerMove(p.nx, p.ny, _mouseIsDown); } }
-                            function _dispatchDown(e) { _mouseIsDown = true; if (activeScene && activeScene.onPointerDown) { var p = _getPointerNorm(e); activeScene.onPointerDown(p.nx, p.ny); } }
-                            function _dispatchUp(e) { _mouseIsDown = false; if (activeScene && activeScene.onPointerUp) { var p = _getPointerNorm(e); activeScene.onPointerUp(p.nx, p.ny); } }
-
-                            if (activeScene && (activeScene.onPointerMove || activeScene.onPointerDown)) {
-                                threejsLayer.addEventListener('mousemove', _dispatchMove);
-                                threejsLayer.addEventListener('mousedown', _dispatchDown);
-                                threejsLayer.addEventListener('mouseup', _dispatchUp);
-                                threejsLayer.addEventListener('touchmove', function (e) { e.preventDefault(); _dispatchMove(e); }, { passive: false });
-                                threejsLayer.addEventListener('touchstart', _dispatchDown, { passive: true });
-                                threejsLayer.addEventListener('touchend', _dispatchUp, { passive: true });
-                                threejsLayer._pointerCleanup = function () {
-                                    threejsLayer.removeEventListener('mousemove', _dispatchMove);
-                                    threejsLayer.removeEventListener('mousedown', _dispatchDown);
-                                    threejsLayer.removeEventListener('mouseup', _dispatchUp);
-                                };
-                            }
-
-                            // SUBTITLES: Karaoke word-by-word reveal for this beat
-                            var subtitleEl = document.getElementById('subtitle-overlay');
-                            var subtitleTextEl = document.getElementById('subtitle-text');
-                            if (sec.narration && sec.narration.segments && sec.narration.segments[currentBeatIdx]) {
-                                var beatText = sec.narration.segments[currentBeatIdx].text;
-                                if (beatText && beatText.trim().length > 0) {
-                                    renderSubtitleKaraoke(subtitleEl, subtitleTextEl, beatText, beatDuration, sectionAtLoad);
-                                } else {
-                                    if (subtitleEl) subtitleEl.style.display = 'none';
-                                }
-                            } else {
-                                if (subtitleEl) subtitleEl.style.display = 'none';
-                            }
-
-                            // Schedule the next beat based on avatar master clock
-                            accumulatedTime += beatDuration;
-                            currentBeatIdx++;
-
-                            if (currentBeatIdx < files.length) {
-                                // We need to check avatar time periodically to trigger next beat exactly when it's supposed to start
-                                var checkInterval = setInterval(function () {
-                                    if (curSec !== sectionAtLoad) { clearInterval(checkInterval); return; }
-                                    var v = document.getElementById('av-vid');
-                                    if (v && v.currentTime >= accumulatedTime) {
-                                        clearInterval(checkInterval);
-                                        playNextBeat();
-                                    }
-                                }, 50);
-                            }
-                        }
-                    } catch (e) {
-                        console.warn('[V3 Player] initScene error in beat ' + (currentBeatIdx - 1) + ':', e);
-                    }
-                }
-
-                if (loadedScripts[jsPath]) {
-                    runScene(loadedScripts[jsPath]);
+                // Get video for this segment
+                var beatVids = seg.beat_videos || [];
+                var videoPath = null;
+                if (beatVids.length > 0) {
+                    videoPath = beatVids[0];
                 } else {
-                    var script = document.createElement('script');
-                    script.src = jsPath;
-                    script.onload = function () {
-                        var fn = typeof window.initScene === 'function' ? window.initScene : null;
-                        loadedScripts[jsPath] = fn;
-                        runScene(fn);
-                    };
-                    script.onerror = function () { console.warn('[V3 Player] Failed to load:', jsPath); };
-                    document.head.appendChild(script);
+                    // Fallback to section-level manim_video_paths
+                    videoPath = sec.video_path || (sec.manim_video_paths && sec.manim_video_paths.length > i ? sec.manim_video_paths[i] : null);
                 }
+
+                beatPlaylist.push({
+                    videoPath: videoPath,
+                    startTime: segStartTime,
+                    endTime: segEndTime,
+                    segmentIndex: i,
+                    hasVideo: !!videoPath
+                });
+
+                if (videoPath) {
+                    console.log('[V3 FIX] Beat ' + i + ' → Segment ' + i + ' (' + segStartTime.toFixed(1) + 's - ' + segEndTime.toFixed(1) + 's): ' + videoPath);
+                } else {
+                    console.log('[V3 FIX] Segment ' + i + ' (' + segStartTime.toFixed(1) + 's - ' + segEndTime.toFixed(1) + 's): No video');
+                }
+
+                accumulatedTime += duration;
             }
 
-            // Start the sequence
-            playNextBeat();
+            // Get first video
+            var firstVideo = beatPlaylist.length > 0 && beatPlaylist[0].hasVideo ? beatPlaylist[0].videoPath : null;
+            if (!firstVideo) {
+                console.log('[V3 FIX] No manim video found');
+                return;
+            }
+
+            manimLayer.classList.add('on');
+            manimVid.src = getMediaSrc(firstVideo);
+
+            // FIX: Don't set currentTime to avatar time - start from 0!
+            manimVid.oncanplay = function() {
+                manimVid.currentTime = 0;  // FIXED: Always start from beginning
+                manimVid.play().catch(function () {});
+                manimVid.oncanplay = null;
+            };
+            manimVid.load();
+
+            // Track current video index
+            var currentVideoIndex = 0;
+
+            // SYNC: Check segment timing and switch videos accordingly
+            var _syncInterval = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(_syncInterval); return; }
+                if (!avVid || avVid.paused || avVid.ended) return;
+                if (manimVid.readyState < 2) return;
+
+                var avTime = avVid.currentTime;
+
+                // Find which segment we're in
+                for (var si = 0; si < beatPlaylist.length; si++) {
+                    var beat = beatPlaylist[si];
+                    var nextStart = (si + 1 < beatPlaylist.length) ? beatPlaylist[si + 1].startTime : 99999;
+
+                    // If we're in this segment's time range and it has a video
+                    if (avTime >= beat.startTime && avTime < nextStart && beat.hasVideo) {
+                        if (si !== currentVideoIndex) {
+                            // Switch to new video
+                            console.log('[V3 FIX] Switching to beat video: ' + beat.videoPath + ' at ' + avTime.toFixed(1) + 's');
+                            currentVideoIndex = si;
+                            manimVid.src = getMediaSrc(beat.videoPath);
+                            manimVid.oncanplay = function() {
+                                manimVid.currentTime = 0;  // FIXED: Start from beginning
+                                manimVid.play().catch(function () {});
+                                manimVid.oncanplay = null;
+                            };
+                            manimVid.load();
+                        }
+                        break;
+                    }
+                }
+
+                // FIX: Remove wrong drift correction - don't sync currentTime to avatar
+                // Each beat video plays independently from 0
+
+                // Keep playing state in sync
+                if (!avVid.paused && manimVid.paused) {
+                    manimVid.play().catch(function () { });
+                } else if (avVid.paused && !manimVid.paused) {
+                    manimVid.pause();
+                }
+            }, 100);
+            timers.push(_syncInterval);
+
+            // Start check
+            var startCheck = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(startCheck); return; }
+                if (_avBox.started && avVid.currentTime > 0) {
+                    clearInterval(startCheck);
+                    manimVid.currentTime = 0;  // FIXED: Start from beginning
+                    manimVid.play().catch(function () { });
+                }
+            }, 50);
+            timers.push(startCheck);
+
+            // Stall check
+            var _stallCheck = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
+                if (manimVid.paused && !manimVid.ended && manimVid.readyState >= 3 && !avVid.paused) {
+                    manimVid.play().catch(function () {});
+                }
+            }, 2000);
+            timers.push(_stallCheck);
+
+            // SUBTITLES
+            if (sec.narration && sec.narration.segments) {
+                var subtitleEl = document.getElementById('subtitle-overlay');
+                var subtitleTextEl = document.getElementById('subtitle-text');
+                var segIdx = 0;
+                var segStart = 0;
+
+                var _subInterval = setInterval(function () {
+                    if (curSec !== sectionAtLoad) { clearInterval(_subInterval); return; }
+                    if (segIdx >= segments.length) return;
+
+                    var seg = segments[segIdx];
+                    var segDur = seg.duration_seconds || seg.duration || 5;
+
+                    if (avVid.currentTime >= segStart) {
+                        var beatText = seg.text || '';
+                        if (beatText.trim().length > 0) {
+                            renderSubtitleKaraoke(subtitleEl, subtitleTextEl, beatText, segDur, sectionAtLoad);
+                        }
+                        segStart += segDur;
+                        segIdx++;
+                    }
+                }, 100);
+                timers.push(_subInterval);
+            }
+        }
+
+            // Get the initial Manim video path (fallback to section-level)
+            var videoPath = sec.video_path || (sec.manim_video_paths && sec.manim_video_paths.length > 0 ? sec.manim_video_paths[0] : null);
+            // Override with first segment's video if available
+            if (segmentVideos.length > 0 && segmentVideos[0]) {
+                videoPath = segmentVideos[0];
+            }
+            if (!videoPath) return;
+
+            manimLayer.classList.add('on');
+            manimVid.src = getMediaSrc(videoPath);
+            manimVid.oncanplay = function() {
+                manimVid.currentTime = avVid.currentTime || 0;
+                manimVid.play().catch(function () {});
+                manimVid.oncanplay = null;
+            };
+            manimVid.load();
+
+            // Track current video index for segment switching
+            var currentVideoIndex = 0;
+
+            // SYNC: Pin Manim video currentTime to avatar video currentTime
+            // Avatar is master clock — Manim video follows exactly
+            var _syncInterval = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(_syncInterval); return; }
+                if (!avVid || avVid.paused || avVid.ended) return;
+                if (manimVid.readyState < 2) return; // not loaded yet
+
+                // Check if we need to switch to next beat video based on segment timing
+                if (segmentVideos.length > 1) {
+                    var avTime = avVid.currentTime;
+                    for (var si = 0; si < segStartTimes.length; si++) {
+                        var nextStart = (si + 1 < segStartTimes.length) ? segStartTimes[si + 1] : 99999;
+                        if (avTime >= segStartTimes[si] && avTime < nextStart && segmentVideos[si] && si !== currentVideoIndex) {
+                            // Switch to this segment's video
+                            currentVideoIndex = si;
+                            manimVid.src = getMediaSrc(segmentVideos[si]);
+                            manimVid.oncanplay = function() {
+                                manimVid.currentTime = 0;
+                                manimVid.play().catch(function () {});
+                                manimVid.oncanplay = null;
+                            };
+                            manimVid.load();
+                            console.log('[V3] Switched to beat video: ' + segmentVideos[si]);
+                            break;
+                        }
+                    }
+                }
+
+                // Force sync: if drift > 0.3s, snap to avatar time
+                var drift = Math.abs(manimVid.currentTime - avVid.currentTime);
+                if (drift > 0.3) {
+                    manimVid.currentTime = avVid.currentTime;
+                }
+
+                // Keep playing state in sync
+                if (!avVid.paused && manimVid.paused) {
+                    manimVid.play().catch(function () { });
+                } else if (avVid.paused && !manimVid.paused) {
+                    manimVid.pause();
+                }
+            }, 100);
+            timers.push(_syncInterval);
+
+            // Start Manim video when avatar starts
+            var startCheck = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(startCheck); return; }
+                if (_avBox.started && avVid.currentTime > 0) {
+                    clearInterval(startCheck);
+                    manimVid.currentTime = avVid.currentTime;
+                    manimVid.play().catch(function () { });
+                }
+            }, 50);
+            timers.push(startCheck);
+
+            // Stall check: if Manim video pauses unexpectedly, restart it
+            var _stallCheck = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
+                if (manimVid.paused && !manimVid.ended && manimVid.readyState >= 3 && !avVid.paused) {
+                    manimVid.play().catch(function () { });
+                }
+            }, 2000);
+            timers.push(_stallCheck);
+
+            // SUBTITLES: Show narration segments as karaoke
+            if (sec.narration && sec.narration.segments) {
+                var subtitleEl = document.getElementById('subtitle-overlay');
+                var subtitleTextEl = document.getElementById('subtitle-text');
+                var segments = sec.narration.segments;
+                var segIdx = 0;
+                var segStart = 0;
+
+                var _subInterval = setInterval(function () {
+                    if (curSec !== sectionAtLoad) { clearInterval(_subInterval); return; }
+                    if (segIdx >= segments.length) return;
+
+                    var seg = segments[segIdx];
+                    var segDur = seg.duration_seconds || seg.duration || 5;
+
+                    if (avVid.currentTime >= segStart) {
+                        var beatText = seg.text || '';
+                        if (beatText.trim().length > 0) {
+                            renderSubtitleKaraoke(subtitleEl, subtitleTextEl, beatText, segDur, sectionAtLoad);
+                        }
+                        segStart += segDur;
+                        segIdx++;
+                    }
+                }, 100);
+                timers.push(_subInterval);
+            }
         }
 
         // ══════════════════════════════════════════════════════════
@@ -2277,7 +2387,7 @@
         });
 
         window.addEventListener('resize', function () {
-            if (activeScene && activeScene.onResize) activeScene.onResize();
+            // Manim video resizes automatically via CSS object-fit:contain
         });
 
         // ══════════════════════════════════════════════════════════
@@ -2318,7 +2428,7 @@
             if (pd < 60) {
                 if (_lastPinch !== null) {
                     var delta = (_lastPinch - pd) * 0.04;
-                    if (activeScene && activeScene.onPinchZoom) activeScene.onPinchZoom(-delta);
+                    // Pinch zoom disabled (was for Three.js interactive scenes)
                 }
                 _lastPinch = pd; _showGHint('Pinch Zoom'); return;
             }
@@ -2380,7 +2490,7 @@
                     var td = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                     if (lastTD !== null) {
                         var delta = (td - lastTD) * 0.025;
-                        if (activeScene && activeScene.onPinchZoom) activeScene.onPinchZoom(-delta);
+                    // Pinch zoom no longer applies (was for Three.js scenes)
                     }
                     lastTD = td;
                 }
@@ -2442,9 +2552,8 @@
         });
         document.getElementById('dev-three').addEventListener('input', function (e) {
             document.getElementById('dev-three-val').textContent = e.target.value;
-            var tl = document.getElementById('threejs-layer');
-            tl.style.transformOrigin = 'center';
-            tl.style.transform = 'scale(' + e.target.value + ')';
+            var tl = document.getElementById('manim-layer');
+            if (tl) { tl.style.transformOrigin = 'center'; tl.style.transform = 'scale(' + e.target.value + ')'; }
         });
         document.getElementById('dev-raw').addEventListener('change', function (e) {
             var cvs = document.getElementById('av-canvas');
