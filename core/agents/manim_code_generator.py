@@ -1162,6 +1162,59 @@ def build_manim_section_data(
     }
 
 
+def build_v3_segment_data(
+    section: Dict[str, Any],
+    spec: Dict[str, Any],
+    seg_id: str,
+    duration: float,
+) -> Dict[str, Any]:
+    """
+    Build section_data for ManimCodeGenerator from a V3 director per-segment spec.
+
+    V3 director emits per-segment manim_scene_spec inside render_spec.segment_specs[].
+    This helper extracts the matching narration text and produces the correct dict
+    that ManimCodeGenerator.generate() expects.
+
+    Args:
+        section:  Full section dict from presentation.json
+        spec:     One entry from render_spec.segment_specs[] (has manim_scene_spec)
+        seg_id:   segment_id this spec belongs to (e.g. "seg_2")
+        duration: Target duration in seconds (from avatar or narration estimate)
+
+    Returns:
+        Dict suitable for ManimCodeGenerator.generate()
+    """
+    narration_segs = section.get("narration", {}).get("segments", [])
+    matching_seg = next(
+        (s for s in narration_segs if s.get("segment_id") == seg_id), {}
+    )
+    narration_text = matching_seg.get("text", "Visualizing content")
+
+    manim_spec = spec.get("manim_scene_spec", "")
+    key_terms = section.get("key_terms", [])
+    formulas = section.get("formulas", [])
+
+    return {
+        "section_title": f"{section.get('title', 'Section')} — {seg_id}",
+        "manim_spec": manim_spec,
+        "visual_description": manim_spec,
+        "narration_segments": [
+            {
+                "text": narration_text,
+                "duration_seconds": duration,
+                "duration": duration,
+            }
+        ],
+        "key_terms": key_terms if isinstance(key_terms, list) else [],
+        "formulas": formulas if isinstance(formulas, list) else [],
+        "special_requirements": (
+            f"Duration exactly {duration:.1f}s. "
+            "Single segment animation. Screen starts blank. "
+            "End with FadeOut(*self.mobjects)."
+        ),
+    }
+
+
 def integrate_manim_code_into_section(
     section: Dict[str, Any], manim_code: str
 ) -> Dict[str, Any]:

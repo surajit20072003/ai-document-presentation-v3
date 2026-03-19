@@ -430,9 +430,17 @@ class PartitionDirectorGenerator:
                     for key in ["intro", "summary", "memory", "recap", "quiz"]:
                         if key in data:
                             sec = data[key]
-                            # Ensure Recap is always 'video' renderer per Bible
+                            # V3: Ensure Recap uses text_to_video renderer with render_spec
                             if key == "recap":
-                                sec["renderer"] = "video"
+                                sec["renderer"] = "text_to_video"
+                                # Ensure render_spec exists
+                                if "render_spec" not in sec:
+                                    sec["render_spec"] = {
+                                        "renderer": "text_to_video",
+                                        "renderer_reason": "Recap uses text_to_video for cinematic mood-based narrative summary.",
+                                        "total_duration_seconds": 75.0,
+                                        "video_prompt": "Cinematic recap prompt.",
+                                    }
                     return data
 
                 # Validation Failed

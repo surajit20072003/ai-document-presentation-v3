@@ -143,9 +143,9 @@ def _check_manim_spec(section: dict) -> List[V3ValidatorError]:
     """manim sections MUST have render_spec with manim_scene_spec (30+ words)."""
     errors = []
     sid = section.get("section_id", 0)
-    renderer = section.get("renderer", "")
+    section_renderer = section.get("renderer", "")
 
-    if renderer != "manim":
+    if section_renderer != "manim":
         return errors
 
     render_spec = section.get("render_spec", {})
@@ -159,86 +159,56 @@ def _check_manim_spec(section: dict) -> List[V3ValidatorError]:
         )
         return errors
 
-    segment_specs = render_spec.get("segment_specs", [])
-    if not segment_specs:
-        # Also check section-level manim_scene_spec as fallback
-        section_spec = section.get("manim_scene_spec", "") or render_spec.get(
-            "manim_scene_spec", ""
+    renderer_reason = render_spec.get("renderer_reason", "").strip()
+    if not renderer_reason:
+        errors.append(
+            V3ValidatorError(
+                "v3_renderer_reason_missing",
+                sid,
+                "render_spec.renderer_reason is REQUIRED — must explain why manim was chosen for this section.",
+            )
         )
-        if not section_spec:
+
+    manim_spec = render_spec.get("manim_scene_spec", "")
+    if not manim_spec:
+        errors.append(
+            V3ValidatorError(
+                "v3_manim_spec_missing",
+                sid,
+                "render_spec.manim_scene_spec is missing — required for Manim generation.",
+            )
+        )
+    elif _count_words(manim_spec) < MANIM_SPEC_MIN_WORDS:
+        wc = _count_words(manim_spec)
+        errors.append(
+            V3ValidatorError(
+                "v3_manim_spec_too_short",
+                sid,
+                f"render_spec.manim_scene_spec is {wc} words — minimum is {MANIM_SPEC_MIN_WORDS} words.",
+            )
+        )
+    else:
+        vague = _check_vague(manim_spec)
+        if vague:
             errors.append(
                 V3ValidatorError(
-                    "v3_manim_missing_segment_specs",
+                    "v3_vague_manim_spec",
                     sid,
-                    "render_spec.segment_specs is empty and no section-level manim_scene_spec — no Manim animation spec provided.",
+                    f"render_spec.manim_scene_spec contains vague language: {vague}",
                 )
             )
-        return errors
 
-    for i, spec in enumerate(segment_specs):
-        renderer = spec.get("renderer", "")
-
-        renderer_reason = spec.get("renderer_choice_reason", "").strip()
-        if not renderer_reason:
-            # WARNING only for old jobs - not a hard fail
-            print(
-                f"  [WARNING] segment_spec[{i}] renderer_choice_reason missing - recommended for new jobs"
+    spec_duration = render_spec.get("total_duration_seconds")
+    if not spec_duration:
+        errors.append(
+            V3ValidatorError(
+                "v3_total_duration_missing",
+                sid,
+                "render_spec.total_duration_seconds not set — Manim generator needs this.",
             )
-            # Comment out the hard fail to allow old jobs to pass validation
-            # errors.append(
-            #     V3ValidatorError(
-            #         "v3_renderer_choice_reason_missing",
-            #         sid,
-            #         f"segment_spec[{i}] renderer_choice_reason is REQUIRED - must explain WHY renderer '{renderer}' was chosen. Add 2-3 sentence explanation based on decision tree.",
-            #     )
-            # )
+        )
 
-        manim_spec = spec.get("manim_scene_spec", "")
-
-        # Only validate manim_scene_spec for manim renderer
-        if renderer == "manim":
-            if not manim_spec:
-                errors.append(
-                    V3ValidatorError(
-                        "v3_manim_spec_missing",
-                        sid,
-                        f"segment_spec[{i}].manim_scene_spec is missing — required for Manim generation.",
-                    )
-                )
-            elif _count_words(manim_spec) < MANIM_SPEC_MIN_WORDS:
-                wc = _count_words(manim_spec)
-                errors.append(
-                    V3ValidatorError(
-                        "v3_manim_spec_too_short",
-                        sid,
-                        f"segment_spec[{i}].manim_scene_spec is {wc} words — minimum is {MANIM_SPEC_MIN_WORDS} words.",
-                    )
-                )
-            # Check vague language in manim_scene_spec
-            if manim_spec:
-                vague = _check_vague(manim_spec)
-                if vague:
-                    errors.append(
-                        V3ValidatorError(
-                            "v3_vague_manim_spec",
-                            sid,
-                            f"segment_spec[{i}].manim_scene_spec contains vague language: {vague}",
-                        )
-                    )
-
-        # Only validate segment_duration_seconds for manim renderer
-        if renderer == "manim":
-            spec_duration = spec.get("segment_duration_seconds")
-            if not spec_duration:
-                errors.append(
-                    V3ValidatorError(
-                        "v3_segment_duration_missing",
-                        sid,
-                        f"segment_spec[{i}].segment_duration_seconds not set — Manim generator needs this.",
-                    )
-                )
-
-        return errors
+    return errors
 
 
 def _check_segment_duration(section: dict) -> List[V3ValidatorError]:
@@ -346,7 +316,7 @@ def _check_understanding_quiz(section: dict) -> List[V3ValidatorError]:
 
 
 def _check_quiz_section(section: dict) -> List[V3ValidatorError]:
-    """Quiz sections must have 3 narration scripts per question for 3 avatar clips."""
+    """Quiz sections must have 4 narration scripts per question for 4 avatar clips."""
     errors = []
     sid = section.get("section_id", 0)
     section_type = section.get("section_type", "")
@@ -364,13 +334,18 @@ def _check_quiz_section(section: dict) -> List[V3ValidatorError]:
 
     for i, q in enumerate(questions):
         narr = q.get("narration", {})
-        for script_key in ("question_script", "correct_script", "wrong_script"):
+        for script_key in (
+            "question_script",
+            "correct_script",
+            "wrong_script",
+            "explanation_script",
+        ):
             if not narr.get(script_key):
                 errors.append(
                     V3ValidatorError(
                         "v3_quiz_missing_narration_script",
                         sid,
-                        f"Question {i} (id={q.get('question_id')}) missing narration.{script_key} — needed for 3 avatar clips.",
+                        f"Question {i} (id={q.get('question_id')}) missing narration.{script_key} — needed for 4 avatar clips.",
                     )
                 )
 

@@ -44,10 +44,22 @@ Return a JSON object with these EXACT keys and structure:
     "section_id": "recap_1",
     "section_type": "recap",
     "title": "Lesson Recap",
-    "renderer": "video",
+    "renderer": "text_to_video",
+    "use_local_gpu": true,
     "text_layer": "hide",
     "visual_layer": "show",
-    "video_prompts": [...exactly 5 segments...],
+    "render_spec": {
+      "renderer": "text_to_video",
+      "renderer_reason": "Recap uses text_to_video for cinematic mood-based narrative summary.",
+      "total_duration_seconds": 75.0,
+      "video_prompts": [
+        {"segment_id": "seg_1", "prompt": "Scene 1 description (15s). Describe setting, mood, camera movement, colors, lighting...", "duration": 15},
+        {"segment_id": "seg_2", "prompt": "Scene 2 description (15s). Transition from previous scene...", "duration": 15},
+        {"segment_id": "seg_3", "prompt": "Scene 3 description (15s). Continue narrative...", "duration": 15},
+        {"segment_id": "seg_4", "prompt": "Scene 4 description (15s). Build emotional impact...", "duration": 15},
+        {"segment_id": "seg_5", "prompt": "Scene 5 description (15s). Conclude with resolution...", "duration": 15}
+      ]
+    },
     "narration": { 
       "full_text": "...", 
       "segments": [...EXACTLY 5 segments. EACH segment MUST be 40-60 words...] 
@@ -64,7 +76,7 @@ Return a JSON object with these EXACT keys and structure:
 }
 ```
 
-**CRITICAL**: Every section MUST include the `renderer` field. Valid values: "none", "video", "manim".
+**CRITICAL**: Every section MUST include the `renderer` field. Valid values: "none", "text_to_video", "manim".
 
 ## 1. INTRO (Mandatory)
 - **Start Phrase**: MUST start with "Namaste!" (or "Namaskaram!" for South Indian context).
@@ -110,13 +122,14 @@ Return a JSON object with these EXACT keys and structure:
 ## 5. RECAP (Mandatory - The "Perfected" Model)
 - **Role**: A cinematic visual summary of the lesson.
 - **Rules**:
-  - **EXACTLY 5 SEGMENTS**.
-  - **derived_renderer**: `"video"`.
-  - **Visuals**: FULL SCREEN VIDEO. (`text_layer: "hide"`, `visual_layer: "show"`).
-  - **Prompts**: Each `video_prompt` MUST be **EXTREMELY DETAILED, MINIMUM 100 WORDS**. Describe camera, lighting, action, subject, texture, color, and mood in cinematic detail.
-  - **NO TECHNICAL REFERENCES**: ❌ NEVER mention image filenames (e.g., "topic_1_beat_1.png"), technical IDs, or file extensions in your prompts.
-  - **Story**: Narrate a cohesive story summarizing the lesson flow.
-- **WORD COUNT**: MANDATORY 40-60 words per segment. DO NOT output fewer than 40 words. This matches the ~15s cinematic duration.
+  - **EXACTLY 5 SEGMENTS** in narration.
+  - **renderer**: `"text_to_video"`.
+  - **Visuals**: FULL SCREEN VIDEO via Local GPU. (`text_layer: "hide"`, `visual_layer: "show"`).
+  - **use_local_gpu**: `true`.
+  - **video_prompts**: Array of EXACTLY 5 prompts — ONE PER SEGMENT. Each prompt describes ONE scene (15 seconds). Include camera movement, lighting, color palette, emotional tone, setting, and mood for that scene.
+  - **NO TECHNICAL REFERENCES**: ❌ NEVER mention image filenames, technical IDs, or file extensions in your prompts.
+  - **Story**: Narrate a cohesive story summarizing the lesson flow across all 5 scenes.
+- **WORD COUNT**: MANDATORY 40-60 words per narration segment. DO NOT output fewer than 40 words. This matches the ~15s cinematic duration.
 - **CULTURAL CONTEXT**: The video story should feature diverse Indian settings (e.g., a student in a Kerala village, a lab in Hyderabad, a field trip in Assam). Make it relatable!
 - **TONE**: Emotional and cinematic. Treat this as the "Final Act" of a movie.
 

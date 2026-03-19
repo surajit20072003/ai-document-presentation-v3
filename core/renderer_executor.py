@@ -30,6 +30,84 @@ from core.locks import presentation_lock, analytics_lock
 TEXT_ONLY_SECTION_TYPES = ["intro", "summary", "memory", "quiz"]
 
 
+def _render_videos_parallel(
+    beats: list,
+    output_dir: str,
+    dry_run: bool = False,
+    use_local_gpu: bool = True,
+) -> dict:
+    """
+    Render videos in parallel using Local GPU (max_workers=3).
+    No fallback - fails immediately on error.
+
+    Args:
+        beats: List of dicts with 'beat_id', 'prompt', 'duration', 'image_path' (optional)
+        output_dir: Output directory
+        dry_run: Skip generation
+        use_local_gpu: True=Local GPU (required, no Kie/WAN fallback)
+
+    Returns:
+        dict: {'success': [video_paths], 'failed': [beat_ids]}
+    """
+    results = {"success": [], "failed": []}
+
+    if dry_run:
+        print(f"[GPU-PARALLEL] DRY RUN: Would process {len(beats)} beats in parallel")
+        for beat in beats:
+            print(
+                f"  - {beat.get('beat_id', 'beat')}: {len(beat.get('prompt', ''))} chars"
+            )
+        return results
+
+    # GPU availability check
+    from render.wan.local_gpu_client import LocalGPUClient
+
+    client = LocalGPUClient()
+    if not client.is_available():
+        raise Exception("Local GPU server unavailable")
+
+    print(f"[GPU-PARALLEL] Using Local GPU (max_workers=3) for {len(beats)} beats")
+
+    # Parallel execution
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        future_to_beat = {}
+
+        for beat in beats:
+            beat_id = beat.get("beat_id", "beat")
+            prompt = beat.get("prompt") or beat.get("video_prompt", "")
+            duration = int(beat.get("duration", 15))
+            image_path = beat.get("image_path")
+            out_path = str(Path(output_dir) / f"{beat_id}.mp4")
+
+            future = executor.submit(
+                client.generate_video,
+                prompt=prompt,
+                duration=duration,
+                output_path=out_path,
+                image_path=image_path,
+            )
+            future_to_beat[future] = beat_id
+
+        # Collect results
+        for future in concurrent.futures.as_completed(future_to_beat):
+            beat_id = future_to_beat[future]
+            try:
+                video_path = future.result()
+                if video_path and Path(video_path).exists():
+                    results["success"].append(video_path)
+                    print(f"[GPU-PARALLEL] ✓ {beat_id}: {Path(video_path).name}")
+                else:
+                    results["failed"].append(beat_id)
+                    print(f"[GPU-PARALLEL] ✗ {beat_id}: No output")
+                    raise Exception(f"Video generation failed for {beat_id}")
+            except Exception as e:
+                results["failed"].append(beat_id)
+                print(f"[GPU-PARALLEL] ✗ {beat_id}: {e}")
+                raise  # Fail immediately
+
+    return results
+
+
 def enforce_renderer_policy(presentation: dict) -> dict:
     """Enforce renderer selection based on section type.
 
@@ -356,111 +434,66 @@ def execute_renderer(
     strict_mode: bool = True,
     video_provider: str = "ltx",
 ) -> dict:
+    """
+    V3 Section-Level Renderer Executor.
+
+    Routing priority:
+    1. render_spec.renderer (new section-level format): manim | image_to_video | text_to_video | infographic
+    2. render_spec.segment_specs[] (old beat-level format): for backward compatibility
+    3. Legacy fallbacks: video_prompts, manim_scene_spec
+    """
     os.makedirs(output_dir, exist_ok=True)
 
     topic_id = topic.get("section_id", topic.get("id", 1))
-    renderer = topic.get("renderer", "wan_video")
     section_type = topic.get("section_type", "content")
     visual_beats = topic.get("visual_beats", [])
 
-    manim_scene_spec = topic.get("manim_scene_spec") or (
-        topic.get("render_spec") or {}
-    ).get("manim_scene_spec")
-    video_prompts = topic.get("video_prompts") or (topic.get("render_spec") or {}).get(
-        "video_prompts"
-    )
+    render_spec = topic.get("render_spec") or {}
 
-    is_valid_manim_spec = isinstance(manim_scene_spec, dict)
-    is_valid_wan_spec = bool(video_prompts)
-    has_v12_specs = is_valid_manim_spec or is_valid_wan_spec
+    # NEW FORMAT: Check section-level renderer first
+    renderer = render_spec.get("renderer")
 
-    # V2.5 FIX: Auto-detect renderer if LLM provided content but forgot to set flag
-    # V3 FIX: Also check segment_specs for renderer types
-    segment_specs = (topic.get("render_spec") or {}).get("segment_specs", [])
+    # Log renderer choice reason if available
+    renderer_reason = render_spec.get("renderer_reason", "")
+    if renderer_reason:
+        print(f"  [{topic_id}] Renderer reason: {renderer_reason}")
 
-    # V3 FIX: If segment_specs exist with different renderers, process EACH SEGMENT INDIVIDUALLY
-    if segment_specs:
-        renderers_in_segments = set(
-            s.get("renderer") for s in segment_specs if s.get("renderer")
-        )
-
-        # If multiple different renderers exist, we need to process each segment individually
-        if len(renderers_in_segments) > 1 or (
-            len(renderers_in_segments) == 1 and not video_prompts
-        ):
-            print(
-                f"  [{topic_id}] -> Processing {len(segment_specs)} segments individually: {renderers_in_segments}"
-            )
-            return _process_segment_specs_individually(
-                topic,
-                segment_specs,
-                output_dir,
-                dry_run,
-                skip_wan,
-                trace_output_dir,
-                video_provider,
-            )
-
-        # Single renderer - use old logic
-        if renderers_in_segments:
-            # Pick the first non-none renderer found
-            if "image_to_video" in renderers_in_segments:
-                renderer = "image_to_video"
-            elif "infographic" in renderers_in_segments:
-                renderer = "infographic"
-            elif "text_to_video" in renderers_in_segments:
-                renderer = "wan_video"  # text_to_video uses WAN/LTX
-            elif "manim" in renderers_in_segments:
-                renderer = "manim"
-            elif "video" in renderers_in_segments:
-                renderer = "wan_video"
-            print(
-                f"  [{topic_id}] -> Using renderer '{renderer}' from segment_specs: {renderers_in_segments}"
-            )
-
-    # Priority 2: Check video_prompts (legacy WAN sections like recap)
-    elif renderer == "none" and section_type not in TEXT_ONLY_SECTION_TYPES:
-        if video_prompts:
-            renderer = "wan_video"
-            logger.info(
-                f"[Renderer] Auto-detected WAN content for section {topic_id}. Upgrading renderer to 'wan_video'."
-            )
-            print(f"  [{topic_id}] -> Auto-upgraded to WAN (found video_prompts)")
-        elif manim_scene_spec:
-            renderer = "manim_flow"
-            logger.info(
-                f"[Renderer] Auto-detected Manim content for section {topic_id}. Upgrading renderer to 'manim_flow'."
-            )
-            print(f"  [{topic_id}] -> Auto-upgraded to WAN (found video_prompts)")
-        elif segment_specs:
-            # Check segment_specs for renderer types
+    # If no section-level renderer, fall back to old detection
+    if not renderer or renderer == "video":
+        segment_specs = render_spec.get("segment_specs", [])
+        if segment_specs:
             renderers_in_segments = set(
                 s.get("renderer") for s in segment_specs if s.get("renderer")
             )
-            if "image_to_video" in renderers_in_segments:
-                renderer = "image_to_video"
-            elif "infographic" in renderers_in_segments:
-                renderer = "infographic"
-            elif "manim" in renderers_in_segments:
+            if renderers_in_segments:
+                if "image_to_video" in renderers_in_segments:
+                    renderer = "image_to_video"
+                elif "infographic" in renderers_in_segments:
+                    renderer = "infographic"
+                elif "text_to_video" in renderers_in_segments:
+                    renderer = "wan_video"
+                elif "manim" in renderers_in_segments:
+                    renderer = "manim"
+                elif "video" in renderers_in_segments:
+                    renderer = "wan_video"
+
+        # Legacy fallback
+        if not renderer or renderer == "video":
+            if topic.get("renderer") == "manim":
                 renderer = "manim"
-            elif (
-                "text_to_video" in renderers_in_segments
-                or "video" in renderers_in_segments
-            ):
+            elif topic.get("renderer") in ("wan", "wan_video"):
                 renderer = "wan_video"
+            elif section_type not in TEXT_ONLY_SECTION_TYPES:
+                video_prompts = topic.get("video_prompts", [])
+                if video_prompts:
+                    renderer = "wan_video"
 
-            if renderer != (topic.get("renderer") or "none"):
-                print(
-                    f"  [{topic_id}] -> Auto-upgraded to {renderer} (from segment_specs)"
-                )
-        elif manim_scene_spec:
-            renderer = "manim_flow"
-            logger.info(
-                f"[Renderer] Auto-detected Manim content for section {topic_id}. Upgrading renderer to 'manim_flow'."
-            )
-            print(f"  [{topic_id}] -> Auto-upgraded to Manim (found manim_scene_spec)")
+    # Default to none if still not set
+    if not renderer:
+        renderer = "none"
 
-    if renderer == "none" or section_type in TEXT_ONLY_SECTION_TYPES:
+    # Skip text-only section types
+    if section_type in TEXT_ONLY_SECTION_TYPES or renderer == "none":
         reason = (
             f"Section type '{section_type}' is text-only"
             if section_type in TEXT_ONLY_SECTION_TYPES
@@ -469,11 +502,15 @@ def execute_renderer(
         return {
             "topic_id": topic_id,
             "section_type": section_type,
-            "renderer": "none",
+            "renderer": renderer,
             "status": "skipped",
             "video_path": None,
             "reason": reason,
         }
+
+    manim_scene_spec = render_spec.get("manim_scene_spec")
+    video_prompts = render_spec.get("video_prompts") or topic.get("video_prompts", [])
+    has_v12_specs = bool(manim_scene_spec) or bool(video_prompts)
 
     if visual_beats:
         if "explanation_plan" not in topic:
@@ -558,7 +595,9 @@ def execute_renderer(
             return result
 
         elif renderer == "image_to_video":
-            # V3: Generate image first (Gemini), then animate with LTX using reference frame
+            # V3: Generate image first (Gemini), then animate with Local GPU in parallel
+            print(f"[RENDER] Section {topic_id}: Processing image_to_video...")
+
             if dry_run:
                 print(f"[DRY RUN] Section {topic_id}: Would generate image_to_video")
                 return {
@@ -570,114 +609,290 @@ def execute_renderer(
                     "reason": "dry_run",
                 }
 
-            print(f"[RENDER] Section {topic_id}: Processing image_to_video...")
+            # Build beats list for parallel processing
+            # Check for image_prompts[] and video_prompts[] arrays first (NEW FORMAT - one per segment)
+            image_prompts = render_spec.get("image_prompts", [])
+            video_prompts = render_spec.get("video_prompts", [])
 
-            # Log renderer choice reason
-            segment_specs = topic.get("render_spec", {}).get("segment_specs", [])
-            for spec in segment_specs:
-                if spec.get("renderer") == "image_to_video":
-                    reason = spec.get("renderer_choice_reason", "No reason provided")
-                    print(f"    [{spec.get('segment_id')}] Reason: {reason}")
-
-            # Import image generator
-            try:
-                from render.image.image_generator import (
-                    ImageGenerator,
-                    generate_image_for_beat,
+            if image_prompts and isinstance(image_prompts, list):
+                # NEW FORMAT: image_prompts[] array - one image per segment
+                # Match with video_prompts if available
+                beats = []
+                for i, img_p in enumerate(image_prompts):
+                    vid_p = video_prompts[i] if i < len(video_prompts) else {}
+                    beats.append(
+                        {
+                            "beat_id": img_p.get(
+                                "segment_id", f"topic_{topic_id}_seg{i + 1}"
+                            ),
+                            "image_prompt": img_p.get("prompt", ""),
+                            "prompt": vid_p.get("prompt", ""),
+                            "duration": img_p.get("duration", 15),
+                        }
+                    )
+                print(
+                    f"[IMAGE_TO_VIDEO] Section {topic_id}: Using image_prompts[] + video_prompts[] arrays ({len(beats)} videos)"
                 )
-            except ImportError as e:
-                logger.error(f"[Renderer] Image generator import failed: {e}")
-                result["status"] = "failed"
-                result["error"] = f"Image generator not available: {e}"
-                return result
-
-            # Get segment specs for this renderer
-            render_spec = topic.get("render_spec", {})
-            segment_specs = render_spec.get("segment_specs", [])
-
-            # Find image_to_video segments
-            i2v_specs = [
-                s for s in segment_specs if s.get("renderer") == "image_to_video"
-            ]
-
-            if not i2v_specs:
-                logger.warning(
-                    f"[Renderer] No image_to_video segment_specs found for {topic_id}"
+            elif video_prompts and isinstance(video_prompts, list):
+                # Only video_prompts[] - need to generate images from video prompts
+                beats = []
+                for i, vid_p in enumerate(video_prompts):
+                    beats.append(
+                        {
+                            "beat_id": vid_p.get(
+                                "segment_id", f"topic_{topic_id}_seg{i + 1}"
+                            ),
+                            "image_prompt": f"Reference image for scene: {vid_p.get('prompt', '')[:200]}...",
+                            "prompt": vid_p.get("prompt", ""),
+                            "duration": vid_p.get("duration", 15),
+                        }
+                    )
+                print(
+                    f"[IMAGE_TO_VIDEO] Section {topic_id}: Using video_prompts[] (auto-generating images)"
                 )
-                result["status"] = "skipped"
-                result["reason"] = "no image_to_video specs"
-                return result
+            else:
+                # FALLBACK: Single image_prompt + video_prompt for entire section
+                image_prompt = render_spec.get("image_prompt", "")
+                video_prompt = render_spec.get("video_prompt", "")
+                duration = render_spec.get("total_duration_seconds", 15)
 
-            # Process each image_to_video segment
-            video_paths = []
+                if image_prompt:
+                    beats = [
+                        {
+                            "beat_id": f"topic_{topic_id}",
+                            "image_prompt": image_prompt,
+                            "prompt": video_prompt,
+                            "duration": duration,
+                        }
+                    ]
+                    print(
+                        f"[IMAGE_TO_VIDEO] Section {topic_id}: Using single image_prompt (fallback)"
+                    )
+                else:
+                    # OLD FORMAT: Check segment_specs
+                    segment_specs = render_spec.get("segment_specs", [])
+                    i2v_specs = [
+                        s
+                        for s in segment_specs
+                        if s.get("renderer") == "image_to_video"
+                    ]
+                    if i2v_specs:
+                        beats = [
+                            {
+                                "beat_id": s.get("segment_id", f"topic_{topic_id}_{i}"),
+                                "image_prompt": s.get("image_prompt", ""),
+                                "prompt": s.get("video_prompt", ""),
+                                "duration": s.get("segment_duration_seconds", 15),
+                            }
+                            for i, s in enumerate(i2v_specs)
+                        ]
+                    else:
+                        result["status"] = "failed"
+                        result["error"] = (
+                            "No image_prompt or image_prompts[] in render_spec"
+                        )
+                        return result
+
+            # Step 1: Generate all reference images in parallel
+            print(
+                f"[IMAGE_TO_VIDEO] Section {topic_id}: Generating {len(beats)} reference images in parallel..."
+            )
+
+            from render.image.image_generator import generate_image_for_beat
+
+            image_paths = {}
             job_id = str(Path(output_dir).parent.name)
 
-            for spec in i2v_specs:
-                beat_id = spec.get("segment_id", f"beat_{len(video_paths)}")
-                image_prompt = spec.get("image_prompt", "")
-                video_prompt = spec.get("video_prompt", "")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                future_to_beat = {}
+                for beat in beats:
+                    beat_id = beat.get("beat_id")
+                    img_prompt = beat.get("image_prompt", "")
+                    if not img_prompt:
+                        continue
+                    future = executor.submit(
+                        generate_image_for_beat,
+                        beat={"beat_id": beat_id, "image_prompt": img_prompt},
+                        job_id=job_id,
+                        section_id=str(topic_id),
+                        output_dir=output_dir,
+                    )
+                    future_to_beat[future] = beat_id
 
-                if not image_prompt:
-                    logger.warning(f"[Renderer] No image_prompt for {beat_id}")
-                    continue
+                for future in concurrent.futures.as_completed(future_to_beat):
+                    beat_id = future_to_beat[future]
+                    try:
+                        img_path = future.result()
+                        if img_path:
+                            image_paths[beat_id] = img_path
+                            print(
+                                f"[IMAGE_TO_VIDEO] ✓ Image {beat_id}: {Path(img_path).name}"
+                            )
+                    except Exception as e:
+                        print(f"[IMAGE_TO_VIDEO] ✗ Image {beat_id}: {e}")
 
-                # Step 1: Generate reference image
-                beat_data = {
-                    "beat_id": beat_id,
-                    "image_prompt": image_prompt,
-                    "video_prompt": video_prompt,
+            # Step 2: Generate videos in parallel using reference images
+            video_beats = []
+            for beat in beats:
+                beat_id = beat.get("beat_id")
+                if beat_id in image_paths:
+                    video_beats.append(
+                        {
+                            "beat_id": beat_id,
+                            "prompt": beat.get("prompt", ""),
+                            "duration": beat.get("duration", 15),
+                            "image_path": image_paths[beat_id],
+                        }
+                    )
+
+            if not video_beats:
+                result["status"] = "failed"
+                result["error"] = "No images generated successfully"
+                return result
+
+            # Get use_local_gpu routing
+            use_local = topic.get("use_local_gpu", True)
+            print(
+                f"[IMAGE_TO_VIDEO] Section {topic_id}: Rendering {len(video_beats)} videos → {'Local GPU' if use_local else 'Kie/WAN'}"
+            )
+
+            # Render videos in parallel
+            try:
+                render_results = _render_videos_parallel(
+                    beats=video_beats,
+                    output_dir=output_dir,
+                    dry_run=dry_run,
+                    use_local_gpu=use_local,
+                )
+
+                if render_results["success"]:
+                    result["status"] = "success"
+                    result["video_path"] = (
+                        render_results["success"][0]
+                        if len(render_results["success"]) == 1
+                        else render_results["success"]
+                    )
+                    result["all_video_paths"] = render_results["success"]
+                    result["all_image_paths"] = list(image_paths.values())
+                else:
+                    result["status"] = "failed"
+                    result["error"] = "All video generations failed"
+
+            except Exception as e:
+                result["status"] = "failed"
+                result["error"] = str(e)
+
+            return result
+
+        elif renderer == "text_to_video":
+            # V3: Generate video from text prompt using Local GPU in parallel
+            print(f"[RENDER] Section {topic_id}: Processing text_to_video...")
+
+            if dry_run:
+                print(f"[DRY RUN] Section {topic_id}: Would generate text_to_video")
+                return {
+                    "topic_id": topic_id,
+                    "section_type": section_type,
+                    "renderer": "text_to_video",
+                    "status": "skipped",
+                    "video_path": None,
+                    "reason": "dry_run",
                 }
 
-                image_path = generate_image_for_beat(
-                    beat_data, job_id, topic_id, output_dir
+            # Build beats list for parallel processing
+            # Check for video_prompts[] array first (NEW FORMAT - one prompt per segment)
+            video_prompts = render_spec.get("video_prompts", [])
+
+            if video_prompts and isinstance(video_prompts, list):
+                # NEW FORMAT: video_prompts[] array - one video per segment
+                beats = [
+                    {
+                        "beat_id": p.get("segment_id", f"topic_{topic_id}_seg{i + 1}"),
+                        "prompt": p.get("prompt", ""),
+                        "duration": p.get("duration", 15),
+                    }
+                    for i, p in enumerate(video_prompts)
+                ]
+                print(
+                    f"[TEXT_TO_VIDEO] Section {topic_id}: Using video_prompts[] array ({len(beats)} videos)"
                 )
-
-                if not image_path:
-                    logger.error(f"[Renderer] Failed to generate image for {beat_id}")
-                    continue
-
-                # Step 2: Generate video from image using LTX
-                try:
-                    from render.ltx.ltx_client import LtxClient
-
-                    client = LtxClient()
-                    duration = spec.get("segment_duration_seconds", 15)
-                    video_output = str(Path(output_dir) / f"{beat_id}.mp4")
-
-                    video_path = client.generate_video_from_image(
-                        prompt=video_prompt,
-                        image_path=image_path,
-                        output_path=video_output,
-                        duration=duration,
-                    )
-
-                    if video_path:
-                        video_paths.append(video_path)
-                        # Update segment spec with paths
-                        spec["image_path"] = f"images/{Path(image_path).name}"
-                        spec["video_path"] = f"videos/{Path(video_path).name}"
-                        print(f"  [{beat_id}] -> image_to_video complete: {video_path}")
-
-                except Exception as e:
-                    logger.error(
-                        f"[Renderer] LTX image_to_video failed for {beat_id}: {e}"
-                    )
-                    continue
-
-            if video_paths:
-                result["status"] = "success"
-                result["video_path"] = (
-                    video_paths[0] if len(video_paths) == 1 else video_paths
-                )
-                result["all_video_paths"] = video_paths
             else:
+                # FALLBACK: Single video_prompt for entire section
+                video_prompt = render_spec.get("video_prompt", "")
+                duration = render_spec.get("total_duration_seconds", 15)
+
+                if video_prompt:
+                    beats = [
+                        {
+                            "beat_id": f"topic_{topic_id}",
+                            "prompt": video_prompt,
+                            "duration": duration,
+                        }
+                    ]
+                    print(
+                        f"[TEXT_TO_VIDEO] Section {topic_id}: Using single video_prompt (fallback)"
+                    )
+                else:
+                    # OLD FORMAT: Check segment_specs
+                    segment_specs = render_spec.get("segment_specs", [])
+                    t2v_specs = [
+                        s
+                        for s in segment_specs
+                        if s.get("renderer") in ("text_to_video", "video")
+                    ]
+                    if t2v_specs:
+                        beats = [
+                            {
+                                "beat_id": s.get("segment_id", f"topic_{topic_id}_{i}"),
+                                "prompt": s.get("video_prompt", ""),
+                                "duration": s.get("segment_duration_seconds", 15),
+                            }
+                            for i, s in enumerate(t2v_specs)
+                        ]
+                    else:
+                        result["status"] = "failed"
+                        result["error"] = (
+                            "No video_prompt or video_prompts[] in render_spec"
+                        )
+                        return result
+
+            # Get use_local_gpu routing decision
+            use_local = topic.get("use_local_gpu", True)
+            print(
+                f"[TEXT_TO_VIDEO] Section {topic_id}: {len(beats)} videos → {'Local GPU' if use_local else 'Kie/WAN'}"
+            )
+
+            # Render in parallel using GPU
+            try:
+                render_results = _render_videos_parallel(
+                    beats=beats,
+                    output_dir=output_dir,
+                    dry_run=dry_run,
+                    use_local_gpu=use_local,
+                )
+
+                if render_results["success"]:
+                    result["status"] = "success"
+                    result["video_path"] = (
+                        render_results["success"][0]
+                        if len(render_results["success"]) == 1
+                        else render_results["success"]
+                    )
+                    result["all_video_paths"] = render_results["success"]
+                else:
+                    result["status"] = "failed"
+                    result["error"] = "All video generations failed"
+
+            except Exception as e:
                 result["status"] = "failed"
-                result["error"] = "No videos generated"
+                result["error"] = str(e)
 
             return result
 
         elif renderer == "infographic":
             # V3: Generate static image only (no video animation)
+            print(f"[RENDER] Section {topic_id}: Processing infographic...")
+
             if dry_run:
                 print(f"[DRY RUN] Section {topic_id}: Would generate infographic")
                 return {
@@ -689,14 +904,25 @@ def execute_renderer(
                     "reason": "dry_run",
                 }
 
-            print(f"[RENDER] Section {topic_id}: Processing infographic...")
+            # NEW FORMAT: Use render_spec.infographic_beats directly
+            infographic_beats = render_spec.get("infographic_beats", [])
 
-            # Log renderer choice reason
-            segment_specs = topic.get("render_spec", {}).get("segment_specs", [])
-            for spec in segment_specs:
-                if spec.get("renderer") == "infographic":
-                    reason = spec.get("renderer_choice_reason", "No reason provided")
-                    print(f"    [{spec.get('segment_id')}] Reason: {reason}")
+            # OLD FORMAT: Check segment_specs for infographic specs
+            segment_specs = render_spec.get("segment_specs", [])
+            info_specs_old = [
+                s for s in segment_specs if s.get("renderer") == "infographic"
+            ]
+
+            # If infographic_beats exist, use new format
+            if infographic_beats:
+                beats_data = infographic_beats
+            elif info_specs_old:
+                # Use old format from segment_specs
+                beats_data = info_specs_old
+            else:
+                result["status"] = "failed"
+                result["error"] = "No infographic_beats in render_spec"
+                return result
 
             # Import image generator
             try:
@@ -707,30 +933,12 @@ def execute_renderer(
                 result["error"] = f"Image generator not available: {e}"
                 return result
 
-            # Get segment specs for this renderer
-            render_spec = topic.get("render_spec", {})
-            segment_specs = render_spec.get("segment_specs", [])
-
-            # Find infographic segments
-            info_specs = [
-                s for s in segment_specs if s.get("renderer") == "infographic"
-            ]
-
-            if not info_specs:
-                logger.warning(
-                    f"[Renderer] No infographic segment_specs found for {topic_id}"
-                )
-                result["status"] = "skipped"
-                result["reason"] = "no infographic specs"
-                return result
-
-            # Process each infographic segment
             image_paths = []
             job_id = str(Path(output_dir).parent.name)
 
-            for spec in info_specs:
-                beat_id = spec.get("segment_id", f"beat_{len(image_paths)}")
-                image_prompt = spec.get("image_prompt", "")
+            for beat in beats_data:
+                beat_id = beat.get("beat_id", f"inf_{len(image_paths)}")
+                image_prompt = beat.get("image_prompt", "")
 
                 if not image_prompt:
                     logger.warning(f"[Renderer] No image_prompt for {beat_id}")

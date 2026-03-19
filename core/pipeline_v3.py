@@ -48,6 +48,7 @@ def run_v3_pipeline(
     job_update_callback=None,
     video_provider: str = "ltx",
     skip_wan: bool = False,
+    images_dict: Optional[dict] = None,  # ← FIX: source images extracted from uploaded PDF
 ) -> Dict[str, Any]:
     """
     Full V3 pipeline. Returns (presentation_dict, analytics_dict).
@@ -60,6 +61,29 @@ def run_v3_pipeline(
         print(f"[V3-PIPELINE] [{phase.upper()}] {message}", flush=True)
         if update_status_callback:
             update_status_callback(job_id, phase, message)
+
+    # ─────────────────────────────────────────────
+    # Phase 0: Save PDF source images to job/images/
+    # Mirrors pipeline_unified.py Phase 0 so V3 jobs
+    # preserve the original document images on disk.
+    # ─────────────────────────────────────────────
+    saved_images = {}
+    images_list = "None"
+    if images_dict:
+        log("image_processing", f"Processing {len(images_dict)} source images from PDF...")
+        try:
+            from core.image_processor import save_datalab_images
+            images_dir = output_path / "images"
+            saved_images = save_datalab_images(images_dict, str(images_dir), apply_green_screen=True)
+            if saved_images:
+                images_list = ", ".join(saved_images.keys())
+                logger.info(f"[V3] Saved {len(saved_images)} source images to {images_dir}")
+                log("image_processing", f"✅ Saved {len(saved_images)} source image(s) to job/images/")
+        except Exception as e:
+            logger.error(f"[V3] Image saving failed (non-fatal): {e}")
+            log("image_processing", f"⚠️ Image saving error (non-fatal): {e}")
+    else:
+        log("image_processing", "No source images from PDF — skipping image phase.")
 
     # ─────────────────────────────────────────────
     # Phase 1: Director V3
@@ -235,288 +259,188 @@ def run_v3_pipeline(
                 log("avatar", f"⚠️ Avatar error (non-fatal): {e}")
 
     # ─────────────────────────────────────────────
-    # Phase 3.5: Manim Code Generation
-    # Runs after Avatar generation. Generates Python code per section
-    # using the exactly known actual avatar duration for timing.
+    # Phase 3.5: Manim Code Generation — PER SEGMENT (Parallel, like V2)
+    # Each visual segment in a Manim section gets its own .py + .mp4 (beat video).
+    # Runs AFTER avatar generation so avatar_duration_seconds is available.
     # ─────────────────────────────────────────────
     if skip_manim:
         log("manim_gen", "Skipping Manim generation (skip_manim=True).")
     else:
-        log("manim_gen", "Generating Manim code (with real avatar durations)...")
-
+        log("manim_gen", "Phase 3.5: Generating per-segment Manim code (parallel, 5 workers)...")
         try:
-            from core.agents.manim_code_generator import (
-                ManimCodeGenerator,
-                build_manim_section_data,
-                integrate_manim_code_into_section,
-            )
+            from core.agents.manim_code_generator import ManimCodeGenerator, build_v3_segment_data
+            import concurrent.futures
 
             gen = ManimCodeGenerator()
             manim_dir = output_path / "manim"
             manim_dir.mkdir(parents=True, exist_ok=True)
 
             sections = presentation.get("sections", [])
-            manim_sections = [
-                s
-                for s in sections
-                if s.get("renderer") == "manim"
-                or any(
-                    seg.get("renderer") == "manim"
-                    for seg in s.get("render_spec", {}).get("segment_specs", [])
-                )
-            ]
+            manim_sections = [s for s in sections if s.get("renderer") == "manim"]
+            log("manim_gen", f"Found {len(manim_sections)} Manim section(s).")
 
-            log("manim_gen", f"Found {len(manim_sections)} Manim sections.")
-
-            for section in manim_sections:
+            def process_section(section):
                 sec_id = section.get("section_id", "0")
                 render_spec = section.get("render_spec", {})
-                segment_specs = render_spec.get("segment_specs", [])
+                narrow_specs = render_spec.get("segment_specs", [])
+                manim_specs = [
+                    s for s in narrow_specs
+                    if s.get("renderer") == "manim" or s.get("manim_scene_spec")
+                ]
 
-                # Pull narration segments with REAL TTS durations (updated by Phase 3)
-                narration_segments = section.get("narration", {}).get("segments", [])
+                # Fallback: director gave ONE section-level spec (old format)
+                if not manim_specs:
+                    single_spec = render_spec.get("manim_scene_spec", "")
+                    if single_spec:
+                        narr_segs = section.get("narration", {}).get("segments", [])
+                        total_dur = section.get("total_duration_seconds", 20.0)
+                        first_seg_id = narr_segs[0]["segment_id"] if narr_segs else "seg_1"
+                        manim_specs = [{
+                            "segment_id": first_seg_id,
+                            "renderer": "manim",
+                            "duration_seconds": total_dur,
+                            "manim_scene_spec": single_spec,
+                        }]
 
-                # Use real avatar_duration_seconds from Phase 3.3 if available
-                total_avatar_sec = section.get("avatar_duration_seconds", None)
-                total_narration_secs = (
-                    sum(
-                        seg.get("duration_seconds") or seg.get("duration", 5.0)
-                        for seg in narration_segments
-                    )
-                    if narration_segments
-                    else None
-                )
+                if not manim_specs:
+                    log("manim_gen", f"  Sec {sec_id}: no manim segment_specs found, skipping.")
+                    return
 
-                # Target duration: avatar MP4 > TTS estimate > section default
-                target_duration = (
-                    total_avatar_sec
-                    or total_narration_secs
-                    or section.get("segment_duration_seconds", 20)
-                )
+                narration_segs = section.get("narration", {}).get("segments", [])
+                narration_by_id = {s["segment_id"]: s for s in narration_segs}
+                section["_manim_segment_specs"] = []
 
-                # V3 FIX: If it's a segment-level Manim spec, we don't generate a combined
-                # section-level python file. Phase 3.7's _render_manim_segment_specs
-                # will generate the code per-segment during rendering.
-                if segment_specs and any(
-                    s.get("renderer") == "manim" for s in segment_specs
-                ):
-                    section["manim_code_path"] = "manim/v3_segment_rendered.py"
-                    log(
-                        "manim_gen",
-                        f"  Sec {sec_id}: V3 segment-level manim, deferring code gen to render phase.",
-                    )
-                    continue
+                for beat_idx, spec in enumerate(manim_specs):
+                    seg_id = spec.get("segment_id", f"seg_{beat_idx + 1}")
+                    narr_seg = narration_by_id.get(seg_id, {})
 
-                # Build manim_spec from section-level (legacy)
-                manim_spec = ""
-                if segment_specs:
-                    spec_parts = []
-                    for spec in segment_specs:
-                        ms = spec.get("manim_scene_spec", "")
-                        if ms:
-                            spec_parts.append(ms)
-                    manim_spec = " ".join(spec_parts)
-
-                if not manim_spec:
-                    manim_spec = section.get("manim_scene_spec", "") or render_spec.get(
-                        "manim_scene_spec", ""
+                    # Duration priority: real avatar MP4 > director estimate > narration estimate
+                    duration = (
+                        narr_seg.get("avatar_duration_seconds")
+                        or spec.get("duration_seconds")
+                        or narr_seg.get("duration_seconds")
+                        or 15.0
                     )
 
-                if not manim_spec:
-                    log("manim_gen", f"  Sec {sec_id}: no manim_scene_spec, skipping.")
-                    continue
+                    section_data = build_v3_segment_data(
+                        section=section,
+                        spec=spec,
+                        seg_id=seg_id,
+                        duration=duration,
+                    )
 
-                # Build section_data for ManimCodeGenerator
-                section_data = {
-                    "section_title": section.get("title", "Educational Section"),
-                    "manim_spec": manim_spec,
-                    "visual_description": manim_spec,
-                    "narration_segments": [
-                        {
-                            "text": seg.get("text", ""),
-                            "duration": float(
-                                seg.get("duration_seconds") or seg.get("duration", 5.0)
-                            ),
-                        }
-                        for seg in narration_segments
-                    ],
-                    "formulas": section.get("formulas", []),
-                    "key_terms": section.get("key_terms", []),
-                    "special_requirements": "",
-                }
-
-                log(
-                    "manim_gen",
-                    f"  Generating Sec {sec_id} (target_dur={target_duration:.1f}s)...",
-                )
-
-                manim_code, errors = gen.generate(section_data)
-
-                if manim_code:
-                    # Save the .py file
-                    py_filename = f"topic_{sec_id}.py"
+                    py_filename = f"topic_{sec_id}_beat_{beat_idx}.py"
                     py_path = manim_dir / py_filename
-                    with open(py_path, "w", encoding="utf-8") as f:
-                        f.write(manim_code)
 
-                    # Store path in presentation.json for later rendering
-                    rel_py_path = f"manim/{py_filename}"
-                    section["manim_code_path"] = rel_py_path
+                    log("manim_gen", f"  Sec {sec_id} | seg {seg_id} ({duration:.1f}s) → {py_filename}")
+                    manim_code, errors = gen.generate(section_data)
 
-                    # NOTE: Do NOT call integrate_manim_code_into_section here.
-                    # V3 generates code fresh during render phase via _render_manim_segment_specs.
-                    # The .py file is saved above for reference/debugging only.
+                    if manim_code:
+                        py_path.write_text(manim_code, encoding="utf-8")
+                        section["_manim_segment_specs"].append({
+                            "segment_id": seg_id,
+                            "beat_idx": beat_idx,
+                            "py_path": str(py_path),
+                            "duration_seconds": duration,
+                            "topic_id": sec_id,
+                        })
+                        log("manim_gen", f"    ✅ Saved {py_filename}")
+                    else:
+                        log("manim_gen", f"    ⚠️ Gen failed for {seg_id}: {errors}")
 
-                    log("manim_gen", f"  ✅ Saved: {rel_py_path}")
-                else:
-                    log("manim_gen", f"  ⚠️ Sec {sec_id} generation failed: {errors}")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                list(executor.map(process_section, manim_sections))
 
-        except V3PipelineError:
-            raise
         except Exception as e:
-            logger.warning(f"[V3] Manim code generation error (non-fatal): {e}")
+            logger.warning(f"[V3] Manim code gen error (non-fatal): {e}")
             log("manim_gen", f"⚠️ Manim gen error (non-fatal): {e}")
 
-        # ── Save presentation.json with manim code paths ──────────
+        # Save presentation.json with _manim_segment_specs
         try:
             from core.locks import presentation_lock
-
             with presentation_lock:
                 with open(pres_path, "w", encoding="utf-8") as f:
                     json.dump(presentation, f, indent=2, ensure_ascii=False)
         except ImportError:
             with open(pres_path, "w", encoding="utf-8") as f:
                 json.dump(presentation, f, indent=2, ensure_ascii=False)
-        log("manim_gen", "✅ presentation.json updated with Manim code paths.")
+        log("manim_gen", "✅ Phase 3.5 complete.")
 
     # ─────────────────────────────────────────────
     # (Phase 5 Avatar Generation was moved up to Phase 3.3)
     # ─────────────────────────────────────────────
 
     # ─────────────────────────────────────────────
-    # Phase 3.6: Manim Timing Enforcement (VSYNC-001)
-    # V3 Core Goal: Perfect avatar–animation sync.
-    # Runs AFTER avatar generation so avatar_duration_seconds is available.
-    # Scales self.wait() calls in generated .py files to match real MP4 duration.
+    # Phase 3.6: Manim Timing Enforcement
+    # Scales self.wait() in each .py to match real avatar duration.
+    # Falls back to narration duration_seconds when avatar is unavailable.
+    # NOTE: no longer gated by skip_avatar.
     # ─────────────────────────────────────────────
-    if not skip_manim and not skip_avatar:
-        log(
-            "manim_timing_enforce",
-            "Phase 3.6: Enforcing Manim timing against real avatar durations...",
-        )
+    if not skip_manim:
+        log("manim_timing_enforce", "Phase 3.6: Enforcing Manim timing...")
         try:
-            # Re-read presentation.json: avatar_generator has written avatar_duration_seconds
             with open(pres_path, "r", encoding="utf-8") as f:
                 presentation = json.load(f)
 
             from core.manim_timing_enforcer import run_manim_timing_enforcement
-
             patched = run_manim_timing_enforcement(
                 presentation=presentation,
                 output_dir=str(output_path),
                 log_fn=log,
             )
-            log(
-                "manim_timing_enforce",
-                f"✅ Phase 3.6 complete: {patched} Manim file(s) timing-enforced.",
-            )
+            log("manim_timing_enforce", f"✅ Phase 3.6 complete: {patched} file(s) timing-enforced.")
         except Exception as e:
             logger.warning(f"[V3] Manim timing enforcement error (non-fatal): {e}")
             log("manim_timing_enforce", f"⚠️ Phase 3.6 error (non-fatal): {e}")
 
     # ─────────────────────────────────────────────
-    # Phase 3.7: Manim Render (execute Manim CLI → .mp4)
-    # Renders the timing-enforced .py files into video files.
+    # Phase 3.7: Manim Render — one .mp4 per segment (beat_videos)
+    # Calls V2's _render_manim_segment_specs which writes seg.beat_videos[] directly.
     # ─────────────────────────────────────────────
     if not skip_manim:
-        log("manim_render", "Phase 3.7: Rendering Manim videos...")
+        log("manim_render", "Phase 3.7: Rendering per-segment Manim beat videos...")
         try:
-            from render.manim.manim_runner import render_manim_video
+            from render.manim.manim_runner import _render_manim_segment_specs
 
             sections = presentation.get("sections", [])
-            manim_sections = [
-                s
-                for s in sections
-                if s.get("renderer") == "manim"
-                or any(
-                    seg.get("renderer") == "manim"
-                    for seg in s.get("render_spec", {}).get("segment_specs", [])
-                )
-            ]
-            rendered_count = 0
+            manim_sections = [s for s in sections if s.get("renderer") == "manim"]
+            rendered_total = 0
 
             for section in manim_sections:
                 sec_id = section.get("section_id", "0")
-                manim_code_path = section.get("manim_code_path")
-                if not manim_code_path:
-                    log(
-                        "manim_render",
-                        f"  Sec {sec_id}: no manim_code_path, skipping render.",
-                    )
+                internal_specs = section.get("_manim_segment_specs", [])
+
+                if not internal_specs:
+                    log("manim_render", f"  Sec {sec_id}: no _manim_segment_specs, skipping.")
                     continue
 
-                abs_py_path = output_path / manim_code_path
-                if not abs_py_path.exists():
-                    log(
-                        "manim_render",
-                        f"  Sec {sec_id}: {manim_code_path} not found, skipping.",
-                    )
-                    continue
-
-                log("manim_render", f"  Rendering Sec {sec_id}...")
+                log("manim_render", f"  Sec {sec_id}: rendering {len(internal_specs)} beat video(s)...")
                 try:
-                    video_result = render_manim_video(
-                        topic=section,
+                    rendered = _render_manim_segment_specs(
+                        specs=internal_specs,
+                        topic_id=sec_id,
+                        topic_title=section.get("title", ""),
                         output_dir=str(output_path / "videos"),
                         dry_run=dry_run,
+                        topic=section,  # CRITICAL: writes seg.beat_videos[] directly
                     )
-
-                    # Store video path(s) in section
-                    if isinstance(video_result, list):
-                        section["manim_video_paths"] = video_result
-                        section["video_path"] = (
-                            video_result[0] if video_result else None
-                        )
-                    elif video_result:
-                        section["manim_video_paths"] = [video_result]
-                        section["video_path"] = video_result
-
-                    rendered_count += 1
-                    log("manim_render", f"  ✅ Sec {sec_id}: rendered → {video_result}")
+                    if rendered:
+                        section["video_path"] = f"videos/{Path(rendered[0]).name}"
+                        section["manim_video_paths"] = [
+                            f"videos/{Path(p).name}" for p in rendered
+                        ]
+                    rendered_total += len(rendered)
+                    log("manim_render", f"  ✅ Sec {sec_id}: {len(rendered)} beat video(s) done.")
 
                 except Exception as render_err:
-                    logger.warning(
-                        f"[V3] Manim render failed for sec {sec_id}: {render_err}"
-                    )
+                    logger.warning(f"[V3] Manim render failed for sec {sec_id}: {render_err}")
                     log("manim_render", f"  ⚠️ Sec {sec_id} render failed: {render_err}")
 
-            log(
-                "manim_render",
-                f"✅ Phase 3.7 complete: {rendered_count} video(s) rendered.",
-            )
-
-            # FIX: Populate manim_video_paths from segment-level beat_videos if not already set
-            for section in manim_sections:
-                if not section.get("manim_video_paths"):
-                    segment_videos = []
-                    narration = section.get("narration", {})
-                    for seg in narration.get("segments", []):
-                        beat_videos = seg.get("beat_videos", [])
-                        if beat_videos:
-                            segment_videos.extend(beat_videos)
-                    if segment_videos:
-                        section["manim_video_paths"] = segment_videos
-                        if not section.get("video_path"):
-                            section["video_path"] = segment_videos[0]
-                        log(
-                            "manim_render",
-                            f"  📝 Sec {section.get('section_id')}: populated manim_video_paths from segments",
-                        )
+            log("manim_render", f"✅ Phase 3.7 complete: {rendered_total} beat video(s) rendered.")
 
             # Save presentation.json with video paths
             try:
                 from core.locks import presentation_lock
-
                 with presentation_lock:
                     with open(pres_path, "w", encoding="utf-8") as f:
                         json.dump(presentation, f, indent=2, ensure_ascii=False)
@@ -592,16 +516,70 @@ def run_v3_pipeline(
 
     # ─────────────────────────────────────────────
     # Phase 6.5: WAN / LTX2 Video Generation
-    # renderer: "video" sections — Biology, History, Geography
-    # UNCHANGED from V2 — WAN handles non-math visual content.
+    # V3: Handle text_to_video, image_to_video, and video sections
     # ─────────────────────────────────────────────
+
+    # V3: Sections that need video generation
     video_sections = [
-        s for s in presentation.get("sections", []) if s.get("renderer") == "video"
+        s
+        for s in presentation.get("sections", [])
+        if s.get("renderer") in ("video", "text_to_video", "image_to_video")
     ]
-    if video_sections and not skip_wan:
+
+    # V3: Separate sections by type
+    wan_video_sections = [s for s in video_sections if s.get("renderer") == "video"]
+    v3_video_sections = [
+        s
+        for s in video_sections
+        if s.get("renderer") in ("text_to_video", "image_to_video")
+    ]
+
+    # V3: Handle text_to_video and image_to_video sections via execute_renderer()
+    if v3_video_sections and not skip_wan:
         log(
             "wan_video",
-            f"Starting WAN/LTX video generation for {len(video_sections)} renderer:video section(s)...",
+            f"Starting V3 video generation for {len(v3_video_sections)} section(s) via execute_renderer()...",
+        )
+        try:
+            from core.renderer_executor import execute_renderer
+
+            for section in v3_video_sections:
+                section_id = section.get("section_id", "?")
+                renderer = section.get("renderer", "?")
+                log("wan_video", f"  Processing section {section_id} ({renderer})...")
+
+                result = execute_renderer(
+                    topic=section,
+                    output_dir=str(output_path / "videos"),
+                    dry_run=False,
+                    skip_wan=False,
+                    video_provider=video_provider,
+                )
+
+                if result.get("status") == "success":
+                    log(
+                        "wan_video",
+                        f"    ✅ Section {section_id} complete: {result.get('video_path')}",
+                    )
+                else:
+                    log(
+                        "wan_video",
+                        f"    ❌ Section {section_id} failed: {result.get('error', 'Unknown error')}",
+                    )
+
+            log(
+                "wan_video",
+                f"✅ V3 video generation complete for {len(v3_video_sections)} section(s).",
+            )
+        except Exception as e:
+            logger.warning(f"[V3] V3 video generation error (non-fatal): {e}")
+            log("wan_video", f"⚠️ V3 video error (non-fatal): {e}")
+
+    # Legacy: Handle renderer: "video" sections via submit_wan_background_job()
+    if wan_video_sections and not skip_wan:
+        log(
+            "wan_video",
+            f"Starting WAN/LTX video generation for {len(wan_video_sections)} renderer:video section(s)...",
         )
         try:
             from core.renderer_executor import submit_wan_background_job
@@ -620,8 +598,8 @@ def run_v3_pipeline(
             log("wan_video", f"⚠️ WAN/LTX error (non-fatal): {e}")
     elif skip_wan:
         log("wan_video", "Skipping WAN/LTX video generation (skip_wan=True).")
-    else:
-        log("wan_video", "No renderer:video sections — skipping WAN/LTX.")
+    elif not video_sections:
+        log("wan_video", "No video sections found — skipping WAN/LTX.")
 
     # ─────────────────────────────────────────────
     # Phase 7: Final save

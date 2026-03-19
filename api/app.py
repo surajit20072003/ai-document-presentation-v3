@@ -3535,9 +3535,10 @@ def process_document_job_v3(
         conversion_result = document_to_markdown(document_path)
         markdown_content = conversion_result.markdown
         page_count = conversion_result.page_count
+        images_dict = conversion_result.images  # ← FIX: extract source images from PDF
 
         print(
-            f"[V3 Document] Converted {file_ext}: {len(markdown_content)} chars, {page_count} pages"
+            f"[V3 Document] Converted {file_ext}: {len(markdown_content)} chars, {page_count} pages, {len(images_dict)} images"
         )
 
         job_manager.update_job(
@@ -3545,6 +3546,7 @@ def process_document_job_v3(
             {
                 "page_count": page_count,
                 "source_type": file_ext.replace(".", ""),
+                "image_count": len(images_dict),
             },
             persist=True,
         )
@@ -3562,6 +3564,7 @@ def process_document_job_v3(
             source_file=source_file,
             tts_provider=tts_provider,
             model=model,
+            images_dict=images_dict,  # ← FIX: pass images through
         )
     except DatalabConversionError as e:
         raise RuntimeError(f"[V3] Document conversion failed: {e}")
@@ -3790,6 +3793,7 @@ def process_markdown_job_v3(
     source_file: Optional[str] = None,
     tts_provider: str = "edge_tts",
     model: Optional[str] = None,
+    images_dict: Optional[dict] = None,  # ← FIX: accept source images from PDF
     **kwargs,
 ) -> dict:
     """
@@ -3832,6 +3836,7 @@ def process_markdown_job_v3(
             tts_provider=tts_provider,
             model=model,
             job_update_callback=job_update_callback,
+            images_dict=images_dict,  # ← FIX: pass images into V3 pipeline
         )
 
         # Save analytics

@@ -20,8 +20,16 @@ V3 uses:
 6. **Timing Contract**: Director owns all timing. Every segment has `start_seconds`, `end_seconds`, `segment_duration_seconds`. Avatar narration is written to match duration exactly.
 7. **Narration Flow**: NO greetings. Start with a bridging phrase connecting to previous concept.
 8. **Quiz Interaction**: Quiz and Understanding sections are interactive HTML/JS in the player — A/B/C/D buttons, student clicks answer, player handles branching. Director generates all scripts, visual assets, and avatar clips so the player can execute the full interactive flow.
-9. **Section renderer**: ALWAYS "video" at section level for content/example/quiz/recap. ALWAYS "none" for intro/summary/memory. The actual renderer per beat is set inside render_spec.segment_specs ONLY. NEVER set manim/image_to_video/text_to_video/infographic/image at section level. NEVER set "none" inside render_spec.segment_specs — every beat must have a visual.
-10. **renderer_reason**: Every segment_spec MUST include a `renderer_reason` field — one sentence explaining why this renderer was chosen for this beat.
+9. **Section renderer**: Set to the ACTUAL renderer for this section:
+   - content/example with STEM/math/graphs/flowcharts: "manim"
+   - content/example with biology/anatomy needing reference image: "image_to_video"
+   - content/example with history/narrative (mood sufficient): "text_to_video"
+   - intro/summary/memory: "none"
+   - quiz/recap: "video" (for quiz player, recap uses text_to_video or video_prompts)
+   
+   The render_spec.renderer MUST match section.renderer. ONE renderer per section. NEVER mixed.
+   INFOGRAPHIC can be added as beats alongside main renderer via render_spec.infographic_beats.
+10. **renderer_reason**: Every render_spec MUST include a `renderer_reason` field — one sentence explaining why this renderer was chosen for this section.
 
 ---
 
@@ -65,89 +73,69 @@ SECTION LEVEL (top of section JSON):
   intro / summary / memory            → renderer: "none"   (always)
   This is a container value only. Never manim/infographic/image here.
 
-BEAT LEVEL (inside render_spec.segment_specs):
-  LLM decides per beat: manim | image_to_video | text_to_video | infographic | image
-  NEVER "none" at beat level — every beat must have a visual asset
-  NEVER "video" at beat level — "video" is section-level only
+SECTION RENDER LEVEL (inside render_spec):
+  ONE renderer for the entire section: manim | image_to_video | text_to_video
+  INFOGRAPHIC can be added as beats via render_spec.infographic_beats
+  NEVER mix multiple main renderers within the same section
 ```
 
 ---
 
-## RENDERER DECISION TREE (beat level only)
+## SECTION RENDERER RULE — decide ONCE for the entire section
 
-For each beat, ask these questions in order:
+Look at the TARGET CHUNK as a whole. What is the majority content?
 
 ```
-STEP 1 — Is it a molecule, formula, equation, geometry, graph, or STEM diagram?
-  YES → renderer: "manim" (always, no exceptions)
-        Includes: benzene ring, NAPQI, drug structures,
-        sin/cos/tan, right triangles, graphs, force diagrams,
-        chemical reaction arrows, metabolism pathway diagrams,
-        circuit diagrams, physics vectors
+MANIM — use when chunk is primarily:
+  Molecules, formulas, equations, geometry, graphs,
+  STEM diagrams, chemical pathways, physics vectors
+  → renderer: "manim"
+  → ONE manim_scene_spec per VISUAL SEGMENT inside segment_specs[]
+  → Manim renders ONE MP4 per segment (beat video), stored in seg.beat_videos[]
+  → Do NOT generate a section-level manim_scene_spec — use segment_specs[] only
 
-STEP 2 — Is it biology, anatomy, pharmacology in the body,
-          farming, history, geography, or real-world narrative?
-  → Ask: Does a reference image make the scene more accurate?
-      YES (anatomy, pharmacology, biology, farming, detailed scene)
-          → renderer: "image_to_video"
-            Gemini 3 Pro generates reference PNG → LTX-2 animates FROM it
-            Includes: liver cell, heart pumping, drug absorption,
-            fever breaking, crops, soil, organ diagrams
-      NO (history, geography, general narrative — mood is enough)
-          → renderer: "text_to_video"
-            LTX-2 generates video from text prompt only. No reference image.
-            Includes: historical events, civilisations, rivers, landscapes,
-            general real-world scenes where a specific reference image
-            would not add scientific accuracy
+IMAGE_TO_VIDEO — use when chunk is primarily:
+  Biology, anatomy, pharmacology in the body,
+  farming, detailed real-world scenes needing
+  a reference image for scientific accuracy
+  → renderer: "image_to_video"
+  → ONE image_prompt + ONE video_prompt
+  → LTX-2 renders ONE 15s MP4
 
-STEP 3 — Is it a conceptual or explanatory beat with no formula?
-  → Ask: Would a static labelled diagram explain this better than video?
-      YES (labelled diagram, comparison table, step list, simple illustration)
-          → renderer: "infographic"
-            Gemini 3 Pro generates a static PNG. Displayed in player. No video.
-            Use when: the concept is spatial, structured, or comparative
-            and motion would add no value.
-      NO (concept needs movement or cinematic context)
-          → renderer: "image_to_video" or "text_to_video" (apply STEP 2 logic)
+TEXT_TO_VIDEO — use when chunk is primarily:
+  History, geography, general narrative, conceptual
+  analogies where mood is sufficient
+  → renderer: "text_to_video"
+  → ONE video_prompt
+  → LTX-2 renders ONE 15s MP4
 
-STEP 4 — Is the source document providing a diagram or image for this beat?
-  → renderer: "image"
-    No generation needed. Pipeline displays the source image statically
-    while avatar narrates. Use image_source field with exact file path.
+INFOGRAPHIC — can be used IN ANY SECTION as a beat
+  alongside the main renderer. Static image. Fast.
+  No LTX-2 needed. Use for comparison tables,
+  step lists, labelled diagrams within any section.
 ```
 
-**Important:** Every beat is decided independently. A single section can have:
-```
-Beat 1 → manim          (formula)
-Beat 2 → image_to_video (anatomy)
-Beat 3 → text_to_video  (narrative)
-Beat 4 → infographic    (labelled diagram)
-```
-This is correct and expected. Pick the best renderer for what is being narrated at that moment.
+**NEVER mix manim + image_to_video + text_to_video
+within the same section.
+A section is ONE renderer type. Always.**
 
 ---
 
 ## RENDERER DECISIONS (MANDATORY — document every choice)
 
-Every segment_spec MUST include a `renderer_reason` field — one sentence explaining
-why this renderer was chosen for this beat. This is used for validation and debugging.
+Every render_spec MUST include a `renderer_reason` field — one sentence explaining
+why this renderer was chosen for this section. This is used for validation and debugging.
 
 **Examples:**
 ```
-"renderer_reason": "Manim — narration describes benzene ring molecular structure,
- formula-based content, always Manim."
+"renderer_reason": "Manim — section covers paracetamol metabolism formulas,
+ benzene ring structure, and NAPQI chemical pathway, formula-based throughout."
 
-"renderer_reason": "image_to_video — narration describes liver cell metabolism,
- anatomy content needs reference image for scientific accuracy."
+"renderer_reason": "image_to_video — section covers liver cell anatomy,
+ reference image needed for scientific accuracy of cell structures."
 
-"renderer_reason": "text_to_video — narration describes 1947 Indian independence,
- historical narrative, mood-only prompt is sufficient, no reference image needed."
-
-"renderer_reason": "infographic — narration compares three drug metabolism routes,
- static labelled diagram explains better than video, motion adds no value."
-
-"renderer_reason": "image — source document contains Figure 3 pathway diagram,
- displaying source image directly while avatar narrates."
+"renderer_reason": "text_to_video — section is a historical narrative about
+ Indian independence movement, mood prompt sufficient, no reference image needed."
 ```
 
 ---
@@ -450,7 +438,7 @@ Return a single valid JSON object. No text before or after.
       "section_id": "section_1",
       "section_type": "content|example|quiz|intro|summary|memory|recap",
       "title": "Section Title",
-      "renderer": "video",
+      "renderer": "manim|image_to_video|text_to_video|video|none",
       "use_local_gpu": true,
       "total_duration_seconds": 63.0,
       "segment_duration_seconds": 63.0,
@@ -485,50 +473,37 @@ Return a single valid JSON object. No text before or after.
         }
       ],
       "render_spec": {
-        "total_duration_seconds": 63.0,
+        "renderer": "manim|image_to_video|text_to_video",
+        "renderer_reason": "One sentence why this renderer for this section.",
+        "total_duration_seconds": 90.0,
         "segment_specs": [
           {
-            "segment_id": "seg_1",
-            "renderer": "manim",
-            "renderer_reason": "Manim — narration describes benzene ring molecular structure, formula-based content, always Manim.",
-            "start_seconds": 0.0,
-            "end_seconds": 18.5,
-            "segment_duration_seconds": 18.5,
-            "manim_scene_spec": "100+ word explicit Manim choreography. Dark background. At 0s: ... At 3s: ... At 8s: ... Final freeze at Xs. Duration exactly 18.5s. frame_width=10.",
-            "interaction": null
-          },
-          {
             "segment_id": "seg_2",
-            "renderer": "image_to_video",
-            "renderer_reason": "image_to_video — narration describes liver cell anatomy, reference image needed for scientific accuracy.",
-            "start_seconds": 18.5,
-            "end_seconds": 33.5,
-            "segment_duration_seconds": 15.0,
-            "image_prompt": "100+ word Gemini 3 Pro image generation prompt. Every element, every label in quotes, background #0d1117, colour coding, style, 16:9. No watermarks.",
-            "video_prompt": "80+ word LTX-2 mood prompt. Reference starting image. Camera movement. Atmosphere. Lighting. Colour mood. Ends: 15 seconds. 24fps. No text overlays.",
-            "image_source": null,
-            "image_mode": null,
-            "interaction": null
-          },
-          {
-            "segment_id": "seg_3",
-            "renderer": "text_to_video",
-            "renderer_reason": "text_to_video — narration describes a historical narrative scene, mood prompt sufficient, no reference image needed.",
-            "start_seconds": 33.5,
-            "end_seconds": 48.5,
-            "segment_duration_seconds": 15.0,
-            "video_prompt": "80+ word LTX-2 mood prompt. Scene, setting, atmosphere, camera movement, colour palette. No reference image. Ends: 15 seconds. 24fps. No text overlays.",
-            "interaction": null
+            "renderer": "manim",
+            "duration_seconds": 18.5,
+            "manim_scene_spec": "Required for EACH visual segment (visual_layer: show) when renderer is manim. 100+ words. Dark background. At 0s: [first action]. At 5s: [next action]. Duration exactly 18.5s. frame_width=10. Covers ONLY this segment's content — screen is cleared between segments."
           },
           {
             "segment_id": "seg_4",
-            "renderer": "infographic",
-            "renderer_reason": "infographic — narration compares drug metabolism routes, static labelled diagram explains better than video, no motion needed.",
-            "start_seconds": 48.5,
-            "end_seconds": 63.0,
-            "segment_duration_seconds": 14.5,
+            "renderer": "manim",
+            "duration_seconds": 12.0,
+            "manim_scene_spec": "Dark background. Duration exactly 12s. At 0s: [specific actions]. frame_width=10."
+          }
+        ],
+        "image_prompt": "Required if renderer is image_to_video (section-level). 100+ word Gemini 3 Pro prompt. Every element, every label in quotes, background #0d1117, colour coding, style, 16:9. No watermarks.",
+        "video_prompt": "Required if renderer is text_to_video (single video for entire section). 200+ word LTX-2 mood prompt describing all scenes sequentially. Scene 1: ..., Scene 2: ..., etc.",
+        "video_prompts": "Required if renderer is text_to_video or image_to_video. Array of prompts — ONE PROMPT PER SEGMENT. Each entry: {\"segment_id\": \"seg_1\", \"prompt\": \"Scene prompt...\", \"duration\": 15}. Generate based on narration.segments. For image_to_video: each prompt needs a matching image_prompts entry.",
+        "image_prompts": "Required if renderer is image_to_video. Array of prompts — ONE PROMPT PER SEGMENT. Each entry: {\"segment_id\": \"seg_1\", \"prompt\": \"Image prompt...\", \"duration\": 15}. 100+ word Gemini 3 Pro prompt per segment.",
+        "image_source": null,
+        "image_mode": null,
+        "infographic_beats": [
+          {
+            "beat_id": "inf_1",
+            "segment_id": "seg_2",
             "image_prompt": "100+ word infographic prompt. All elements, labels, layout, background #0d1117. Static infographic layout. Clean and readable at full screen. 16:9. No watermarks.",
-            "interaction": null
+            "renderer_reason": "One sentence why infographic here.",
+            "start_seconds": 15.0,
+            "end_seconds": 30.0
           }
         ]
       },
@@ -560,7 +535,7 @@ Return a single valid JSON object. No text before or after.
     {
       "section_id": "section_2",
       "section_type": "quiz",
-      "renderer": "video",
+      "renderer": "video|manim|image_to_video|text_to_video",
       "quiz_origin": "document|understanding",
       "questions": [
         {
@@ -605,18 +580,15 @@ Return a single valid JSON object. No text before or after.
 
 | Field | Rule |
 |---|---|
-| `section renderer` | Always "video" for content/example/quiz/recap. Always "none" for intro/summary/memory. |
+| `section renderer` | Must match actual renderer: manim|image_to_video|text_to_video for content/example. "none" for intro/summary/memory. "video" for quiz/recap. Must match render_spec.renderer. |
+| `render_spec.renderer` | Same as section renderer. One value for whole section. Never mixed within section. |
 | `segment_duration_seconds` | Required everywhere. Word count ÷ 130 × 60. image_to_video and text_to_video always 15.0s |
-| `start_seconds` / `end_seconds` | Required on every segment_spec. Cumulative from 0.0 |
 | `total_duration_seconds` | Sum of all segment durations. Required at section and render_spec level |
-| `renderer_reason` | Required on every segment_spec and explanation_visual. One sentence. |
-| `manim_scene_spec` | Required for manim. 100+ words. Explicit timing. Ends with "Duration exactly Xs." |
-| `image_prompt` | Required for image_to_video and infographic. 100+ words. All labels quoted. Background #0d1117. 16:9. |
-| `video_prompt` | Required for image_to_video and text_to_video. 80+ words. Mood only. Ends: "15 seconds. 24fps. No text overlays." |
-| `image_source` | Set to file path if renderer is "image" or source document has image. null otherwise |
-| `image_mode` | Set "video_reference" if using source image with image_to_video. null otherwise |
-| `beat_start_seconds` | When this beat starts within the section timeline |
-| `narration_sync_phrase` | Exact 4-6 words from narration text where this beat begins |
+| `render_spec.segment_specs` | Required if renderer is manim. Array of per-segment specs. ONE entry per visual segment (visual_layer: show). Each entry: segment_id, renderer: "manim", duration_seconds, manim_scene_spec (100+ words). |
+| `segment_specs[].manim_scene_spec` | 100+ words. Covers ONLY this segment. Starts fresh (screen cleared). Ends with "Duration exactly Xs. frame_width=10." |
+| `render_spec.image_prompt` | Required if renderer is image_to_video. 100+ words. All labels quoted. Background #0d1117. 16:9. |
+| `render_spec.video_prompt` | Required if renderer is image_to_video or text_to_video. 80+ words. Mood only. Ends: "15 seconds. 24fps. No text overlays." |
+| `render_spec.infographic_beats` | Optional. List of infographic beats to use alongside main renderer in any section. |
 | `key_terms` | 2-5 terms. Appear in GOLD in Manim. Required for manim sections |
 | `complexity` | simple / medium / complex |
 | `text_layer` | Always "hide". No exceptions |
@@ -624,7 +596,6 @@ Return a single valid JSON object. No text before or after.
 | `explanation_visual` | Mandatory on every quiz question. No exceptions |
 | `explanation_script` | 4th narration script. Avatar narrates WHY correct answer is correct |
 | `option_reveal_seconds` | 4 floats. When each option A/B/C/D appears on screen (~130 wpm estimate) |
-| `interaction` | Required on every segment_spec. null if no student interaction |
 | `explanation_visual.duration_seconds` | LLM decides based on complexity — not fixed |
 
 ---
@@ -642,7 +613,7 @@ Return a single valid JSON object. No text before or after.
 
 | Renderer | image_prompt | video_prompt | manim_scene_spec | image_source | renderer_reason |
 |---|---|---|---|---|---|
-| manim | ✗ | ✗ | ✅ Required | ✗ | ✅ Required |
+| manim | ✗ | ✗ | ✅ Required (per-segment in segment_specs[]) | ✗ | ✅ Required |
 | image_to_video | ✅ Required | ✅ Required | ✗ | null or path | ✅ Required |
 | text_to_video | ✗ | ✅ Required | ✗ | ✗ | ✅ Required |
 | infographic | ✅ Required | ✗ | ✗ | ✗ | ✅ Required |
