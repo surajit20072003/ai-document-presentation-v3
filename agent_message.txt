@@ -1,0 +1,750 @@
+Complete Action List — V3 Visual Pipeline Fix
+
+Part 1 — Prompt Files (Director)
+Action: Replace core/prompts/director_v3_partition_prompt.txt with the updated version.
+Two changes from current version:
+Change 1 — Add Constraint #9 to CRITICAL CONSTRAINTS:
+9. Section renderer: ALWAYS "video" at section level for 
+   content/example/quiz/recap. ALWAYS "none" for 
+   intro/summary/memory. The actual renderer per beat is 
+   set inside render_spec.segment_specs ONLY. NEVER set 
+   manim/image_to_video/text_to_video/infographic/image 
+   at section level. NEVER set "none" inside 
+   render_spec.segment_specs — every beat must have a visual.
+Change 2 — Add Constraint #10 to CRITICAL CONSTRAINTS:
+10. renderer_reason: Every segment_spec MUST include a 
+    renderer_reason field — one sentence explaining why 
+    this renderer was chosen for this beat.
+Change 3 — Fix schema: section-level renderer
+json// OLD:
+"renderer": "manim|image_to_video|text_to_video|infographic|image|none"
+
+// NEW:
+"renderer": "video"
+Change 4 — Add renderer_reason to every segment_spec in schema:
+json{
+  "segment_id": "seg_1",
+  "renderer": "manim",
+  "renderer_reason": "Manim — narration describes benzene ring 
+   molecular structure, formula-based content, always Manim.",
+  "start_seconds": 0.0,
+  ...
+}
+Change 5 — Add 4th avatar clip and explanation_script to quiz schema:
+json"avatar_clips": {
+  "question":    "avatars/en/quiz_{id}_q1_question.mp4",
+  "correct":     "avatars/en/quiz_{id}_q1_correct.mp4",
+  "wrong":       "avatars/en/quiz_{id}_q1_wrong.mp4",
+  "explanation": "avatars/en/quiz_{id}_q1_explanation.mp4"
+},
+"narration": {
+  "question_script":    "...",
+  "correct_script":     "...",
+  "wrong_script":       "...",
+  "explanation_script": "Avatar explains WHY correct answer 
+                         is correct over explanation_visual."
+}
+Change 6 — Add explanation_visual to every quiz question:
+json"explanation_visual": {
+  "renderer": "manim|image_to_video|text_to_video|infographic|image",
+  "renderer_reason": "One sentence why this renderer chosen.",
+  "duration_seconds": 15.0,
+  "manim_scene_spec": "Required if renderer is manim. 100+ words.",
+  "image_prompt": "Required if image_to_video or infographic. 100+ words.",
+  "video_prompt": "Required if image_to_video or text_to_video. 80+ words.",
+  "image_source": null,
+  "display_text": "What student sees during explanation."
+}
+
+Part 2 — Implementation Plan Fixes (6 items)
+Fix 1 — Section filter in submit_v3_segment_background_job()
+python# REPLACE:
+if section.get("renderer") != "video":
+    continue
+
+# WITH:
+if not section.get("render_spec", {}).get("segment_specs"):
+    continue
+Fix 2 — Add image renderer handling
+python# Add to segments_by_renderer dict:
+segments_by_renderer = {
+    "text_to_video": [],
+    "image_to_video": [],
+    "infographic": [],
+    "manim": [],
+    "image": [],    # ← add this
+}
+
+# Add Phase 0 before Gemini image generation:
+# Phase 0: Source images — copy directly, no generation needed
+import shutil
+for spec in segments_by_renderer["image"]:
+    source = spec.get("image_source")
+    if source and Path(source).exists():
+        dest = images_dir / f"topic_{spec['_section_id']}_{spec['segment_id']}.png"
+        shutil.copy(source, dest)
+        spec["image_path"] = f"images/{dest.name}"
+Fix 3 — Add explanation_visual processing
+python# Add AFTER collecting segment_specs, BEFORE Phase 1:
+# Also collect explanation_visual assets from quiz questions
+
+for section in presentation.get("sections", []):
+    section_id = section.get("section_id")
+
+    # From understanding_quiz in content/example sections
+    quiz = section.get("understanding_quiz", {})
+    exp = quiz.get("explanation_visual", {})
+    if exp and exp.get("renderer") in segments_by_renderer:
+        exp["_section_id"] = section_id
+        exp["segment_id"] = f"quiz_{section_id}_explanation"
+        segments_by_renderer[exp["renderer"]].append(exp)
+
+    # From standalone quiz sections
+    for q in section.get("questions", []):
+        exp = q.get("explanation_visual", {})
+        qid = q.get("question_id", "q1")
+        if exp and exp.get("renderer") in segments_by_renderer:
+            exp["_section_id"] = section_id
+            exp["segment_id"] = f"quiz_{section_id}_{qid}_explanation"
+            segments_by_renderer[exp["renderer"]].append(exp)
+Fix 4 — Make Gemini image generation parallel
+python# REPLACE sequential loop:
+for spec in segments_by_renderer["infographic"] + segments_by_renderer["image_to_video"]:
+    image_path = _generate_gemini_image(...)
+    image_promises[seg_id] = image_path
+
+# WITH parallel execution:
+import concurrent.futures
+
+image_specs = (
+    segments_by_renderer["infographic"] + 
+    segments_by_renderer["image_to_video"]
+)
+
+def generate_image_task(spec):
+    seg_id = spec.get("segment_id")
+    section_id = spec.get("_section_id")
+    image_prompt = spec.get("image_prompt", "")
+    if not image_prompt:
+        return seg_id, None
+    image_path = _generate_gemini_image(
+        image_prompt, job_id, section_id, seg_id, str(images_dir)
+    )
+    return seg_id, image_path
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+    futures = [executor.submit(generate_image_task, spec) 
+               for spec in image_specs]
+    for future in concurrent.futures.as_completed(futures):
+        seg_id, image_path = future.result()
+        if image_path:
+            image_promises[seg_id] = image_path
+Fix 5 — Update visual_beats with generated asset paths
+python# Add AFTER updating segment_specs with paths (Phase 5):
+# Also update visual_beats so player can read asset paths
+
+for section in presentation.get("sections", []):
+    beats = section.get("visual_beats", [])
+    specs = section.get("render_spec", {}).get("segment_specs", [])
+
+    # Build lookup: segment_id → spec
+    spec_lookup = {s.get("segment_id"): s for s in specs}
+
+    for beat in beats:
+        seg_id = beat.get("segment_id")
+        spec = spec_lookup.get(seg_id)
+        if not spec:
+            continue
+        if spec.get("video_path"):
+            beat["video_path"] = spec["video_path"]
+        if spec.get("image_path"):
+            beat["image_path"] = spec["image_path"]
+```
+
+**Fix 6 — Update Testing Plan**
+```
+Add to Testing Plan:
+
+Test A: Section with renderer="manim" at section level
+  (current bug state before Director prompt fix)
+  Confirm new filter still finds segment_specs and processes them
+
+Test B: explanation_visual generation
+  Confirm images/videos generated for quiz explanation_visual
+  Confirm paths written to understanding_quiz.explanation_visual
+  and questions[].explanation_visual
+
+Test C: visual_beats updated
+  After generation confirm visual_beats have video_path/image_path
+  Player reads visual_beats — must have paths to play correctly
+
+Test D: image renderer
+  Confirm source image copied to images/ folder
+  Confirm image_path written to segment_spec and visual_beat
+
+Test E: Full end-to-end on job 103_162_120_230_924874c4
+  All 8 beats in section 3 should have assets:
+  seg_1 text_to_video  → videos/topic_3_seg_1.mp4
+  seg_2 infographic    → images/topic_3_seg_2.png
+  seg_3 manim          → routed to Manim pipeline
+  seg_4 manim          → routed to Manim pipeline
+  seg_5 manim          → routed to Manim pipeline
+  seg_6 manim          → routed to Manim pipeline
+  seg_7 image_to_video → images/topic_3_seg_7.png + videos/topic_3_seg_7.mp4
+  seg_8 text_to_video  → videos/topic_3_seg_8.mp4
+```
+
+---
+
+### Part 3 — Separate Bug Fix
+
+**`manim_code_generator.py` writes Python code into `presentation.json`**
+```
+Bug: manim_scene_spec field in presentation.json contains 
+     Python code at section level. Should not be there.
+
+Fix: In manim_code_generator.py
+  1. Generate Python code as before
+  2. Save to jobs/{job_id}/manim/topic_{section_id}.py
+  3. Render to jobs/{job_id}/videos/topic_{section_id}_beat_{n}.mp4
+  4. Write ONLY the mp4 path back to presentation.json
+     segment_spec["video_path"] = "videos/topic_3_beat_0.mp4"
+  5. Do NOT write Python code into presentation.json at all
+```
+
+---
+
+### Summary for agent
+```
+Three things to do in order:
+
+1. PROMPT: Replace director_v3_partition_prompt.txt
+   with updated version (6 changes listed above)
+   Share v3_director_bible.md as knowledge base
+
+2. IMPLEMENTATION PLAN: Apply 6 fixes to the plan
+   then implement
+
+3. BUG FIX: manim_code_generator.py
+   stop writing Python code into presentation.json
+   only write video_path to segment_spec
+
+Test after each step.
+Do not move to next step until current step passes.how can we ask my agent to create an automated test also rather than running the full cycle adn wait for 1 hr to find out the result21:38Great thinking. Here is how to ask your agent to build automated tests that catch issues fast without running the full pipeline.
+
+Tell your agent this
+Before implementing any code changes, create an automated 
+test suite that validates the V3 pipeline output without 
+running the full generation cycle.
+
+Tests should run in under 60 seconds.
+No API calls. No video generation. No avatar generation.
+Use mock data and existing presentation.json files from 
+completed jobs as test fixtures.
+
+The 4 types of tests to build
+
+Test Type 1 — Schema Validator (< 5 seconds)
+File: tests/test_v3_schema.py
+
+Purpose: Validate presentation.json structure without 
+running anything. Load a completed job JSON and check 
+every field rule from the Director Bible.
+
+What to check:
+  - Every content/example section has renderer: "video"
+  - Every content/example section has render_spec.segment_specs
+  - Every segment_spec has renderer_reason
+  - Every segment_spec has start_seconds, end_seconds
+  - start_seconds of seg N = end_seconds of seg N-1
+  - total_duration = sum of segment durations
+  - Every manim segment_spec has manim_scene_spec (100+ words)
+  - Every image_to_video segment_spec has image_prompt + video_prompt
+  - Every content/example section has understanding_quiz
+  - Every quiz question has 4 avatar_clips
+  - Every quiz question has explanation_visual
+  - Every quiz question has explanation_script in narration
+  - text_layer is always "hide"
+  - No "Namaste" or "Welcome" in content/example narration
+
+Run with:
+  pytest tests/test_v3_schema.py -v
+
+Pass condition: 0 failures on any job JSON
+python# tests/test_v3_schema.py
+
+import json
+import pytest
+from pathlib import Path
+
+# Load a real completed job as fixture
+JOB_JSON = Path("tests/fixtures/sample_presentation.json")
+
+@pytest.fixture
+def presentation():
+    with open(JOB_JSON) as f:
+        return json.load(f)
+
+def get_content_sections(presentation):
+    return [s for s in presentation["sections"] 
+            if s["section_type"] in ("content", "example")]
+
+def test_section_renderer_is_video(presentation):
+    for s in get_content_sections(presentation):
+        assert s.get("renderer") == "video", \
+            f"Section {s['section_id']} has renderer={s.get('renderer')}, expected 'video'"
+
+def test_every_segment_spec_has_renderer_reason(presentation):
+    for s in get_content_sections(presentation):
+        for spec in s.get("render_spec", {}).get("segment_specs", []):
+            assert spec.get("renderer_reason"), \
+                f"Section {s['section_id']} seg {spec.get('segment_id')} missing renderer_reason"
+
+def test_timing_contract(presentation):
+    for s in get_content_sections(presentation):
+        specs = s.get("render_spec", {}).get("segment_specs", [])
+        for i, spec in enumerate(specs):
+            assert "start_seconds" in spec, f"Missing start_seconds in {spec.get('segment_id')}"
+            assert "end_seconds" in spec, f"Missing end_seconds in {spec.get('segment_id')}"
+            if i > 0:
+                prev = specs[i-1]
+                assert abs(spec["start_seconds"] - prev["end_seconds"]) < 0.1, \
+                    f"Timing gap between {prev['segment_id']} and {spec['segment_id']}"
+
+def test_manim_spec_100_words(presentation):
+    for s in get_content_sections(presentation):
+        for spec in s.get("render_spec", {}).get("segment_specs", []):
+            if spec.get("renderer") == "manim":
+                spec_text = spec.get("manim_scene_spec", "")
+                word_count = len(spec_text.split())
+                assert word_count >= 100, \
+                    f"manim_scene_spec too short ({word_count} words) in {spec.get('segment_id')}"
+
+def test_image_to_video_has_both_prompts(presentation):
+    for s in get_content_sections(presentation):
+        for spec in s.get("render_spec", {}).get("segment_specs", []):
+            if spec.get("renderer") == "image_to_video":
+                assert spec.get("image_prompt"), \
+                    f"Missing image_prompt in {spec.get('segment_id')}"
+                assert spec.get("video_prompt"), \
+                    f"Missing video_prompt in {spec.get('segment_id')}"
+
+def test_understanding_quiz_mandatory(presentation):
+    for s in get_content_sections(presentation):
+        assert s.get("understanding_quiz"), \
+            f"Section {s['section_id']} missing understanding_quiz"
+
+def test_quiz_has_4_avatar_clips(presentation):
+    for s in get_content_sections(presentation):
+        quiz = s.get("understanding_quiz", {})
+        clips = quiz.get("avatar_clips", {})
+        for clip in ["question", "correct", "wrong", "explanation"]:
+            assert clip in clips, \
+                f"Section {s['section_id']} quiz missing avatar clip: {clip}"
+
+def test_quiz_has_explanation_visual(presentation):
+    for s in get_content_sections(presentation):
+        quiz = s.get("understanding_quiz", {})
+        assert quiz.get("explanation_visual"), \
+            f"Section {s['section_id']} missing explanation_visual"
+
+def test_quiz_has_explanation_script(presentation):
+    for s in get_content_sections(presentation):
+        narration = s.get("understanding_quiz", {}).get("narration", {})
+        assert narration.get("explanation_script"), \
+            f"Section {s['section_id']} missing explanation_script"
+
+def test_text_layer_always_hidden(presentation):
+    for s in presentation["sections"]:
+        for seg in s.get("narration", {}).get("segments", []):
+            directives = seg.get("display_directives", {})
+            assert directives.get("text_layer") != "show", \
+                f"text_layer is show in section {s['section_id']}"
+```
+
+---
+
+### Test Type 2 — Asset Path Validator (< 5 seconds)
+```
+File: tests/test_v3_asset_paths.py
+
+Purpose: After generation runs, check that all expected 
+asset files actually exist on disk. Fast — just file checks.
+
+What to check:
+  - Every segment_spec with video_path → file exists
+  - Every segment_spec with image_path → file exists
+  - Every visual_beat with video_path → file exists
+  - Every manim segment → mp4 file exists in videos/ folder
+  - Every avatar_video path → file exists
+
+Run with:
+  pytest tests/test_v3_asset_paths.py --job-id=abc123 -v
+python# tests/test_v3_asset_paths.py
+
+import json
+import pytest
+from pathlib import Path
+
+def pytest_addoption(parser):
+    parser.addoption("--job-id", action="store", required=True)
+
+@pytest.fixture
+def job_dir(request):
+    job_id = request.config.getoption("--job-id")
+    return Path(f"player/jobs/{job_id}")
+
+@pytest.fixture
+def presentation(job_dir):
+    with open(job_dir / "presentation.json") as f:
+        return json.load(f)
+
+def test_segment_video_paths_exist(presentation, job_dir):
+    missing = []
+    for s in presentation["sections"]:
+        for spec in s.get("render_spec", {}).get("segment_specs", []):
+            vp = spec.get("video_path")
+            if vp and not (job_dir / vp).exists():
+                missing.append(f"Section {s['section_id']} {spec['segment_id']}: {vp}")
+    assert not missing, f"Missing video files:\n" + "\n".join(missing)
+
+def test_segment_image_paths_exist(presentation, job_dir):
+    missing = []
+    for s in presentation["sections"]:
+        for spec in s.get("render_spec", {}).get("segment_specs", []):
+            ip = spec.get("image_path")
+            if ip and not (job_dir / ip).exists():
+                missing.append(f"Section {s['section_id']} {spec['segment_id']}: {ip}")
+    assert not missing, f"Missing image files:\n" + "\n".join(missing)
+
+def test_visual_beats_have_paths(presentation, job_dir):
+    missing = []
+    for s in presentation["sections"]:
+        for beat in s.get("visual_beats", []):
+            vp = beat.get("video_path") or beat.get("image_path")
+            if not vp:
+                missing.append(
+                    f"Section {s['section_id']} beat {beat['beat_id']} has no asset path"
+                )
+    assert not missing, f"Beats missing asset paths:\n" + "\n".join(missing)
+
+def test_avatar_videos_exist(presentation, job_dir):
+    missing = []
+    for s in presentation["sections"]:
+        av = s.get("avatar_video")
+        if av and not (job_dir / av).exists():
+            missing.append(f"Section {s['section_id']}: {av}")
+    assert not missing, f"Missing avatar videos:\n" + "\n".join(missing)
+```
+
+---
+
+### Test Type 3 — Mock Generation Test (< 30 seconds)
+```
+File: tests/test_v3_renderer_executor.py
+
+Purpose: Test submit_v3_segment_background_job() logic 
+WITHOUT making real API calls. Mock all external calls.
+Verify routing, batching, path writing logic.
+
+What to check:
+  - text_to_video segments routed to video generator
+  - image_to_video segments routed to image then video
+  - infographic segments routed to image only
+  - image segments copied from source
+  - manim segments routed to manim pipeline
+  - explanation_visual segments collected and processed
+  - visual_beats updated with paths after generation
+  - Gemini calls are parallel not sequential
+python# tests/test_v3_renderer_executor.py
+
+import json
+import pytest
+from unittest.mock import patch, MagicMock, call
+from pathlib import Path
+from core.renderer_executor import submit_v3_segment_background_job
+
+SAMPLE_PRESENTATION = {
+    "sections": [
+        {
+            "section_id": 3,
+            "section_type": "content",
+            "renderer": "video",
+            "visual_beats": [
+                {"beat_id": "b1", "segment_id": "seg_1", "visual_type": "text_to_video"},
+                {"beat_id": "b2", "segment_id": "seg_2", "visual_type": "infographic"},
+                {"beat_id": "b3", "segment_id": "seg_3", "visual_type": "image_to_video"},
+            ],
+            "render_spec": {
+                "segment_specs": [
+                    {
+                        "segment_id": "seg_1",
+                        "renderer": "text_to_video",
+                        "renderer_reason": "historical narrative",
+                        "video_prompt": "Cinematic scene...",
+                        "start_seconds": 0.0,
+                        "end_seconds": 15.0,
+                        "segment_duration_seconds": 15.0,
+                    },
+                    {
+                        "segment_id": "seg_2",
+                        "renderer": "infographic",
+                        "renderer_reason": "static diagram",
+                        "image_prompt": "Educational infographic...",
+                        "start_seconds": 15.0,
+                        "end_seconds": 30.0,
+                        "segment_duration_seconds": 15.0,
+                    },
+                    {
+                        "segment_id": "seg_3",
+                        "renderer": "image_to_video",
+                        "renderer_reason": "anatomy needs reference",
+                        "image_prompt": "Anatomy diagram...",
+                        "video_prompt": "Cinematic animation...",
+                        "start_seconds": 30.0,
+                        "end_seconds": 45.0,
+                        "segment_duration_seconds": 15.0,
+                    },
+                ]
+            },
+            "understanding_quiz": {
+                "explanation_visual": {
+                    "renderer": "infographic",
+                    "image_prompt": "Quiz explanation infographic...",
+                    "duration_seconds": 12.0
+                }
+            }
+        }
+    ]
+}
+
+@patch("core.renderer_executor._generate_gemini_image")
+@patch("core.renderer_executor._generate_video")
+def test_routing_correct(mock_video, mock_image, tmp_path):
+    mock_image.return_value = str(tmp_path / "test.png")
+    mock_video.return_value = str(tmp_path / "test.mp4")
+
+    result = submit_v3_segment_background_job(
+        presentation=SAMPLE_PRESENTATION,
+        job_id="test_job",
+        output_dir=str(tmp_path),
+    )
+
+    # Gemini called for infographic + image_to_video + explanation_visual = 3 times
+    assert mock_image.call_count == 3
+
+    # Video called for text_to_video + image_to_video = 2 times
+    assert mock_video.call_count == 2
+
+def test_visual_beats_updated_after_generation(tmp_path):
+    with patch("core.renderer_executor._generate_gemini_image") as mock_img, \
+         patch("core.renderer_executor._generate_video") as mock_vid:
+
+        mock_img.return_value = str(tmp_path / "images/test.png")
+        mock_vid.return_value = str(tmp_path / "videos/test.mp4")
+
+        import copy
+        presentation = copy.deepcopy(SAMPLE_PRESENTATION)
+        submit_v3_segment_background_job(
+            presentation=presentation,
+            job_id="test_job",
+            output_dir=str(tmp_path),
+        )
+
+        beats = presentation["sections"][0]["visual_beats"]
+        # text_to_video beat should have video_path
+        ttv_beat = next(b for b in beats if b["segment_id"] == "seg_1")
+        assert ttv_beat.get("video_path"), "visual_beat missing video_path"
+
+        # infographic beat should have image_path
+        inf_beat = next(b for b in beats if b["segment_id"] == "seg_2")
+        assert inf_beat.get("image_path"), "visual_beat missing image_path"
+
+def test_manim_segments_not_sent_to_video_generator(tmp_path):
+    presentation = {
+        "sections": [{
+            "section_id": 1,
+            "section_type": "content",
+            "renderer": "video",
+            "visual_beats": [],
+            "render_spec": {
+                "segment_specs": [{
+                    "segment_id": "seg_1",
+                    "renderer": "manim",
+                    "renderer_reason": "formula",
+                    "manim_scene_spec": "Dark background...",
+                    "start_seconds": 0.0,
+                    "end_seconds": 18.0,
+                    "segment_duration_seconds": 18.0,
+                }]
+            }
+        }]
+    }
+    with patch("core.renderer_executor._generate_video") as mock_vid:
+        submit_v3_segment_background_job(
+            presentation=presentation,
+            job_id="test_job",
+            output_dir=str(tmp_path),
+        )
+        mock_vid.assert_not_called()
+
+def test_section_filter_works_with_old_renderer_value(tmp_path):
+    # Simulate old bug where section has renderer="manim" not "video"
+    old_presentation = {
+        "sections": [{
+            "section_id": 1,
+            "section_type": "content",
+            "renderer": "manim",  # old bug value
+            "visual_beats": [],
+            "render_spec": {
+                "segment_specs": [{
+                    "segment_id": "seg_1",
+                    "renderer": "text_to_video",
+                    "video_prompt": "Cinematic...",
+                    "start_seconds": 0.0,
+                    "end_seconds": 15.0,
+                    "segment_duration_seconds": 15.0,
+                }]
+            }
+        }]
+    }
+    with patch("core.renderer_executor._generate_video") as mock_vid:
+        mock_vid.return_value = str(tmp_path / "test.mp4")
+        # Should still process because filter checks segment_specs existence
+        submit_v3_segment_background_job(
+            presentation=old_presentation,
+            job_id="test_job",
+            output_dir=str(tmp_path),
+        )
+        # text_to_video should still be processed
+        mock_vid.assert_called_once()
+```
+
+---
+
+### Test Type 4 — Schema Diff Test (< 5 seconds)
+```
+File: tests/test_v3_schema_diff.py
+
+Purpose: Compare a NEW job JSON output against expected 
+schema. Run this after Director prompt is updated.
+Catches regressions automatically.
+
+What to check:
+  - New job has renderer_reason on all segment_specs
+  - New job has explanation_visual on all quiz questions
+  - New job has 4 avatar clips per question
+  - New job has explanation_script in narration
+python# tests/test_v3_schema_diff.py
+
+import json
+import pytest
+from pathlib import Path
+
+def load_job(job_id):
+    path = Path(f"player/jobs/{job_id}/presentation.json")
+    with open(path) as f:
+        return json.load(f)
+
+def test_new_job_has_renderer_reason():
+    """Run after a new job is generated with updated prompt"""
+    job_id = "LATEST_JOB_ID"  # update this per test run
+    presentation = load_job(job_id)
+    
+    missing = []
+    for s in presentation["sections"]:
+        if s["section_type"] not in ("content", "example"):
+            continue
+        for spec in s.get("render_spec", {}).get("segment_specs", []):
+            if not spec.get("renderer_reason"):
+                missing.append(
+                    f"Section {s['section_id']} {spec.get('segment_id')}"
+                )
+    assert not missing, \
+        f"renderer_reason missing in {len(missing)} segment_specs:\n" + "\n".join(missing)
+```
+
+---
+
+## Add to implementation plan
+```
+## Automated Test Suite
+
+### Location
+tests/
+  test_v3_schema.py          ← schema validation (no API, <5s)
+  test_v3_asset_paths.py     ← file existence check (<5s)
+  test_v3_renderer_executor.py ← mock generation tests (<30s)
+  test_v3_schema_diff.py     ← prompt output regression (<5s)
+  fixtures/
+    sample_presentation.json ← copy of a real completed job JSON
+
+### Run before any implementation
+pytest tests/test_v3_schema.py -v
+→ Shows all current schema violations as baseline
+
+### Run after implementation
+pytest tests/ -v --job-id=NEW_JOB_ID
+→ All tests must pass
+
+### Run time
+Total: under 60 seconds
+No API calls. No video generation. No avatar. 
+Mock everything external.
+
+### CI integration
+Add to GitHub Actions or your CI:
+  pytest tests/test_v3_schema.py tests/test_v3_renderer_executor.py
+  runs on every PR before merge
+```
+
+---
+
+## Order of work for agent
+```
+1. Copy a real presentation.json to tests/fixtures/sample_presentation.json
+2. Write all 4 test files
+3. Run test_v3_schema.py → document all failures as baseline
+4. Implement prompt changes
+5. Implement renderer_executor.py changes
+6. Run all tests → all must pass
+7. Generate one real job → run test_v3_asset_paths.py
+8. Done
+
+What is giving your agent
+1. director_v3_partition_prompt.txt   ← updated prompt
+2. v3_director_bible.md               ← knowledge base
+3. Implementation plan                ← with 6 fixes applied
+4. Test suite   
+
+What your agent should do — in order
+Step 1: Read both knowledge base files
+        Build understanding — do not write any code yet
+
+Step 2: Copy a real job presentation.json 
+        to tests/fixtures/sample_presentation.json
+
+Step 3: Write all 4 test files
+        Run test_v3_schema.py immediately
+        Document all failures as baseline
+
+Step 4: Replace director_v3_partition_prompt.txt
+        with updated version
+
+Step 5: Fix renderer_executor.py
+        Apply all 6 implementation plan fixes
+
+Step 6: Fix manim_code_generator.py
+        Stop writing Python code into presentation.json
+
+Step 7: Run full test suite
+        All must pass before generating a real job
+
+Step 8: Generate one real job
+        Run test_v3_asset_paths.py with real job id
+        Verify all beat assets exist on disk
+
+Crucial instruction ***
+Do NOT skip steps. Do NOT generate a real job until 
+Step 7 passes completely. The tests exist so you do 
+not waste an hour waiting for a broken pipeline run.                      ← 4 test files

@@ -302,7 +302,20 @@ def _render_visual_beats(
             if isinstance(prompt_obj, str):
                 wan_prompt = prompt_obj
             else:
-                wan_prompt = prompt_obj.get("prompt") or prompt_obj.get("wan_prompt") or prompt_obj.get("text") or prompt_obj.get("video_prompt") or str(prompt_obj)
+                # Extract text from all known prompt field names
+                # NOTE: 'description' is the field name used in recap/video_prompts dicts
+                wan_prompt = (
+                    prompt_obj.get("prompt")
+                    or prompt_obj.get("wan_prompt")
+                    or prompt_obj.get("text")
+                    or prompt_obj.get("video_prompt")
+                    or prompt_obj.get("description")  # recap scene dict uses 'description'
+                    or ""
+                )
+                if not wan_prompt:
+                    print(f"  [Beat {beat_idx}] ERROR: Could not extract prompt text from dict. Keys: {list(prompt_obj.keys())}")
+                    video_paths.append(None)
+                    continue
             
             # V2.5 DOUBLE-RESILIENT FIX: Skip if this is a known garbage fallback prompt 
             # (Ensures old jobs benefit from the fix even without regenerating the plan)

@@ -256,7 +256,15 @@ def run_v3_pipeline(
             manim_dir.mkdir(parents=True, exist_ok=True)
 
             sections = presentation.get("sections", [])
-            manim_sections = [s for s in sections if s.get("renderer") == "manim"]
+            manim_sections = [
+                s
+                for s in sections
+                if s.get("renderer") == "manim"
+                or any(
+                    seg.get("renderer") == "manim"
+                    for seg in s.get("render_spec", {}).get("segment_specs", [])
+                )
+            ]
 
             log("manim_gen", f"Found {len(manim_sections)} Manim sections.")
 
@@ -286,16 +294,29 @@ def run_v3_pipeline(
                     or section.get("segment_duration_seconds", 20)
                 )
 
-                # Build manim_spec from render_spec segment_specs or section-level
+                # V3 FIX: If it's a segment-level Manim spec, we don't generate a combined
+                # section-level python file. Phase 3.7's _render_manim_segment_specs
+                # will generate the code per-segment during rendering.
+                if segment_specs and any(
+                    s.get("renderer") == "manim" for s in segment_specs
+                ):
+                    section["manim_code_path"] = "manim/v3_segment_rendered.py"
+                    log(
+                        "manim_gen",
+                        f"  Sec {sec_id}: V3 segment-level manim, deferring code gen to render phase.",
+                    )
+                    continue
+
+                # Build manim_spec from section-level (legacy)
                 manim_spec = ""
                 if segment_specs:
-                    # Combine all segment specs into one visual description
                     spec_parts = []
                     for spec in segment_specs:
                         ms = spec.get("manim_scene_spec", "")
                         if ms:
                             spec_parts.append(ms)
                     manim_spec = " ".join(spec_parts)
+
                 if not manim_spec:
                     manim_spec = section.get("manim_scene_spec", "") or render_spec.get(
                         "manim_scene_spec", ""
@@ -338,12 +359,13 @@ def run_v3_pipeline(
                     with open(py_path, "w", encoding="utf-8") as f:
                         f.write(manim_code)
 
-                    # Store paths in presentation.json for later rendering
+                    # Store path in presentation.json for later rendering
                     rel_py_path = f"manim/{py_filename}"
                     section["manim_code_path"] = rel_py_path
 
-                    # Also store in render_spec for renderer_executor compatibility
-                    integrate_manim_code_into_section(section, manim_code)
+                    # NOTE: Do NOT call integrate_manim_code_into_section here.
+                    # V3 generates code fresh during render phase via _render_manim_segment_specs.
+                    # The .py file is saved above for reference/debugging only.
 
                     log("manim_gen", f"  ✅ Saved: {rel_py_path}")
                 else:
@@ -412,7 +434,15 @@ def run_v3_pipeline(
             from render.manim.manim_runner import render_manim_video
 
             sections = presentation.get("sections", [])
-            manim_sections = [s for s in sections if s.get("renderer") == "manim"]
+            manim_sections = [
+                s
+                for s in sections
+                if s.get("renderer") == "manim"
+                or any(
+                    seg.get("renderer") == "manim"
+                    for seg in s.get("render_spec", {}).get("segment_specs", [])
+                )
+            ]
             rendered_count = 0
 
             for section in manim_sections:

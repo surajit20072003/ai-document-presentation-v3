@@ -1,8 +1,21 @@
-# V3.0 Avatar–Three.js Sync Issues
+# V3.0 Avatar–Visual Sync Issues
 **Created:** 2026-03-09  
-**Updated:** 2026-03-10  
+**Updated:** 2026-03-18  
 **Owner:** Antigravity agent  
 **Prior gaps (RESOLVED):** GAP 1–6 from `GAP_RESOLUTION.md` (all closed 2026-03-08)
+
+---
+
+## Important Updates (2026-03-18)
+
+### V3 Generates Manim, Not Three.js
+- V3 pipeline generates **Manim** animations, not Three.js
+- Three.js infrastructure exists but is not actively used
+- Dashboard label updated: "V3 Three.js Mode" → "V3 Visual Mode"
+
+### Dashboard Changes
+- Line 374: `"⚡ V3 Three.js Mode"` → `"⚡ V3 Visual Mode"`
+- Line 414: `"Skip Three.js Gen"` → `"Skip Visual Gen"`
 
 ---
 
@@ -10,18 +23,18 @@
 
 | ID | Title | Bible Rule | Severity | Status |
 |---|---|---|---|---|
-| [VSYNC-001](#vsync-001) | Avatar duration not fed back to Three.js timing | §1 "LLM owns sync", §9 Rule 1 | 🔴 High | ✅ Done |
-| [VSYNC-002](#vsync-002) | Three.js segment windows use word-count proportions, not avatar-relative timing | §9 Rule 2 "Avatar is master clock" | 🔴 High | ✅ Done |
-| [VSYNC-003](#vsync-003) | Player cold-start: Three.js clock runs before avatar buffers | §1 "Avatar = master clock" | 🟡 Medium | ✅ Done |
-| [QUIZ-001](#quiz-001) | Quiz sections had no Three.js visual layer (question card) | §12 Quiz Visual Layer | 🟡 Medium | ✅ Done |
+| [VSYNC-001](#vsync-001) | Avatar duration not fed back to timing | §1 "LLM owns sync", §9 Rule 1 | 🔴 High | ✅ Done |
+| [VSYNC-002](#vsync-002) | Segment windows use word-count proportions, not avatar-relative timing | §9 Rule 2 "Avatar is master clock" | 🔴 High | ✅ Done |
+| [VSYNC-003](#vsync-003) | Player cold-start: clock runs before avatar buffers | §1 "Avatar = master clock" | 🟡 Medium | ✅ Done |
+| [QUIZ-001](#quiz-001) | Quiz sections had no visual layer (question card) | §12 Quiz Visual Layer | 🟡 Medium | ✅ Done |
 | [AVTR-001](#avtr-001) | Avatar overlay renders squeezed and too small | Player UI | 🟡 Medium | ✅ Done |
-| [JOBS-001](#jobs-001) | Verify Three.js font/animation/quiz fixes apply to newly generated jobs | §9 Rule 1, §12 | 🟡 Medium | ⏳ Needs Verification |
-| [SUB-001](#sub-001) | Subtitle solid background blocks Three.js animation content | Player UI | 🟡 Medium | ✅ Done |
+| [JOBS-001](#jobs-001) | Verify font/animation/quiz fixes apply to newly generated jobs | §9 Rule 1, §12 | 🟡 Medium | ⏳ Needs Verification |
+| [SUB-001](#sub-001) | Subtitle solid background blocks animation content | Player UI | 🟡 Medium | ✅ Done |
 | [AVTR-002](#avtr-002) | Avatar completely invisible — WebGL canvas blank | Player UI | 🔴 High | ✅ Done |
 | [AVTR-003](#avtr-003) | Avatar has box/border around it — should be frameless like a weatherman | Player UI | 🟡 Medium | ✅ Done |
 | [AVTR-004](#avtr-004) | Avatar wrong size/position by section type | §13 Player Behaviour | 🔴 High | ✅ Done |
 | [RECAP-001](#recap-001) | Recap beat videos not displaying full 15s — may be cut to 5s | §13 Player Behaviour | 🟡 Medium | ✅ Done |
-| [THREEJS-001](#threejs-001) | Three.js scene code not rendering correctly in new job | §9 Rule 1 | 🔴 High | ✅ Done |
+| [VISUAL-001](#visual-001) | Content sections not generating image/video - only avatar shows | Pipeline | 🔴 High | 🔄 In Progress |
 | [QUIZ-002](#quiz-002) | Quiz answers do not appear one-by-one while avatar reads; avatar missing from quiz | §12 Quiz Visual Layer | 🔴 High | ✅ Done |
 | [UI-001](#ui-001) | Avatar squeezed (aspect ratio warped) + green screen from GLSL smoothstep bug | Player UI | 🟡 Medium | ✅ Done |
 | [UI-002](#ui-002) | Playback button does not match V2 styling (lacks gradient/shadow) | Player UI | 🟢 Low | ✅ Done |
@@ -29,6 +42,123 @@
 | [DEV-001](#dev-001) | Need an in-browser Dev Mode overlay to adjust avatar size/position/transparency | Player UI | 🟢 Low | ✅ Done |
 
 ---
+
+## VISUAL-001 🔴 IN PROGRESS
+
+### Content sections not generating images/video/assets - only avatar shows
+
+**Job Analyzed:** `103_162_120_230_924874c4`
+
+---
+
+### Root Cause Analysis
+
+**Current Problem:**
+- `submit_wan_background_job()` only looks at `video_prompts` at section level
+- V3 content sections store beat-level prompts in `render_spec.segment_specs`
+- Segments with `renderer=infographic` or `renderer=manim` have no `video_prompt` at section level
+- These segments are silently skipped
+
+**Example from Section 3:**
+| Segment | Renderer | Prompt in segment_specs | Status |
+|---------|----------|------------------------|--------|
+| seg_1 | text_to_video | video_prompt (327 chars) | ✓ Generated |
+| seg_2 | text_to_video | video_prompt (360 chars) | ✓ Generated |
+| seg_3 | infographic | image_prompt (594 chars) | ✗ NOT Generated |
+| seg_4-8 | manim | manim_scene_spec (646-500 chars) | ✗ V3 handles separately |
+
+**Assets Missing:**
+- `images/` folder does not exist
+- Infographic images not generated via Gemini
+- Manim videos not generated (V3 pipeline broken)
+
+---
+
+### Correct Flow Understanding
+
+```
+1. READ presentation.json
+   └── Find all sections with renderer="video"
+   └── For each section, read render_spec.segment_specs
+   └── For each segment, check renderer type
+
+2. UNDERSTAND what each segment needs:
+   ├── text_to_video     → needs LTX video
+   ├── image_to_video    → needs Gemini image + LTX video
+   ├── infographic       → needs Gemini image only
+   └── manim             → needs Manim code + render (V3 pipeline)
+
+3. BATCH everything (PARALLEL PHASES):
+   
+   ┌─────────────────────────────────────────────────────────────────┐
+   │ PHASE 1: Gemini Images (PARALLEL - starts immediately)        │
+   ├─────────────────────────────────────────────────────────────────┤
+   │   All infographic + image_to_video segments                     │
+   │   → Gemini 3.1 Flash image generation                        │
+   │   → Save to: jobs/{id}/images/                                │
+   └─────────────────────────────────────────────────────────────────┘
+                              ↓
+   ┌─────────────────────────────────────────────────────────────────┐
+   │ PHASE 2: LTX Videos (BATCHED - 3 concurrent jobs)            │
+   ├─────────────────────────────────────────────────────────────────┤
+   │   All text_to_video + image_to_video segments                   │
+   │   → LocalGPU/LTX (3 at a time)                               │
+   │   → image_to_video waits for Phase 1 image token              │
+   │   → Save to: jobs/{id}/videos/                               │
+   └─────────────────────────────────────────────────────────────────┘
+                              ↓
+   ┌─────────────────────────────────────────────────────────────────┐
+   │ PHASE 3: Update presentation.json                             │
+   ├─────────────────────────────────────────────────────────────────┤
+   │   Add image_path and video_path to each segment_spec          │
+   └─────────────────────────────────────────────────────────────────┘
+   
+   ┌─────────────────────────────────────────────────────────────────┐
+   │ PHASE 4: Manim (PARALLEL with Phase 1 - V3 pipeline)          │
+   ├─────────────────────────────────────────────────────────────────┤
+   │   All manim segments                                           │
+   │   → Generate manim Python code from manim_scene_spec          │
+   │   → Enforce timing (match avatar duration)                     │
+   │   → Render .py → .mp4                                         │
+   │   → Save to: jobs/{id}/manim/                                 │
+   └─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Folder Structure
+
+```
+jobs/
+└── 103_162_120_230_924874c4/
+    ├── images/          ← All Gemini-generated images
+    │   ├── topic_3_seg_3.png      (infographic)
+    │   ├── topic_4_seg_3.png      (image_to_video reference)
+    │   └── ...
+    ├── videos/          ← All LTX-generated videos
+    │   ├── topic_3_seg_1_beat_1.mp4  (text_to_video)
+    │   ├── topic_3_seg_2_beat_1.mp4  (text_to_video)
+    │   └── ...
+    ├── manim/           ← Manim code + rendered videos
+    │   ├── v3_segment_rendered.py  (V3 pipeline generates this)
+    │   └── ...
+    └── presentation.json ← Updated with paths
+```
+
+---
+
+### Implementation Required
+
+**New Function:** `submit_v3_segment_background_job()`
+- Reads `render_spec.segment_specs` from V3 sections
+- Routes by renderer type
+- Phase 1: Gemini image generation (parallel)
+- Phase 2: LocalGPU/LTX video batch (3 concurrent)
+- Phase 4: Manim pipeline (parallel with Phase 1)
+
+**See:** `implementation_plan.md` for full implementation details
+
+**Status:** 🔄 Implementation plan ready
 
 ---
 

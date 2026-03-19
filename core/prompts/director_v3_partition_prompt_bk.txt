@@ -6,7 +6,7 @@ V3 uses:
 - **Narration as the master** — you write narration FIRST. Every visual decision flows from what the narration says at that moment.
 - **Avatar** as master clock — avatar duration = visual duration. Avatar ends → player advances.
 - **Zero text on screen** — all information delivered via avatar narration + visual.
-- **Six beat renderers** — you pick the best one per beat based on narration content.
+- **Six renderers** — you pick the best one per beat based on narration content.
 
 ---
 
@@ -20,8 +20,6 @@ V3 uses:
 6. **Timing Contract**: Director owns all timing. Every segment has `start_seconds`, `end_seconds`, `segment_duration_seconds`. Avatar narration is written to match duration exactly.
 7. **Narration Flow**: NO greetings. Start with a bridging phrase connecting to previous concept.
 8. **Quiz Interaction**: Quiz and Understanding sections are interactive HTML/JS in the player — A/B/C/D buttons, student clicks answer, player handles branching. Director generates all scripts, visual assets, and avatar clips so the player can execute the full interactive flow.
-9. **Section renderer**: ALWAYS "video" at section level for content/example/quiz/recap. ALWAYS "none" for intro/summary/memory. The actual renderer per beat is set inside render_spec.segment_specs ONLY. NEVER set manim/image_to_video/text_to_video/infographic/image at section level. NEVER set "none" inside render_spec.segment_specs — every beat must have a visual.
-10. **renderer_reason**: Every segment_spec MUST include a `renderer_reason` field — one sentence explaining why this renderer was chosen for this beat.
 
 ---
 
@@ -57,23 +55,7 @@ Determines the duration of that beat
 
 ---
 
-## SECTION-LEVEL vs BEAT-LEVEL RENDERER
-
-```
-SECTION LEVEL (top of section JSON):
-  content / example / quiz / recap   → renderer: "video"  (always)
-  intro / summary / memory            → renderer: "none"   (always)
-  This is a container value only. Never manim/infographic/image here.
-
-BEAT LEVEL (inside render_spec.segment_specs):
-  LLM decides per beat: manim | image_to_video | text_to_video | infographic | image
-  NEVER "none" at beat level — every beat must have a visual asset
-  NEVER "video" at beat level — "video" is section-level only
-```
-
----
-
-## RENDERER DECISION TREE (beat level only)
+## RENDERER DECISION TREE
 
 For each beat, ask these questions in order:
 
@@ -114,41 +96,17 @@ STEP 4 — Is the source document providing a diagram or image for this beat?
   → renderer: "image"
     No generation needed. Pipeline displays the source image statically
     while avatar narrates. Use image_source field with exact file path.
+
+STEP 5 — Is it intro / summary / memory / recap?
+  YES → renderer: "none" (avatar only, no visual)
 ```
 
 **Important:** Every beat is decided independently. A single section can have:
-```
-Beat 1 → manim          (formula)
+Beat 1 → manim (formula)
 Beat 2 → image_to_video (anatomy)
-Beat 3 → text_to_video  (narrative)
-Beat 4 → infographic    (labelled diagram)
-```
+Beat 3 → text_to_video (narrative)
+Beat 4 → infographic (labelled diagram)
 This is correct and expected. Pick the best renderer for what is being narrated at that moment.
-
----
-
-## RENDERER DECISIONS (MANDATORY — document every choice)
-
-Every segment_spec MUST include a `renderer_reason` field — one sentence explaining
-why this renderer was chosen for this beat. This is used for validation and debugging.
-
-**Examples:**
-```
-"renderer_reason": "Manim — narration describes benzene ring molecular structure,
- formula-based content, always Manim."
-
-"renderer_reason": "image_to_video — narration describes liver cell metabolism,
- anatomy content needs reference image for scientific accuracy."
-
-"renderer_reason": "text_to_video — narration describes 1947 Indian independence,
- historical narrative, mood-only prompt is sufficient, no reference image needed."
-
-"renderer_reason": "infographic — narration compares three drug metabolism routes,
- static labelled diagram explains better than video, motion adds no value."
-
-"renderer_reason": "image — source document contains Figure 3 pathway diagram,
- displaying source image directly while avatar narrates."
-```
 
 ---
 
@@ -176,7 +134,7 @@ Rules:
 "display_directives": { "text_layer": "hide", "visual_layer": "show", "avatar_layer": "show" }
 ```
 
-**None segments** (intro / summary / memory):
+**None segments** (intro / summary / memory / recap):
 ```json
 "display_directives": { "text_layer": "hide", "visual_layer": "hide", "avatar_layer": "show" }
 ```
@@ -320,15 +278,16 @@ No reference image. LTX-2 generates entirely from text description.
 5. DO NOT reference any specific image — there is none
 6. End: "15 seconds. 24fps. No text overlays."
 
-**TEXT_TO_VIDEO EXAMPLE:**
+**TEXT_TO_VIDEO EXAMPLE (historical event):**
 ```
 Cinematic scene of the Indian independence movement, crowds gathering
 at a public square in 1940s India. Warm golden hour light. People
 dressed in white kurtas and sarees, holding flags. Wide establishing
 shot slowly pushing forward into the crowd. Dust particles in warm
 light. Atmosphere of determined hope — not celebration, not fear,
-quiet resolve. Sepia-tinted warm colour grade. Stone buildings,
-large banyan tree in background. 15 seconds. 24fps. No text overlays.
+quiet resolve. Sepia-tinted warm colour grade. Soft orchestral
+undertone implied in the visual mood. Stone buildings, large banyan
+tree in background. 15 seconds. 24fps. No text overlays.
 ```
 
 ---
@@ -371,7 +330,6 @@ No generation. No prompts. Pipeline displays source image statically.
 {
   "segment_id": "seg_X",
   "renderer": "image",
-  "renderer_reason": "Source document contains Figure X — displaying directly while avatar narrates.",
   "start_seconds": 0.0,
   "end_seconds": 12.0,
   "segment_duration_seconds": 12.0,
@@ -416,6 +374,7 @@ Every `section_type: content` or `section_type: example` section MUST have an `u
 4. BOTH PATHS  → explanation_visual plays
                  Avatar narrates explanation_script
                  Student SEES the visual proof/diagram
+                 LLM picks renderer + duration for this visual
 5. Explanation avatar clip ends → advance to next section
 ```
 
@@ -423,9 +382,9 @@ Every `section_type: content` or `section_type: example` section MUST have an `u
 
 ## STANDALONE QUIZ SECTION (document quiz from Global Director)
 
-Same rules apply. Every question MUST also have:
+Same rules apply. Every question in a standalone quiz section MUST also have:
 - 4 avatar clips: question, correct, wrong, explanation
-- `explanation_visual` block with renderer_reason, duration, narration, and visual spec
+- `explanation_visual` block with renderer, duration, narration, and visual spec
 - Same flow as understanding quiz above
 
 ---
@@ -450,8 +409,8 @@ Return a single valid JSON object. No text before or after.
       "section_id": "section_1",
       "section_type": "content|example|quiz|intro|summary|memory|recap",
       "title": "Section Title",
-      "renderer": "video",
-      "use_local_gpu": true,
+      "renderer": "manim|image_to_video|text_to_video|infographic|image|none",
+      "use_local_gpu": false,
       "total_duration_seconds": 63.0,
       "segment_duration_seconds": 63.0,
       "key_terms": ["term1", "term2"],
@@ -476,7 +435,7 @@ Return a single valid JSON object. No text before or after.
         {
           "beat_id": "beat_1",
           "segment_id": "seg_1",
-          "visual_type": "manim|image_to_video|text_to_video|infographic|image",
+          "visual_type": "manim|image_to_video|text_to_video|infographic|image|none",
           "beat_start_seconds": 0.0,
           "beat_end_seconds": 18.5,
           "display_text": "Short description of what student sees",
@@ -490,7 +449,6 @@ Return a single valid JSON object. No text before or after.
           {
             "segment_id": "seg_1",
             "renderer": "manim",
-            "renderer_reason": "Manim — narration describes benzene ring molecular structure, formula-based content, always Manim.",
             "start_seconds": 0.0,
             "end_seconds": 18.5,
             "segment_duration_seconds": 18.5,
@@ -500,11 +458,10 @@ Return a single valid JSON object. No text before or after.
           {
             "segment_id": "seg_2",
             "renderer": "image_to_video",
-            "renderer_reason": "image_to_video — narration describes liver cell anatomy, reference image needed for scientific accuracy.",
             "start_seconds": 18.5,
             "end_seconds": 33.5,
             "segment_duration_seconds": 15.0,
-            "image_prompt": "100+ word Gemini 3 Pro image generation prompt. Every element, every label in quotes, background #0d1117, colour coding, style, 16:9. No watermarks.",
+            "image_prompt": "100+ word Gemini 3 Pro image generation prompt. Describe every element, every label in quotes, background #0d1117, colour coding, style, 16:9. No watermarks.",
             "video_prompt": "80+ word LTX-2 mood prompt. Reference starting image. Camera movement. Atmosphere. Lighting. Colour mood. Ends: 15 seconds. 24fps. No text overlays.",
             "image_source": null,
             "image_mode": null,
@@ -513,17 +470,15 @@ Return a single valid JSON object. No text before or after.
           {
             "segment_id": "seg_3",
             "renderer": "text_to_video",
-            "renderer_reason": "text_to_video — narration describes a historical narrative scene, mood prompt sufficient, no reference image needed.",
             "start_seconds": 33.5,
             "end_seconds": 48.5,
             "segment_duration_seconds": 15.0,
-            "video_prompt": "80+ word LTX-2 mood prompt. Scene, setting, atmosphere, camera movement, colour palette. No reference image. Ends: 15 seconds. 24fps. No text overlays.",
+            "video_prompt": "80+ word LTX-2 mood prompt. Describe scene, setting, atmosphere, camera movement, colour palette. No reference image. Ends: 15 seconds. 24fps. No text overlays.",
             "interaction": null
           },
           {
             "segment_id": "seg_4",
             "renderer": "infographic",
-            "renderer_reason": "infographic — narration compares drug metabolism routes, static labelled diagram explains better than video, no motion needed.",
             "start_seconds": 48.5,
             "end_seconds": 63.0,
             "segment_duration_seconds": 14.5,
@@ -546,7 +501,6 @@ Return a single valid JSON object. No text before or after.
         },
         "explanation_visual": {
           "renderer": "manim|image_to_video|text_to_video|infographic|image",
-          "renderer_reason": "One sentence explaining why this renderer was chosen for the explanation visual.",
           "duration_seconds": 15.0,
           "manim_scene_spec": "Required if renderer is manim. 100+ words. Same rules as content manim_scene_spec.",
           "image_prompt": "Required if renderer is image_to_video or infographic. 100+ words.",
@@ -560,7 +514,6 @@ Return a single valid JSON object. No text before or after.
     {
       "section_id": "section_2",
       "section_type": "quiz",
-      "renderer": "video",
       "quiz_origin": "document|understanding",
       "questions": [
         {
@@ -570,10 +523,10 @@ Return a single valid JSON object. No text before or after.
           "correct_option": "B",
           "explanation": "Why B is correct — one sentence.",
           "avatar_clips": {
-            "question":    "avatars/en/quiz_{id}_q1_question.mp4",
-            "correct":     "avatars/en/quiz_{id}_q1_correct.mp4",
-            "wrong":       "avatars/en/quiz_{id}_q1_wrong.mp4",
-            "explanation": "avatars/en/quiz_{id}_q1_explanation.mp4"
+            "question":     "avatars/en/quiz_{id}_q1_question.mp4",
+            "correct":      "avatars/en/quiz_{id}_q1_correct.mp4",
+            "wrong":        "avatars/en/quiz_{id}_q1_wrong.mp4",
+            "explanation":  "avatars/en/quiz_{id}_q1_explanation.mp4"
           },
           "narration": {
             "question_script":    "Avatar reads question and all 4 options aloud.",
@@ -584,9 +537,8 @@ Return a single valid JSON object. No text before or after.
           },
           "explanation_visual": {
             "renderer": "manim|image_to_video|text_to_video|infographic|image",
-            "renderer_reason": "One sentence explaining why this renderer was chosen for the explanation visual.",
             "duration_seconds": 15.0,
-            "manim_scene_spec": "Required if renderer is manim. 100+ words.",
+            "manim_scene_spec": "Required if renderer is manim. 100+ words. Same rules as content manim_scene_spec.",
             "image_prompt": "Required if renderer is image_to_video or infographic. 100+ words.",
             "video_prompt": "Required if renderer is image_to_video or text_to_video. 80+ words.",
             "image_source": null,
@@ -605,27 +557,25 @@ Return a single valid JSON object. No text before or after.
 
 | Field | Rule |
 |---|---|
-| `section renderer` | Always "video" for content/example/quiz/recap. Always "none" for intro/summary/memory. |
 | `segment_duration_seconds` | Required everywhere. Word count ÷ 130 × 60. image_to_video and text_to_video always 15.0s |
 | `start_seconds` / `end_seconds` | Required on every segment_spec. Cumulative from 0.0 |
 | `total_duration_seconds` | Sum of all segment durations. Required at section and render_spec level |
-| `renderer_reason` | Required on every segment_spec and explanation_visual. One sentence. |
 | `manim_scene_spec` | Required for manim. 100+ words. Explicit timing. Ends with "Duration exactly Xs." |
-| `image_prompt` | Required for image_to_video and infographic. 100+ words. All labels quoted. Background #0d1117. 16:9. |
+| `image_prompt` | Required for image_to_video and infographic. 100+ words. All labels quoted. Background #0d1117. Style. 16:9. |
 | `video_prompt` | Required for image_to_video and text_to_video. 80+ words. Mood only. Ends: "15 seconds. 24fps. No text overlays." |
 | `image_source` | Set to file path if renderer is "image" or source document has image. null otherwise |
 | `image_mode` | Set "video_reference" if using source image with image_to_video. null otherwise |
 | `beat_start_seconds` | When this beat starts within the section timeline |
 | `narration_sync_phrase` | Exact 4-6 words from narration text where this beat begins |
 | `key_terms` | 2-5 terms. Appear in GOLD in Manim. Required for manim sections |
-| `complexity` | simple / medium / complex |
+| `complexity` | simple / medium / complex. Drives renderer choice for conceptual beats |
 | `text_layer` | Always "hide". No exceptions |
 | `understanding_quiz` | Mandatory on every content/example section. No exceptions |
-| `explanation_visual` | Mandatory on every quiz question. No exceptions |
-| `explanation_script` | 4th narration script. Avatar narrates WHY correct answer is correct |
-| `option_reveal_seconds` | 4 floats. When each option A/B/C/D appears on screen (~130 wpm estimate) |
-| `interaction` | Required on every segment_spec. null if no student interaction |
-| `explanation_visual.duration_seconds` | LLM decides based on complexity — not fixed |
+| `explanation_visual` | Mandatory on every quiz question (understanding_quiz and standalone quiz). No exceptions |
+| `explanation_script` | 4th narration script. Avatar narrates WHY correct answer is correct over explanation_visual |
+| `option_reveal_seconds` | 4 floats. When each option A/B/C/D appears on screen during question_script (~130 wpm estimate) |
+| `interaction` | Required field on every segment_spec. null if no student interaction |
+| `explanation_visual.duration_seconds` | LLM decides based on complexity of explanation — not fixed |
 
 ---
 
@@ -640,13 +590,14 @@ Return a single valid JSON object. No text before or after.
 
 ## RENDERER FIELDS QUICK REFERENCE
 
-| Renderer | image_prompt | video_prompt | manim_scene_spec | image_source | renderer_reason |
-|---|---|---|---|---|---|
-| manim | ✗ | ✗ | ✅ Required | ✗ | ✅ Required |
-| image_to_video | ✅ Required | ✅ Required | ✗ | null or path | ✅ Required |
-| text_to_video | ✗ | ✅ Required | ✗ | ✗ | ✅ Required |
-| infographic | ✅ Required | ✗ | ✗ | ✗ | ✅ Required |
-| image | ✗ | ✗ | ✗ | ✅ Required | ✅ Required |
+| Renderer | image_prompt | video_prompt | manim_scene_spec | image_source |
+|---|---|---|---|---|
+| manim | ✗ | ✗ | ✅ Required | ✗ |
+| image_to_video | ✅ Required | ✅ Required | ✗ | null or path |
+| text_to_video | ✗ | ✅ Required | ✗ | ✗ |
+| infographic | ✅ Required | ✗ | ✗ | ✗ |
+| image | ✗ | ✗ | ✗ | ✅ Required |
+| none | ✗ | ✗ | ✗ | ✗ |
 
 ---
 

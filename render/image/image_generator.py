@@ -1,0 +1,298 @@
+"""
+Image Generator Client - Generates images from text prompts using Gemini/OpenRouter API
+Used for: image_to_video reference frames, infographic static images
+"""
+
+import os
+import base64
+import requests
+import logging
+from pathlib import Path
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_IMAGE_MODEL = os.environ.get(
+    "OPENROUTER_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview"
+)
+
+IMAGE_OUTPUT_DIR = "jobs"
+
+
+class ImageGeneratorError(Exception):
+    pass
+
+
+class ImageGenerator:
+    """Generate images from text prompts using Gemini via OpenRouter or Google AI"""
+
+    def __init__(self):
+        self.openrouter_key = OPENROUTER_API_KEY
+        self.model = OPENROUTER_IMAGE_MODEL
+
+    def generate_image(
+        self,
+        prompt: str,
+        output_path: str,
+        size: str = "1024x1024",
+        quality: str = "standard",
+    ) -> Optional[str]:
+        """
+        Generate an image from text prompt.
+
+        Args:
+            prompt: Text description for image generation
+            output_path: Where to save the PNG image
+            size: Image dimensions (1024x1024, 1024x768, 768x1024)
+            quality: standard or high
+
+        Returns:
+            Path to generated image file, or None on failure
+        """
+        logger.info(f"[ImageGen] Generating image: {prompt[:60]}...")
+
+        # Try OpenRouter first
+        if self.openrouter_key:
+            try:
+                return self._generate_openrouter(prompt, output_path, size, quality)
+            except Exception as e:
+                logger.error(f"[ImageGen] OpenRouter failed: {e}")
+
+        logger.error("[ImageGen] No valid API keys available")
+        return None
+
+    def _generate_openrouter(
+        self, prompt: str, output_path: str, size: str, quality: str
+    ) -> Optional[str]:
+        """Generate image using OpenRouter API (Gemini 3.1 Flash Image Preview) via raw requests"""
+
+        import json
+
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.openrouter_key}",
+            "HTTP-Referer": "https://opencode.ai",
+            "X-Title": "AI Document Presentation",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+
+        try:
+            resp = requests.post(url, headers=headers, json=payload, timeout=120)
+            resp.raise_for_status()
+            data = resp.json()
+
+            logger.debug(f"[ImageGen] Raw response keys: {list(data.keys())}")
+
+            # Navigate to the message parts
+            choices = data.get("choices", [])
+            if not choices:
+                raise ImageGeneratorError(f"No choices in response: {data}")
+
+            message = choices[0].get("message", {})
+
+            logger.debug(f"[ImageGen] Message keys: {list(message.keys())}")
+
+            # 0) Check message['images'] - OpenRouter Gemini image response format
+            # Format: [{'type': 'image_url', 'image_url': {'url': 'data:image/jpeg;base64,...'}}]
+            images = message.get("images") or []
+            if images:
+                img = images[0]
+                image_data = None
+                if isinstance(img, str):
+                    image_data = img
+                elif isinstance(img, dict):
+                    if img.get("type") == "image_url":
+                        url_str = img.get("image_url", {}).get("url", "")
+                    else:
+                        url_str = img.get("url") or img.get("data") or img.get("b64_json") or ""
+                    if url_str.startswith("data:image"):
+                        image_data = url_str.split(",", 1)[1]
+                    elif url_str.startswith("http"):
+                        return self._download_image(url_str, output_path)
+                    else:
+                        image_data = url_str
+
+                if image_data:
+                    image_bytes = base64.b64decode(image_data)
+                    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+                    with open(output_path, "wb") as f:
+                        f.write(image_bytes)
+                    logger.info(f"[ImageGen] Saved to {output_path}")
+                    return output_path
+
+            # 1) Try content_parts (multimodal format)
+            parts = message.get("content_parts") or message.get("parts") or []
+
+            # 2) Fallback: content as list (some OpenRouter responses)
+            if not parts and isinstance(message.get("content"), list):
+                parts = message["content"]
+
+            image_data = None
+            for part in parts:
+                if isinstance(part, dict):
+                    # inline_data format
+                    if part.get("type") == "image_url":
+                        url_str = part.get("image_url", {}).get("url", "")
+                        if url_str.startswith("data:image"):
+                            image_data = url_str.split(",", 1)[1]
+                        elif url_str.startswith("http"):
+                            return self._download_image(url_str, output_path)
+                    elif "inline_data" in part:
+                        image_data = part["inline_data"].get("data", "")
+                    elif part.get("type") == "image" and "data" in part:
+                        image_data = part["data"]
+
+            # 3) Fallback: content as plain string
+            if not image_data:
+                content = message.get("content")
+                if content and isinstance(content, str) and len(content) > 200:
+                    if content.startswith("data:image"):
+                        image_data = content.split(",", 1)[1]
+                    elif content.startswith("http"):
+                        return self._download_image(content, output_path)
+                    else:
+                        # Might be raw base64
+                        image_data = content
+
+            if not image_data:
+                raise ImageGeneratorError(
+                    f"No image data found in response. Message keys: {list(message.keys())}"
+                )
+
+            # Decode & save
+            image_bytes = base64.b64decode(image_data)
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, "wb") as f:
+                f.write(image_bytes)
+
+            logger.info(f"[ImageGen] Saved to {output_path}")
+            return output_path
+
+        except Exception as e:
+            raise ImageGeneratorError(f"OpenRouter image generation failed: {e}")
+
+    def _generate_google(
+        self, prompt: str, output_path: str, size: str, quality: str
+    ) -> Optional[str]:
+        """Generate image using Google AI (Imagen) API"""
+
+        # Map size for Imagen
+        size_map = {
+            "1024x1024": "1024x1024",
+            "1024x768": "1024x768",
+            "768x1024": "768x1024",
+        }
+        google_size = size_map.get(size, "1024x1024")
+
+        # Use Gemini 3.1 Flash Image model - this is the image generation model
+        model_options = [
+            "gemini-3.1-flash-image-preview",  # This is the image generation model
+            "gemini-2.5-flash-image",  # Older experimental
+            "gemini-2.0-flash-exp",  # Older experimental
+        ]
+
+        last_error = None
+        for model in model_options:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.google_key}"
+                headers = {"Content-Type": "application/json"}
+                payload = {
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "responseModalities": ["image", "text"],
+                        "temperature": 1,
+                    },
+                }
+                response = requests.post(url, headers=headers, json=payload, timeout=60)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    # Check for image in parts
+                    if "candidates" in data and data["candidates"]:
+                        candidate = data["candidates"][0]
+                        if "content" in candidate and "parts" in candidate["content"]:
+                            for part in candidate["content"]["parts"]:
+                                if "inlineData" in part:
+                                    image_data = part["inlineData"]["data"]
+                                    image_bytes = base64.b64decode(image_data)
+                                    Path(output_path).parent.mkdir(
+                                        parents=True, exist_ok=True
+                                    )
+                                    with open(output_path, "wb") as f:
+                                        f.write(image_bytes)
+                                    logger.info(f"[ImageGen] Saved to {output_path}")
+                                    return output_path
+
+                    # Try alternative format
+                    if "predictions" in data and data["predictions"]:
+                        prediction = data["predictions"][0]
+                        if "bytesBase64Encoded" in prediction:
+                            image_data = prediction["bytesBase64Encoded"]
+                            image_bytes = base64.b64decode(image_data)
+                            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+                            with open(output_path, "wb") as f:
+                                f.write(image_bytes)
+                            logger.info(f"[ImageGen] Saved to {output_path}")
+                            return output_path
+
+                    last_error = f"No image in response: {data}"
+                    continue
+                else:
+                    last_error = f"{response.status_code}: {response.text[:100]}"
+                    continue
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        raise ImageGeneratorError(f"All models failed. Last error: {last_error}")
+
+    def _download_image(self, url: str, output_path: str) -> str:
+        """Download image from URL and save to output_path"""
+        response = requests.get(url, timeout=60)
+        if response.status_code != 200:
+            raise ImageGeneratorError(f"Download failed: {response.status_code}")
+
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_path, "wb") as f:
+            f.write(response.content)
+
+        logger.info(f"[ImageGen] Downloaded to {output_path}")
+        return output_path
+
+
+def generate_image_for_beat(
+    beat: dict, job_id: str, section_id: str, output_dir: str
+) -> Optional[str]:
+    """
+    Generate image for a single beat.
+
+    Args:
+        beat: Beat dict with image_prompt
+        job_id: Job ID for folder naming
+        section_id: Section ID for file naming
+        output_dir: Base output directory
+
+    Returns:
+        Path to generated image, or None
+    """
+    image_prompt = beat.get("image_prompt", "")
+    if not image_prompt:
+        logger.warning(f"[ImageGen] No image_prompt in beat")
+        return None
+
+    # Create output path
+    beat_id = beat.get("beat_id", f"beat_{section_id}")
+    images_dir = Path(output_dir) / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    output_path = str(images_dir / f"{job_id}_{beat_id}.png")
+
+    # Generate
+    gen = ImageGenerator()
+    return gen.generate_image(image_prompt, output_path)

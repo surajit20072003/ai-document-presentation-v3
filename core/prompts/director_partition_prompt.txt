@@ -119,9 +119,12 @@ Return a JSON object with this exact structure:
         "segment_specs": [
           {
             "segment_id": "seg_2",
-            "renderer": "manim|video",
+            "renderer": "manim|image_to_video|text_to_video|infographic|image",
+            "renderer_choice_reason": "REQUIRED: 2-3 sentence explanation of WHY this renderer was chosen. Based on decision tree below.",
             "manim_scene_spec": "For manim: 80+ word description...",
-            "video_prompt": "For WAN: 80+ word cinematic prompt...",
+            "image_prompt": "For image_to_video/infographic: 100+ word Gemini image prompt...",
+            "video_prompt": "For image_to_video/text_to_video: 80+ word LTX video prompt...",
+            "image_source": "For image renderer: path to source image file",
             "beats": [
               {
                 "beat_id": "seg_2_beat_1",
@@ -153,19 +156,43 @@ WAN 2.6 API produces 15s videos maximum.
 - For Beats 2+: Use prefix "Keeping the previous scene exactly the same, continue showing..."
 - Each beat prompt MUST be 80+ words.
 
-### 3. RENDERER SELECTION
+### 3. RENDERER SELECTION (REQUIRED: Every segment MUST have renderer_choice_reason)
 1. **MATH / PHYSICS** -> **MANIM** (`renderer: "manim"`)
+   - Content: formulas, equations, graphs, geometry, LaTeX, physics vectors
+   - renderer_choice_reason: "Mathematical formulas/equations/graphs/physics - requires precise LaTeX rendering via Manim for accurate visualization"
    - 1 `manim_scene_spec` per segment (NO 15s limit for Manim).
-2. **BIOLOGY / ANATOMY / HUMAN ORGANS** -> **VIDEO** (`renderer: "video"`, `use_local_gpu: false`)
-   - Content involving: human body, organs (heart, liver, kidney, brain, lungs, etc.), cells, tissues, blood, nervous system, digestive system, anatomy diagrams, microscopic biology.
-   - Uses Kie.ai WAN API (external) — better for organic/anatomical visuals.
-3. **ALL OTHER VIDEO CONTENT** (history, general scenes, objects, landscapes, abstract concepts) -> **VIDEO** (`renderer: "video"`, `use_local_gpu: true`)
-   - Uses Local GPU server — faster and free for generic visual content.
-4. **STANDARD** -> **NONE** (`renderer: "none"`)
 
-**CRITICAL**: `use_local_gpu` MUST be set for every `renderer: "video"` section.
-- `use_local_gpu: false` → Only for Biology/Anatomy/Human Organ content
-- `use_local_gpu: true`  → For ALL other video sections (default)
+2. **BIOLOGY / ANATOMY / DETAILED SCIENCE** -> **IMAGE_TO_VIDEO** (`renderer: "image_to_video"`, `use_local_gpu: true`)
+   - Content: human body, organs (heart, liver, kidney, brain, lungs), cells, tissues, blood, nervous system, anatomy diagrams, microscopic biology, farming, detailed real-world scenes
+   - renderer_choice_reason: "Biology/anatomy/detailed science - requires accurate reference image for scientific visualization. Gemini generates reference PNG, LTX animates from it."
+   - Needs BOTH `image_prompt` (100+ words for Gemini) AND `video_prompt` (80+ words for LTX)
+   - Uses Local GPU server - good for organic/anatomical visuals with reference.
+
+3. **HISTORY / GEOGRAPHY / GENERAL NARRATIVE** -> **TEXT_TO_VIDEO** (`renderer: "text_to_video"`, `use_local_gpu: true`)
+   - Content: historical events, civilizations, rivers, landscapes, abstract concepts, general real-world scenes where specific reference not needed
+   - renderer_choice_reason: "General narrative/history/geography/abstract concept - no specific reference image needed. LTX generates directly from text description."
+   - Only needs `video_prompt` (80+ words) - no image_prompt needed.
+   - Uses Local GPU server.
+
+4. **STATIC DIAGRAMS** -> **INFOGRAPHIC** (`renderer: "infographic"`)
+   - Content: labelled diagrams, comparison tables, step-by-step lists, process flows
+   - renderer_choice_reason: "Static diagram/comparison table/labeled illustration - no animation needed, just display the infographic"
+   - Only needs `image_prompt` (100+ words) - no video generation.
+   - Gemini generates static PNG, player displays it.
+
+5. **SOURCE IMAGES** -> **IMAGE** (`renderer: "image"`)
+   - Content: Source document already has image
+   - renderer_choice_reason: "Source document provides existing image - no generation needed, just display"
+   - Only needs `image_source` field with file path.
+
+6. **TEXT ONLY** -> **NONE** (`renderer: "none"`)
+   - Content: Intro, summary, memory, quiz sections
+   - renderer_choice_reason: "Text-only section - avatar narration only, no visual needed"
+   - No render_spec needed.
+
+**CRITICAL**: `use_local_gpu` MUST be set for video/image_to_video sections.
+- `use_local_gpu: false` → Only for Biology/Anatomy/Human Organ content via Kie.ai
+- `use_local_gpu: true`  → For all other video content (default, uses Local GPU)
 
 ### B. PROMPT QUALITY CHECKLIST
 1. **Length**: 80+ Words Minimum for BOTH Manim specs and Video prompts.

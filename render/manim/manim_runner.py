@@ -814,7 +814,8 @@ def _render_manim_segment_specs(
                     # V2.6 FIX: Store relative path like Avatar does (not Docker absolute)
                     video_filename = os.path.basename(result)
                     seg["beat_videos"] = [f"videos/{video_filename}"]
-                    print(f"  [MANIM] Linked beat {idx} to segment {seg_id}")
+                    seg["video_path"] = f"videos/{video_filename}"
+                    print(f"  [MANIM] Linked beat {idx} to segment {seg_id} with video_path={seg['video_path']}")
                     break
                     
         print(f"  [MANIM] Finalized beat {idx} ({seg_id}): {result}")

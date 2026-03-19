@@ -2611,7 +2611,10 @@ def _retry_wan_render(
                             for beat in video_prompts:
                                 beat_id = beat.get("beat_id", "")
                                 prompt = (
-                                    beat.get("prompt") or beat.get("wan_prompt") or ""
+                                    beat.get("prompt")
+                                    or beat.get("wan_prompt")
+                                    or beat.get("video_prompt")
+                                    or ""
                                 )
                                 duration = int(beat.get("duration_hint", 5))
                                 out_path = str(videos_dir / f"{beat_id}.mp4")

@@ -45,7 +45,18 @@ VAGUE_PHRASES = [
     "a type of",
 ]
 
-VALID_RENDERERS = {"manim", "video", "none", "wan", "wan_video"}
+VALID_RENDERERS = {
+    "manim",
+    "video",
+    "none",
+    "wan",
+    "wan_video",
+    "image_to_video",
+    "text_to_video",
+    "infographic",
+    "image",
+    "threejs",
+}
 
 
 class V3ValidatorError(Exception):
@@ -165,48 +176,69 @@ def _check_manim_spec(section: dict) -> List[V3ValidatorError]:
         return errors
 
     for i, spec in enumerate(segment_specs):
+        renderer = spec.get("renderer", "")
+
+        renderer_reason = spec.get("renderer_choice_reason", "").strip()
+        if not renderer_reason:
+            # WARNING only for old jobs - not a hard fail
+            print(
+                f"  [WARNING] segment_spec[{i}] renderer_choice_reason missing - recommended for new jobs"
+            )
+            # Comment out the hard fail to allow old jobs to pass validation
+            # errors.append(
+            #     V3ValidatorError(
+            #         "v3_renderer_choice_reason_missing",
+            #         sid,
+            #         f"segment_spec[{i}] renderer_choice_reason is REQUIRED - must explain WHY renderer '{renderer}' was chosen. Add 2-3 sentence explanation based on decision tree.",
+            #     )
+            # )
+
         manim_spec = spec.get("manim_scene_spec", "")
-        if not manim_spec:
-            errors.append(
-                V3ValidatorError(
-                    "v3_manim_spec_missing",
-                    sid,
-                    f"segment_spec[{i}].manim_scene_spec is missing — required for Manim generation.",
-                )
-            )
-        elif _count_words(manim_spec) < MANIM_SPEC_MIN_WORDS:
-            wc = _count_words(manim_spec)
-            errors.append(
-                V3ValidatorError(
-                    "v3_manim_spec_too_short",
-                    sid,
-                    f"segment_spec[{i}].manim_scene_spec is {wc} words — minimum is {MANIM_SPEC_MIN_WORDS} words.",
-                )
-            )
 
-        spec_duration = spec.get("segment_duration_seconds")
-        if not spec_duration:
-            errors.append(
-                V3ValidatorError(
-                    "v3_segment_duration_missing",
-                    sid,
-                    f"segment_spec[{i}].segment_duration_seconds not set — Manim generator needs this.",
-                )
-            )
-
-        # Check vague language in manim_scene_spec
-        if manim_spec:
-            vague = _check_vague(manim_spec)
-            if vague:
+        # Only validate manim_scene_spec for manim renderer
+        if renderer == "manim":
+            if not manim_spec:
                 errors.append(
                     V3ValidatorError(
-                        "v3_vague_manim_spec",
+                        "v3_manim_spec_missing",
                         sid,
-                        f"segment_spec[{i}].manim_scene_spec contains vague language: {vague}",
+                        f"segment_spec[{i}].manim_scene_spec is missing — required for Manim generation.",
+                    )
+                )
+            elif _count_words(manim_spec) < MANIM_SPEC_MIN_WORDS:
+                wc = _count_words(manim_spec)
+                errors.append(
+                    V3ValidatorError(
+                        "v3_manim_spec_too_short",
+                        sid,
+                        f"segment_spec[{i}].manim_scene_spec is {wc} words — minimum is {MANIM_SPEC_MIN_WORDS} words.",
+                    )
+                )
+            # Check vague language in manim_scene_spec
+            if manim_spec:
+                vague = _check_vague(manim_spec)
+                if vague:
+                    errors.append(
+                        V3ValidatorError(
+                            "v3_vague_manim_spec",
+                            sid,
+                            f"segment_spec[{i}].manim_scene_spec contains vague language: {vague}",
+                        )
+                    )
+
+        # Only validate segment_duration_seconds for manim renderer
+        if renderer == "manim":
+            spec_duration = spec.get("segment_duration_seconds")
+            if not spec_duration:
+                errors.append(
+                    V3ValidatorError(
+                        "v3_segment_duration_missing",
+                        sid,
+                        f"segment_spec[{i}].segment_duration_seconds not set — Manim generator needs this.",
                     )
                 )
 
-    return errors
+        return errors
 
 
 def _check_segment_duration(section: dict) -> List[V3ValidatorError]:

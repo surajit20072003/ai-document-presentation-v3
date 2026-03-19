@@ -647,8 +647,6 @@ def process_markdown_unified(
             try:
                 from core.renderer_executor import submit_wan_background_job
                 
-                # Submit synchronously to hold the worker slot
-                # This prevents "Thundering Herd" on GPU/WAN APIs
                 try:
                     submit_wan_background_job(
                         presentation, 
@@ -670,13 +668,29 @@ def process_markdown_unified(
                         )
                     else:
                         raise te
-                        
+                
                 logger.info(f"Pipeline: Completed synchronous WAN generation for job {job_id}")
                 
+                # ── CRITICAL FIX: Save presentation.json AFTER WAN job completes ──
+                # Background job updates spec["video_path"] in segment_specs in-memory,
+                # but JSON was saved BEFORE job ran so updates were lost. Re-save now.
+                if output_dir:
+                    pres_path_post = os.path.join(output_dir, "presentation.json")
+                    try:
+                        with presentation_lock:
+                            with open(pres_path_post, "w", encoding="utf-8") as f:
+                                json.dump(presentation, f, indent=4)
+                        logger.info(f"Pipeline: Saved POST-WAN presentation (video paths persisted)")
+                    except Exception as save_err:
+                        logger.error(f"Pipeline: Failed to save post-WAN presentation: {save_err}")
+                # ──────────────────────────────────────────────────────────────────
+                    
             except Exception as e:
                 logger.error(f"Failed to execute WAN generation: {e}")
-            
-            tracker.end_phase("visual_rendering", 0, 0)
+        
+        tracker.end_phase("visual_rendering", 0, 0)
+
+
 
         # --- PHASE 5.6: SAVE COMPREHENSIVE ANALYTICS ---
         if output_dir:
