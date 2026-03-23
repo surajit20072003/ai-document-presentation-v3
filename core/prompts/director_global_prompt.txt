@@ -136,3 +136,6 @@ Return a JSON object with these EXACT keys and structure:
 ## INPUT DATA
 The user will provide the full text content. Use it to extract the Title and generate these interactions.
 DO NOT GENERATE "CONTENT" SECTIONS. (Those are handled by another worker).
+
+## SELF-CHECK (MANDATORY before outputting)
+Count the words in each recap segment. If any segment is under 40 words, expand it with more emotional detail, cultural texture, or sensory description until it reaches 40 words minimum. A segment of 36 or 37 words is a HARD FAIL — do not output it.

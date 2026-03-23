@@ -139,6 +139,12 @@ def render_manim_video(
     # NEW V2.5 SYNC: Check for per-segment Manim specs FIRST
     segment_specs = render_spec.get("segment_specs", [])
     manim_segment_specs = [s for s in segment_specs if s.get("renderer") == "manim"]
+    
+    # V3 updated schema: LLM outputs an explicit manim_beats array at root of render_spec
+    if not manim_segment_specs and ("manim_beats" in render_spec or "manim_segment_specs" in render_spec):
+        manim_segment_specs = render_spec.get("manim_beats") or render_spec.get("manim_segment_specs", [])
+        for s in manim_segment_specs:
+            s["renderer"] = "manim"
 
     if manim_segment_specs:
         print(

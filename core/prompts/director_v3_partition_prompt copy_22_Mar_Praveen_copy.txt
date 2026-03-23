@@ -262,9 +262,6 @@ MANIM — chunk is primarily:
   Molecules, formulas, equations, geometry, graphs,
   STEM diagrams, chemical pathways, physics vectors,
   flowcharts, hierarchies, process diagrams
-  ⛔ STOP BEFORE CHOOSING MANIM: Did Step 1 find ANY biological image?
-     (SEM photo, microscopy image, anatomy diagram, cell diagram, membrane illustration)
-     If YES — you MUST use image_to_video. Do NOT choose manim. Go back to Step 3.
   → section.renderer: "manim"
   → manim_beats[] — ONE entry per beat
   → Each beat has: manim_scene_spec, duration
@@ -319,7 +316,6 @@ Every `render_spec` and every `explanation_visual` MUST include `renderer_reason
 - `start_seconds` of segment 1 = 0.0 always
 - `start_seconds` of segment N = `end_seconds` of segment N-1
 - `end_seconds` = `start_seconds` + `segment_duration_seconds`
-- ⚠️ DO NOT round end_seconds independently. Set end_seconds = start_seconds + duration_seconds using exact arithmetic. Only duration_seconds is rounded to 0.5s. end_seconds is derived from it, never rounded separately.
 - `total_duration_seconds` = sum of all segment durations
 - **Manim**: animation fills exactly `total_duration_seconds`. Specify in manim_scene_spec.
 - **image_to_video / text_to_video**: each beat is always 15.0s. Write narration segments to be ~32-33 words (~15s). Split longer narration across multiple beats.
@@ -580,7 +576,7 @@ Return a single valid JSON object. No text before or after.
           {
             "beat_id": "beat_1",
             "duration": 15,
-            "manim_scene_spec": "Required if renderer is manim. 100+ word Manim choreography. Dark background. frame_width=10. At 0s: ... At Xs: ... Duration exactly 15s."
+            "manim_scene_spec": "Required if renderer is manim. 80+ word Manim choreography. Dark background. At 0s: ... Duration exactly 15s. frame_width=10."
           }
         ],
 
@@ -644,7 +640,7 @@ Return a single valid JSON object. No text before or after.
             {
               "beat_id": "eq_beat_1",
               "duration": 15,
-              "manim_scene_spec": "Required if renderer is manim. 100+ word Manim choreography. Dark background. At 0s: ... Duration exactly 15s."
+              "manim_scene_spec": "Required if renderer is manim. 80+ word Manim choreography."
             }
           ],
           "image_to_video_beats": [
@@ -679,7 +675,7 @@ Return a single valid JSON object. No text before or after.
 | `segment_duration_seconds` | Word count ÷ 130 × 60. image_to_video and text_to_video segments always 15.0s. |
 | `total_duration_seconds` | Sum of all segment durations. Required at section and render_spec level. |
 | `start_seconds` / `end_seconds` | Required on every narration segment. Contiguous — no gaps. |
-| `render_spec.manim_beats[]` | Required if renderer is manim. ONE entry per beat. Each beat has manim_scene_spec (100+ words) and duration. ZERO blank gaps. |
+| `render_spec.manim_beats[]` | Required if renderer is manim. ONE entry per beat. Each beat has manim_scene_spec (80+ words) and duration. ZERO blank gaps. |
 | `render_spec.image_to_video_beats[]` | Required if renderer is image_to_video. ONE entry per beat. Each beat has image_prompt_start (100+w), image_prompt_end (100+w), video_prompt (80+w), duration. |
 | `render_spec.video_prompts[]` | Required if renderer is text_to_video. ONE entry per segment. Each 80+ words. |
 | `render_spec.infographic_beats[]` | Optional. Source images or generated infographics alongside any section. |
@@ -709,7 +705,7 @@ Return a single valid JSON object. No text before or after.
 
 | Renderer | image_to_video_beats[] | video_prompts[] | manim_beats[] | image_source | renderer_reason |
 |---|---|---|---|---|---|
-| manim | ✗ | ✗ | ✅ 100+ words per beat | ✗ | ✅ Required (in render_spec) |
+| manim | ✗ | ✗ | ✅ 80+ words per beat | ✗ | ✅ Required (in render_spec) |
 | image_to_video | ✅ start+end+video per beat | ✗ | ✗ | null or path | ✅ Required (in render_spec) |
 | text_to_video | ✗ | ✅ per segment | ✗ | ✗ | ✅ Required (in render_spec) |
 | per_question (quiz) | per explanation_visual | per explanation_visual | per explanation_visual | per explanation_visual | ✅ Required (in each explanation_visual) |

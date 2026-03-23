@@ -4,7 +4,12 @@ This file provides guidelines for agentic coding agents working in this reposito
 
 ## Agent Behavior (IMPORTANT)
 
-- **Always plan and get user approval before making any code changes**
+- **Planning Process:**
+  1. Before any code changes, discuss and agree on a clear plan with the user
+  2. Create a detailed implementation plan outlining the specific changes to be made
+  3. Get explicit user approval for the implementation plan before proceeding
+  4. After implementation, report back on what was actually changed
+  5. If any deviation occurs between the planned vs executed work, stop immediately and consult with the user before continuing
 - Never make assumptions about user intent - ask clarifying questions
 - Read existing code before making modifications
 - Follow the code style guidelines below

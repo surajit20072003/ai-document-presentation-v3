@@ -141,7 +141,7 @@ def _check_renderer_valid(section: dict) -> List[V3ValidatorError]:
 
 
 def _check_manim_spec(section: dict) -> List[V3ValidatorError]:
-    """manim sections MUST have render_spec with manim_beats array."""
+    """manim sections MUST have render_spec with manim_scene_spec (30+ words)."""
     errors = []
     sid = section.get("section_id", 0)
     section_renderer = section.get("renderer", "")
@@ -170,46 +170,34 @@ def _check_manim_spec(section: dict) -> List[V3ValidatorError]:
             )
         )
 
-    manim_beats = render_spec.get("manim_beats", [])
-    if not manim_beats:
+    manim_spec = render_spec.get("manim_scene_spec", "")
+    if not manim_spec:
         errors.append(
             V3ValidatorError(
-                "v3_manim_beats_missing",
+                "v3_manim_spec_missing",
                 sid,
-                "render_spec.manim_beats is missing or empty — required for Manim generation.",
+                "render_spec.manim_scene_spec is missing — required for Manim generation.",
             )
         )
-        return errors
-
-    for i, beat in enumerate(manim_beats):
-        manim_spec = beat.get("manim_scene_spec", "")
-        if not manim_spec:
+    elif _count_words(manim_spec) < MANIM_SPEC_MIN_WORDS:
+        wc = _count_words(manim_spec)
+        errors.append(
+            V3ValidatorError(
+                "v3_manim_spec_too_short",
+                sid,
+                f"render_spec.manim_scene_spec is {wc} words — minimum is {MANIM_SPEC_MIN_WORDS} words.",
+            )
+        )
+    else:
+        vague = _check_vague(manim_spec)
+        if vague:
             errors.append(
                 V3ValidatorError(
-                    "v3_manim_spec_missing",
+                    "v3_vague_manim_spec",
                     sid,
-                    f"render_spec.manim_beats[{i}].manim_scene_spec is missing.",
+                    f"render_spec.manim_scene_spec contains vague language: {vague}",
                 )
             )
-        elif _count_words(manim_spec) < MANIM_SPEC_MIN_WORDS:
-            wc = _count_words(manim_spec)
-            errors.append(
-                V3ValidatorError(
-                    "v3_manim_spec_too_short",
-                    sid,
-                    f"render_spec.manim_beats[{i}] is {wc} words — minimum {MANIM_SPEC_MIN_WORDS}.",
-                )
-            )
-        else:
-            vague = _check_vague(manim_spec)
-            if vague:
-                errors.append(
-                    V3ValidatorError(
-                        "v3_vague_manim_spec",
-                        sid,
-                        f"render_spec.manim_beats[{i}] contains vague language: {vague}",
-                    )
-                )
 
     spec_duration = render_spec.get("total_duration_seconds")
     if not spec_duration:
@@ -431,12 +419,12 @@ def _check_quiz_section(section: dict) -> List[V3ValidatorError]:
 
             # Validate spec based on renderer type
             if exp_renderer == "manim":
-                if not exp_visual.get("manim_beats"):
+                if not exp_visual.get("manim_scene_spec"):
                     errors.append(
                         V3ValidatorError(
-                            "v3_quiz_explanation_visual_missing_manim_beats",
+                            "v3_quiz_explanation_visual_missing_manim_spec",
                             sid,
-                            f"Question {i} explanation_visual.renderer=manim but missing manim_beats.",
+                            f"Question {i} explanation_visual.renderer=manim but missing manim_scene_spec.",
                         )
                     )
             elif exp_renderer == "image_to_video":

@@ -13,7 +13,7 @@ import requests
 from typing import Optional
 from pathlib import Path
 
-WAN_BASE_URL = os.environ.get("WAN_BASE_URL", "http://69.197.145.4:8000")
+WAN_BASE_URL = os.environ.get("WAN_BASE_URL", "http://69.197.145.4:9090")
 LOCAL_GPU_API_KEY = os.environ.get("LOCAL_GPU_API_KEY", "")
 
 

@@ -216,69 +216,21 @@
             background: #0d1117
         }
 
-        /* Layer 4: Source image / infographic overlay — z:5 sits above manim video */
-        #image-layer {
-            position: absolute;
-            inset: 0;
-            z-index: 5;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: #0d1117;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-        #image-layer.on  { display: flex; }
-        #image-layer.vis { opacity: 1; }
-        #image-display {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            display: block;
-        }
-
-        /* Mobile: avatar smaller on non-intro sections */
-        @media (max-width: 640px) {
-            #av-overlay:not([data-sectype="intro"]) {
-                bottom: 62px !important;
-                right: 8px !important;
-                height: 38vh !important;
-            }
-            #av-overlay[data-sectype="intro"] {
-                height: 65vh !important;
-            }
-            #quiz-question-card { padding: 16px 14px !important; }
-            #quiz-q-text { font-size: 17px !important; }
-            #quiz-options { grid-template-columns: 1fr !important; }
-        }
-        @media (max-width: 400px) {
-            #av-overlay:not([data-sectype="intro"]) { height: 30vh !important; right: 4px !important; }
-        }
-
-
+        /* Subtitles — karaoke strip at bottom */
         #subtitle-overlay {
             position: fixed;
-            bottom: 70px;
+            bottom: 56px;
+            /* sits just above the bottom bar */
             left: 50%;
             transform: translateX(-50%);
-            width: 75%;
-            max-width: 860px;
+            width: 70%;
+            max-width: 800px;
             text-align: center;
             pointer-events: none;
-            z-index: 65;
-            /* z:65 — above avatar overlay (z:60) always */
+            z-index: 55;
+            /* above av-overlay(60) is intentional—subtitle readable on avatar */
             display: none;
-            padding: 4px 8px;
-            background: rgba(0,0,0,0.45);
-            border-radius: 8px;
-        }
-
-        @media (max-width: 600px) {
-            #subtitle-overlay {
-                width: 96%;
-                bottom: 68px;
-                font-size: 15px;
-            }
+            padding: 4px 0;
         }
 
         /* individual word tokens */
@@ -1073,21 +1025,17 @@
 
         <!-- MAIN -->
         <div id="main">
-            <!-- Layer 1: WAN/LTX video (renderer: video / text_to_video / image_to_video) -->
+            <!-- Layer 1: WAN/LTX video (renderer: "video") -->
             <div id="wan-layer">
                 <video id="wan-vid" autoplay muted playsinline loop></video>
             </div>
             <!-- Layer 2a: Three.js (renderer: "threejs" - legacy/compat) -->
             <div id="threejs-layer"></div>
-            <!-- Layer 2b: Manim beat videos (renderer: "manim") -->
+            <!-- Layer 2b: Manim video (renderer: "manim") -->
             <div id="manim-layer">
                 <video id="manim-vid" muted playsinline></video>
             </div>
-            <!-- Layer 4: Source image / infographic overlay (infographic_beats) -->
-            <div id="image-layer">
-                <img id="image-display" src="" alt="">
-            </div>
-            <!-- Layer 3: Scene content (intro/summary/memory/recap/quiz HTML) -->
+            <!-- Layer 3: Scene content -->
             <div id="scenes-container"></div>
         </div>
 
@@ -1546,18 +1494,9 @@
         }
 
         function buildRecapHTML(sec) {
-            if (!sec.narration || !sec.narration.segments) return '';
-            var segs = sec.narration.segments;
-            var items = segs.map(function(seg, i) {
-                return '<div id="rs-' + esc(String(sec.section_id)) + '-' + i + '" style="' +
-                    'position:absolute;width:90%;left:5%;bottom:90px;' +
-                    'opacity:0;transition:opacity 0.9s ease;' +
-                    'font-family:\'Caveat\',cursive;font-size:28px;font-weight:700;' +
-                    'color:#e6edf3;text-align:center;line-height:1.5;' +
-                    'text-shadow:0 2px 14px rgba(0,0,0,0.85),0 0 32px rgba(0,0,0,0.6);' +
-                    'pointer-events:none;">' + esc(seg.text || '') + '</div>';
-            }).join('');
-            return '<div style="position:absolute;inset:0;pointer-events:none;">' + items + '</div>';
+            // Recap renders nothing in scene container.
+            // Video plays fullscreen; subtitle overlay shows beat narration.
+            return '';
         }
 
         function buildQuizHTML(sec) {
@@ -1609,10 +1548,6 @@
             // Hide subtitles by default on new section load
             var subtitleEl = document.getElementById('subtitle-overlay');
             if (subtitleEl) subtitleEl.style.display = 'none';
-
-            // Reset image layer
-            var imgLayer = document.getElementById('image-layer');
-            if (imgLayer) { imgLayer.classList.remove('vis'); imgLayer.classList.remove('on'); }
 
             // Stop and hide Manim video layer
             var manimLayer = document.getElementById('manim-layer');
@@ -1673,8 +1608,7 @@
             // ── AVATAR = MASTER CLOCK ──────────────────────────────
             var vid = document.getElementById('av-vid');
             vid.onended = null;
-            // Prefer local path from presentation.json; b2_url is last-resort fallback only
-            var avatarUrl = sec.avatar_video || sec.avatar_url || sec.avatar || sec.b2_url || '';
+            var avatarUrl = sec.avatar_url || sec.avatar || sec.avatar_video || '';
             if (avatarUrl) {
                 vid.src = getMediaSrc(avatarUrl); vid.load();
                 vid.play().catch(function (e) { console.warn("Avatar video play failed", e); });
@@ -1691,7 +1625,9 @@
                 // AVTR-002: re-sample chroma key colour when new clip loads its first frame
                 vid.addEventListener('loadeddata', function resampleKey() {
                     vid.removeEventListener('loadeddata', resampleKey);
+                    // Video width/height guarantees now exist: force a canvas resize to drop the clip bounding box
                     window.dispatchEvent(new Event('resize'));
+                    // attempt to sample top-left pixel
                     try {
                         var sc = document.createElement('canvas');
                         sc.width = 16; sc.height = 16;
@@ -1705,42 +1641,49 @@
                         }
                     } catch (e) { /* cross-origin: keep existing keyColor */ }
                 });
-                var _avBox = { started: false };
+                // Pass actual avatar duration to Manim so animation stays in sync
+                // Avatar = master clock, Manim video duration must match actual MP4 duration
+                // VSYNC-003: track when avatar actually starts playing (not just buffered)
+                var _avBox = { started: false };   // boxed so loadThreejsScene closure reads mutations
                 vid.onplay = (function (box) { return function () { box.started = true; }; })(_avBox);
+                // SYNC FIX (Cause 3): prefer TTS-sourced duration from presentation.json.
+                // sec.segment_duration_seconds is written by tts_duration.py (real audio length).
+                // Only use vid.duration if it is a finite value AND no TTS duration exists.
                 var _ttsRealDur = sec.segment_duration_seconds || null;
 
                 vid.onloadedmetadata = (function (box) {
                     return function () {
+                        // Priority: 1) real vid.duration (finite), 2) TTS-sourced from JSON, 3) fallback 15s
                         var actualDur = (vid.duration && isFinite(vid.duration))
                             ? vid.duration
                             : (_ttsRealDur || 15);
                         var renderer = sec.renderer || 'none';
                         if (renderer === 'manim') {
                             var hasVid = sec.video_path || (sec.manim_video_paths && sec.manim_video_paths.length > 0);
-                            if (hasVid) loadManimScene(sec, actualDur, box);
-                        } else if (renderer === 'video' || renderer === 'wan_video' ||
-                                   renderer === 'text_to_video' || renderer === 'image_to_video' ||
-                                   sec.section_type === 'recap') {
+                            if (hasVid) {
+                                loadManimScene(sec, actualDur, box);
+                            }
+                        } else if (renderer === 'video' || renderer === 'wan_video' || sec.section_type === 'recap') {
                             loadVideoScene(sec, actualDur, box);
                         }
-                        // Start subtitle driver for all sections
-                        startSubtitleDriver(sec, sectionAtLoad);
                     };
                 })(_avBox);
 
+                // SYNC FIX: if vid.duration was Infinity at loadedmetadata time (CDN stream),
+                // durationchange fires when the real duration becomes known. Reload Manim
+                // scene with the corrected duration to prevent animation over/under-run.
                 vid.addEventListener('durationchange', (function (box, capturedSec) {
                     return function () {
                         if (!isFinite(vid.duration) || vid.duration <= 0) return;
                         var renderer = capturedSec.renderer || 'none';
-                        if (renderer === 'video' || renderer === 'wan_video' ||
-                            renderer === 'text_to_video' || renderer === 'image_to_video' ||
-                            capturedSec.section_type === 'recap') {
+                        if (renderer === 'video' || renderer === 'wan_video' || capturedSec.section_type === 'recap') {
                             loadVideoScene(capturedSec, vid.duration, box);
                             return;
                         }
                         if (renderer !== 'manim') return;
                         var hasVid = capturedSec.video_path || (capturedSec.manim_video_paths && capturedSec.manim_video_paths.length > 0);
                         if (!hasVid) return;
+                        // Only reload if the corrected duration is meaningfully different from TTS estimate
                         var prev = _ttsRealDur || 15;
                         if (Math.abs(vid.duration - prev) > 1.5) {
                             loadManimScene(capturedSec, vid.duration, box);
@@ -1748,7 +1691,7 @@
                     };
                 })(_avBox, sec), { once: true });
                 vid.onended = function () {
-                    if (sec.understanding_quiz || (sec.questions && sec.questions.length > 0)) {
+                    if (sec.understanding_quiz) {
                         initQuizSection(sec);
                     } else if (curSec < SECTIONS.length - 1) {
                         timers.push(setTimeout(function () { loadSection(curSec + 1); }, 700));
@@ -1756,10 +1699,10 @@
                 };
             } else {
                 vid.src = '';
+                // Fallback timer when no avatar clip
                 var fallbackDur = sec.segment_duration_seconds || sec.dur || 30;
-                startSubtitleDriver(sec, curSec);
                 timers.push(setTimeout(function () {
-                    if (sec.understanding_quiz || (sec.questions && sec.questions.length > 0)) {
+                    if (sec.understanding_quiz) {
                         initQuizSection(sec);
                     } else if (curSec < SECTIONS.length - 1) loadSection(curSec + 1);
                 }, fallbackDur * 1000));
@@ -1767,9 +1710,7 @@
                 var renderer = sec.renderer || 'none';
                 if (renderer === 'manim') {
                     loadManimScene(sec, fallbackDur, { started: true });
-                } else if (renderer === 'video' || renderer === 'wan_video' ||
-                           renderer === 'text_to_video' || renderer === 'image_to_video' ||
-                           sec.section_type === 'recap') {
+                } else if (renderer === 'video' || renderer === 'wan_video' || sec.section_type === 'recap') {
                     loadVideoScene(sec, fallbackDur, { started: true });
                 }
             }
@@ -1783,45 +1724,9 @@
         }
 
         // ══════════════════════════════════════════════════════════
-        // SUBTITLES: Shared driver — works for ALL section types
-        // Monitors avatar currentTime and triggers karaoke per segment
+        // SUBTITLES: Karaoke Word-by-Word Renderer
         // ══════════════════════════════════════════════════════════
-        function startSubtitleDriver(sec, sectionAtLoad) {
-            if (!sec.narration || !sec.narration.segments) return;
-            var segments = sec.narration.segments;
-            var avEl = document.getElementById('av-vid');
-            var subtitleEl = document.getElementById('subtitle-overlay');
-            var subtitleTextEl = document.getElementById('subtitle-text');
-            var lastSegIdx = -1;
-
-            function onTimeUpdate() {
-                if (curSec !== sectionAtLoad) {
-                    avEl.removeEventListener('timeupdate', onTimeUpdate);
-                    return;
-                }
-                var t = avEl.currentTime;
-                for (var i = 0; i < segments.length; i++) {
-                    var seg = segments[i];
-                    var start = seg.start_seconds !== undefined ? seg.start_seconds
-                              : (seg.start_time !== undefined ? seg.start_time : 0);
-                    var end = seg.end_seconds !== undefined ? seg.end_seconds
-                            : (seg.end_time !== undefined ? seg.end_time
-                            : start + (seg.duration_seconds || seg.duration || 5));
-                    if (t >= start && t < end && i !== lastSegIdx) {
-                        lastSegIdx = i;
-                        var txt = seg.text || '';
-                        if (txt.trim()) {
-                            renderSubtitleKaraoke(subtitleEl, subtitleTextEl, txt,
-                                seg.duration_seconds || (end - start) || 5, sectionAtLoad);
-                        }
-                        break;
-                    }
-                }
-            }
-            avEl.addEventListener('timeupdate', onTimeUpdate);
-        }
-
-
+        var _karaokeTimer = null;
         function renderSubtitleKaraoke(overlay, textEl, beatText, beatDur, sectionAtLoad) {
             if (window.SUB_CONFIG.mode === 'off') {
                 overlay.style.display = 'none';
@@ -1881,236 +1786,370 @@
         }
 
         // ══════════════════════════════════════════════════════════
-        // VIDEO SCENE LOADER — text_to_video / image_to_video / recap
-        // Resolves beat file list from all possible JSON locations.
-        // Beat timing driven by narration.segments duration.
+        // VIDEO DYNAMIC LOADER (WITH SEQUENTIAL BEAT SUPPORT)
         // ══════════════════════════════════════════════════════════
         function loadVideoScene(sec, avatarDuration, _avBox) {
             if (!_avBox) _avBox = { started: true };
-            var wanLayer     = document.getElementById('wan-layer');
-            var wanVid       = document.getElementById('wan-vid');
+            var wanLayer = document.getElementById('wan-layer');
+            var wanVid = document.getElementById('wan-vid');
             var sectionAtLoad = curSec;
 
-            // ── Resolve beat file list ─────────────────────────────
-            // Priority: beat_video_paths[] → narration segments beat_videos[] →
-            //           render_spec.video_prompts[].video_path → single video_path
-            var files = [];
-            if (sec.beat_video_paths && sec.beat_video_paths.length > 0) {
-                files = sec.beat_video_paths;
-            } else if (sec.narration && sec.narration.segments) {
-                sec.narration.segments.forEach(function(seg) {
-                    var bv = seg.beat_videos && seg.beat_videos.length > 0
-                           ? seg.beat_videos[0]
-                           : (seg.video_path || null);
-                    if (bv) files.push(bv);
-                });
-            }
-            if (files.length === 0 && sec.render_spec && sec.render_spec.video_prompts) {
-                sec.render_spec.video_prompts.forEach(function(vp) {
-                    if (vp.video_path) files.push(vp.video_path);
-                });
-            }
-            if (files.length === 0 && (sec.video_path || sec.video_url)) {
-                files = [sec.video_path || sec.video_url];
-            }
+            // Determine if we have multiple beats or just one file
+            var files = sec.beat_video_paths && sec.beat_video_paths.length > 0 ? sec.beat_video_paths : (sec.video_path || sec.video_url ? [sec.video_path || sec.video_url] : []);
             if (files.length === 0) return;
 
             wanLayer.classList.add('on');
 
-            // ── Build per-beat durations ──────────────────────────
-            var segs = sec.narration && sec.narration.segments ? sec.narration.segments : [];
-            var totalDur = (avatarDuration && isFinite(avatarDuration) && avatarDuration > 0)
-                         ? avatarDuration : (sec.segment_duration_seconds || sec.dur || 15);
-            var beatDurations = files.map(function(_, i) {
-                if (segs[i] && segs[i].duration_seconds) return segs[i].duration_seconds;
-                var vp = sec.render_spec && sec.render_spec.video_prompts && sec.render_spec.video_prompts[i];
-                if (vp && vp.duration) return vp.duration;
-                return totalDur / files.length;
-            });
+            // Get durations for each beat
+            var beatDurations = [];
+            var totalDur = (avatarDuration && isFinite(avatarDuration) && avatarDuration > 0) ? avatarDuration : (sec.segment_duration_seconds || sec.dur || 15);
+            var avgDur = totalDur / files.length;
 
-            var currentBeatIdx  = 0;
+            for (var i = 0; i < files.length; i++) {
+                var d = avgDur;
+                // 1. Try to get duration from narration segments
+                if (sec.narration && sec.narration.segments && sec.narration.segments[i] && sec.narration.segments[i].duration_seconds) {
+                    d = sec.narration.segments[i].duration_seconds;
+                }
+                // 2. Try to get duration from video_prompts (duration_hint) if narration is missing or 0
+                else if (sec.video_prompts && sec.video_prompts[i] && sec.video_prompts[i].duration_hint) {
+                    d = sec.video_prompts[i].duration_hint;
+                }
+                beatDurations.push(d);
+            }
+
+            // State for sequence playback
+            var currentBeatIdx = 0;
             var accumulatedTime = 0;
 
             function playNextBeat() {
                 if (curSec !== sectionAtLoad) return;
                 if (currentBeatIdx >= files.length) return;
 
-                var vPath        = getMediaSrc(files[currentBeatIdx]);
+                var vPath = files[currentBeatIdx];
                 var beatDuration = beatDurations[currentBeatIdx];
 
                 wanVid.src = vPath;
                 wanVid.load();
                 wanVid.play().catch(function () { });
 
-                var _sc = setInterval(function () {
-                    if (curSec !== sectionAtLoad) { clearInterval(_sc); return; }
-                    if (wanVid.paused && !wanVid.ended && wanVid.readyState >= 3) wanVid.play().catch(function(){});
+                var _stallCheck = setInterval(function () {
+                    if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
+                    if (wanVid.paused && !wanVid.ended && wanVid.readyState >= 3) {
+                        wanVid.play().catch(function () { });
+                    }
                 }, 2000);
-                timers.push(_sc);
+                timers.push(_stallCheck);
+
+                // SUBTITLES: Karaoke word-by-word reveal for this beat
+                var subtitleEl = document.getElementById('subtitle-overlay');
+                var subtitleTextEl = document.getElementById('subtitle-text');
+                if (sec.narration && sec.narration.segments && sec.narration.segments[currentBeatIdx]) {
+                    var beatText = sec.narration.segments[currentBeatIdx].text;
+                    if (beatText && beatText.trim().length > 0) {
+                        renderSubtitleKaraoke(subtitleEl, subtitleTextEl, beatText, beatDuration, sectionAtLoad);
+                    } else {
+                        if (subtitleEl) subtitleEl.style.display = 'none';
+                    }
+                } else {
+                    if (subtitleEl) subtitleEl.style.display = 'none';
+                }
 
                 accumulatedTime += beatDuration;
                 currentBeatIdx++;
 
                 if (currentBeatIdx < files.length) {
-                    var _ci = setInterval(function () {
-                        if (curSec !== sectionAtLoad) { clearInterval(_ci); return; }
-                        var avT = document.getElementById('av-vid');
-                        if (avT && avT.currentTime >= accumulatedTime) { clearInterval(_ci); playNextBeat(); }
+                    var checkInterval = setInterval(function () {
+                        if (curSec !== sectionAtLoad) { clearInterval(checkInterval); return; }
+                        var v = document.getElementById('av-vid');
+                        if (v && v.currentTime >= accumulatedTime) {
+                            clearInterval(checkInterval);
+                            playNextBeat();
+                        }
                     }, 50);
-                    timers.push(_ci);
+                    timers.push(checkInterval);
                 }
             }
 
-            var _sc2 = setInterval(function () {
-                if (curSec !== sectionAtLoad) { clearInterval(_sc2); return; }
-                if (_avBox.started) { clearInterval(_sc2); playNextBeat(); }
+            var startCheck = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(startCheck); return; }
+                if (_avBox.started) {
+                    clearInterval(startCheck);
+                    playNextBeat();
+                }
             }, 50);
-            timers.push(_sc2);
+            timers.push(startCheck);
         }
 
         // ══════════════════════════════════════════════════════════
-        // MANIM BEAT LOADER — V3
-        // Uses visual_beats[] for timing. Assigns manim_video_paths[]
-        // sequentially to manim-type beats. Shows image overlay for
-        // image-type beats (source photos / infographic_beats).
-        // Avatar is master clock — each beat MP4 plays from 0.
+        // MANIM VIDEO LOADER (synced to avatar master clock) - FIXED V3
         // ══════════════════════════════════════════════════════════
         function loadManimScene(sec, avatarDuration, _avBox) {
             if (!_avBox) _avBox = { started: true };
             var manimLayer = document.getElementById('manim-layer');
-            var manimVid   = document.getElementById('manim-vid');
-            var imgLayer   = document.getElementById('image-layer');
-            var imgDisplay = document.getElementById('image-display');
-            var avVid      = document.getElementById('av-vid');
+            var manimVid = document.getElementById('manim-vid');
+            var avVid = document.getElementById('av-vid');
             var sectionAtLoad = curSec;
 
-            var manimPaths   = sec.manim_video_paths || (sec.video_path ? [sec.video_path] : []);
-            var visualBeats  = (sec.visual_beats || []).slice().sort(function(a,b){
-                return (a.beat_start_seconds||0) - (b.beat_start_seconds||0);
-            });
+            // Build segment-level beat video playlist (like V2)
+            var segments = sec.narration && sec.narration.segments ? sec.narration.segments : [];
+            var beatPlaylist = [];
+            var accumulatedTime = 0;
 
-            if (manimPaths.length === 0 && visualBeats.length === 0) return;
+            for (var i = 0; i < segments.length; i++) {
+                var seg = segments[i];
+                var duration = seg.duration_seconds || seg.duration || 10;
+                var segStartTime = accumulatedTime;
+                var segEndTime = accumulatedTime + duration;
 
-            // Build schedule: assign manim video paths sequentially to manim-type beats
-            var manimIdx = 0;
-            var schedule = visualBeats.map(function(vb) {
-                if ((vb.visual_type === 'image' || vb.visual_type === 'infographic') && vb.image_source) {
-                    return {
-                        start:    vb.beat_start_seconds || 0,
-                        end:      vb.beat_end_seconds   || 9999,
-                        type:     'image',
-                        imgSrc:   vb.image_source
-                    };
+                // Get video for this segment
+                var beatVids = seg.beat_videos || [];
+                var videoPath = null;
+                if (beatVids.length > 0) {
+                    videoPath = beatVids[0];
+                } else {
+                    // Fallback to section-level manim_video_paths
+                    videoPath = sec.video_path || (sec.manim_video_paths && sec.manim_video_paths.length > i ? sec.manim_video_paths[i] : null);
                 }
-                var path = manimPaths[manimIdx] || null;
-                manimIdx++;
-                return {
-                    start:    vb.beat_start_seconds || 0,
-                    end:      vb.beat_end_seconds   || 9999,
-                    type:     'manim',
-                    videoPath: path
-                };
-            });
 
-            // If no visual_beats, fall back to playing paths sequentially by narration timing
-            if (schedule.length === 0 && manimPaths.length > 0) {
-                var segs = sec.narration && sec.narration.segments ? sec.narration.segments : [];
-                var accT = 0;
-                for (var fi = 0; fi < manimPaths.length; fi++) {
-                    var dur = segs[fi] ? (segs[fi].duration_seconds || 15) : 15;
-                    schedule.push({ start: accT, end: accT + dur, type: 'manim', videoPath: manimPaths[fi] });
-                    accT += dur;
+                beatPlaylist.push({
+                    videoPath: videoPath,
+                    startTime: segStartTime,
+                    endTime: segEndTime,
+                    segmentIndex: i,
+                    hasVideo: !!videoPath
+                });
+
+                if (videoPath) {
+                    console.log('[V3 FIX] Beat ' + i + ' → Segment ' + i + ' (' + segStartTime.toFixed(1) + 's - ' + segEndTime.toFixed(1) + 's): ' + videoPath);
+                } else {
+                    console.log('[V3 FIX] Segment ' + i + ' (' + segStartTime.toFixed(1) + 's - ' + segEndTime.toFixed(1) + 's): No video');
                 }
+
+                accumulatedTime += duration;
             }
 
-            var firstManim = null;
-            for (var si = 0; si < schedule.length; si++) {
-                if (schedule[si].type === 'manim' && schedule[si].videoPath) { firstManim = schedule[si]; break; }
+            // Get first video
+            var firstVideo = beatPlaylist.length > 0 && beatPlaylist[0].hasVideo ? beatPlaylist[0].videoPath : null;
+            if (!firstVideo) {
+                console.log('[V3 FIX] No manim video found');
+                return;
             }
-            if (!firstManim) return;
 
             manimLayer.classList.add('on');
-            manimVid.src = getMediaSrc(firstManim.videoPath);
+            manimVid.src = getMediaSrc(firstVideo);
+
+            // FIX: Don't set currentTime to avatar time - start from 0!
+            manimVid.oncanplay = function () {
+                manimVid.currentTime = 0;  // FIXED: Always start from beginning
+                manimVid.play().catch(function () { });
+                manimVid.oncanplay = null;
+            };
             manimVid.load();
 
-            var currentBeatIdx = -1;
+            // Track current video index
+            var currentVideoIndex = 0;
 
-            function switchToBeat(beat) {
-                if (beat.type === 'image') {
-                    // Show image overlay on top of (dark) manim layer
-                    imgDisplay.src = getMediaSrc(beat.imgSrc);
-                    imgLayer.classList.add('on');
-                    setTimeout(function() { imgLayer.classList.add('vis'); }, 20);
-                } else {
-                    // Hide image overlay
-                    imgLayer.classList.remove('vis');
-                    setTimeout(function() {
-                        if (!imgLayer.classList.contains('vis')) imgLayer.classList.remove('on');
-                    }, 420);
-                    // Switch manim video
-                    if (beat.videoPath) {
-                        var newSrc = getMediaSrc(beat.videoPath);
-                        if (manimVid.getAttribute('src') !== newSrc) {
-                            manimVid.src = newSrc;
+            // SYNC: Check segment timing and switch videos accordingly
+            var _syncInterval = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(_syncInterval); return; }
+                if (!avVid || avVid.paused || avVid.ended) return;
+                if (manimVid.readyState < 2) return;
+
+                var avTime = avVid.currentTime;
+
+                // Find which segment we're in
+                for (var si = 0; si < beatPlaylist.length; si++) {
+                    var beat = beatPlaylist[si];
+                    var nextStart = (si + 1 < beatPlaylist.length) ? beatPlaylist[si + 1].startTime : 99999;
+
+                    // If we're in this segment's time range and it has a video
+                    if (avTime >= beat.startTime && avTime < nextStart && beat.hasVideo) {
+                        if (si !== currentVideoIndex) {
+                            // Switch to new video
+                            console.log('[V3 FIX] Switching to beat video: ' + beat.videoPath + ' at ' + avTime.toFixed(1) + 's');
+                            currentVideoIndex = si;
+                            manimVid.src = getMediaSrc(beat.videoPath);
+                            manimVid.oncanplay = function () {
+                                manimVid.currentTime = 0;  // FIXED: Start from beginning
+                                manimVid.play().catch(function () { });
+                                manimVid.oncanplay = null;
+                            };
                             manimVid.load();
-                            manimVid.play().catch(function(){});
                         }
+                        break;
+                    }
+                }
+
+                // FIX: Remove wrong drift correction - don't sync currentTime to avatar
+                // Each beat video plays independently from 0
+
+                // Keep playing state in sync
+                if (!avVid.paused && manimVid.paused) {
+                    manimVid.play().catch(function () { });
+                } else if (avVid.paused && !manimVid.paused) {
+                    manimVid.pause();
+                }
+            }, 100);
+            timers.push(_syncInterval);
+
+            // Start check
+            var startCheck = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(startCheck); return; }
+                if (_avBox.started && avVid.currentTime > 0) {
+                    clearInterval(startCheck);
+                    manimVid.currentTime = 0;  // FIXED: Start from beginning
+                    manimVid.play().catch(function () { });
+                }
+            }, 50);
+            timers.push(startCheck);
+
+            // Stall check
+            var _stallCheck = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
+                if (manimVid.paused && !manimVid.ended && manimVid.readyState >= 3 && !avVid.paused) {
+                    manimVid.play().catch(function () { });
+                }
+            }, 2000);
+            timers.push(_stallCheck);
+
+            // SUBTITLES
+            if (sec.narration && sec.narration.segments) {
+                var subtitleEl = document.getElementById('subtitle-overlay');
+                var subtitleTextEl = document.getElementById('subtitle-text');
+                var segIdx = 0;
+                var segStart = 0;
+
+                var _subInterval = setInterval(function () {
+                    if (curSec !== sectionAtLoad) { clearInterval(_subInterval); return; }
+                    if (segIdx >= segments.length) return;
+
+                    var seg = segments[segIdx];
+                    var segDur = seg.duration_seconds || seg.duration || 5;
+
+                    if (avVid.currentTime >= segStart) {
+                        var beatText = seg.text || '';
+                        if (beatText.trim().length > 0) {
+                            renderSubtitleKaraoke(subtitleEl, subtitleTextEl, beatText, segDur, sectionAtLoad);
+                        }
+                        segStart += segDur;
+                        segIdx++;
+                    }
+                }, 100);
+                timers.push(_subInterval);
+            }
+        }
+
+        // Get the initial Manim video path (fallback to section-level)
+        var videoPath = sec.video_path || (sec.manim_video_paths && sec.manim_video_paths.length > 0 ? sec.manim_video_paths[0] : null);
+        // Override with first segment's video if available
+        if (segmentVideos.length > 0 && segmentVideos[0]) {
+            videoPath = segmentVideos[0];
+        }
+        if (!videoPath) return;
+
+        manimLayer.classList.add('on');
+        manimVid.src = getMediaSrc(videoPath);
+        manimVid.oncanplay = function () {
+            manimVid.currentTime = avVid.currentTime || 0;
+            manimVid.play().catch(function () { });
+            manimVid.oncanplay = null;
+        };
+        manimVid.load();
+
+        // Track current video index for segment switching
+        var currentVideoIndex = 0;
+
+        // SYNC: Pin Manim video currentTime to avatar video currentTime
+        // Avatar is master clock — Manim video follows exactly
+        var _syncInterval = setInterval(function () {
+            if (curSec !== sectionAtLoad) { clearInterval(_syncInterval); return; }
+            if (!avVid || avVid.paused || avVid.ended) return;
+            if (manimVid.readyState < 2) return; // not loaded yet
+
+            // Check if we need to switch to next beat video based on segment timing
+            if (segmentVideos.length > 1) {
+                var avTime = avVid.currentTime;
+                for (var si = 0; si < segStartTimes.length; si++) {
+                    var nextStart = (si + 1 < segStartTimes.length) ? segStartTimes[si + 1] : 99999;
+                    if (avTime >= segStartTimes[si] && avTime < nextStart && segmentVideos[si] && si !== currentVideoIndex) {
+                        // Switch to this segment's video
+                        currentVideoIndex = si;
+                        manimVid.src = getMediaSrc(segmentVideos[si]);
+                        manimVid.oncanplay = function () {
+                            manimVid.currentTime = 0;
+                            manimVid.play().catch(function () { });
+                            manimVid.oncanplay = null;
+                        };
+                        manimVid.load();
+                        console.log('[V3] Switched to beat video: ' + segmentVideos[si]);
+                        break;
                     }
                 }
             }
 
-            // Beat-switching interval — checks avatar time every 120ms
-            var _syncInt = setInterval(function() {
-                if (curSec !== sectionAtLoad) { clearInterval(_syncInt); return; }
-                if (!avVid) return;
-                var t = avVid.currentTime;
+            // Force sync: if drift > 0.3s, snap to avatar time
+            var drift = Math.abs(manimVid.currentTime - avVid.currentTime);
+            if (drift > 0.3) {
+                manimVid.currentTime = avVid.currentTime;
+            }
 
-                // Find active beat
-                var activeIdx = -1;
-                for (var i = 0; i < schedule.length; i++) {
-                    if (t >= schedule[i].start && t < schedule[i].end) { activeIdx = i; break; }
-                }
-                // Clamp to last beat after section end
-                if (activeIdx < 0 && t >= (schedule[schedule.length-1] || {}).start) {
-                    activeIdx = schedule.length - 1;
-                }
+            // Keep playing state in sync
+            if (!avVid.paused && manimVid.paused) {
+                manimVid.play().catch(function () { });
+            } else if (avVid.paused && !manimVid.paused) {
+                manimVid.pause();
+            }
+        }, 100);
+        timers.push(_syncInterval);
 
-                if (activeIdx >= 0 && activeIdx !== currentBeatIdx) {
-                    currentBeatIdx = activeIdx;
-                    switchToBeat(schedule[activeIdx]);
-                }
+        // Start Manim video when avatar starts
+        var startCheck = setInterval(function () {
+            if (curSec !== sectionAtLoad) { clearInterval(startCheck); return; }
+            if (_avBox.started && avVid.currentTime > 0) {
+                clearInterval(startCheck);
+                manimVid.currentTime = avVid.currentTime;
+                manimVid.play().catch(function () { });
+            }
+        }, 50);
+        timers.push(startCheck);
 
-                // Keep play state in sync with avatar
-                if (!avVid.paused && manimVid.paused && !manimVid.ended && manimVid.readyState >= 2) {
-                    manimVid.play().catch(function(){});
-                } else if (avVid.paused && !manimVid.paused) {
-                    manimVid.pause();
-                }
-            }, 120);
-            timers.push(_syncInt);
+        // Stall check: if Manim video pauses unexpectedly, restart it
+        var _stallCheck = setInterval(function () {
+            if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
+            if (manimVid.paused && !manimVid.ended && manimVid.readyState >= 3 && !avVid.paused) {
+                manimVid.play().catch(function () { });
+            }
+        }, 2000);
+        timers.push(_stallCheck);
 
-            // Start manim when avatar starts
-            var _startCheck = setInterval(function() {
-                if (curSec !== sectionAtLoad) { clearInterval(_startCheck); return; }
-                if (_avBox.started) {
-                    clearInterval(_startCheck);
-                    manimVid.currentTime = 0;
-                    manimVid.play().catch(function(){});
-                }
-            }, 50);
-            timers.push(_startCheck);
+        // SUBTITLES: Show narration segments as karaoke
+        if (sec.narration && sec.narration.segments) {
+            var subtitleEl = document.getElementById('subtitle-overlay');
+            var subtitleTextEl = document.getElementById('subtitle-text');
+            var segments = sec.narration.segments;
+            var segIdx = 0;
+            var segStart = 0;
 
-            // Stall check
-            var _stallCheck = setInterval(function() {
-                if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
-                if (manimVid.paused && !manimVid.ended && manimVid.readyState >= 3 && avVid && !avVid.paused) {
-                    manimVid.play().catch(function(){});
+            var _subInterval = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(_subInterval); return; }
+                if (segIdx >= segments.length) return;
+
+                var seg = segments[segIdx];
+                var segDur = seg.duration_seconds || seg.duration || 5;
+
+                if (avVid.currentTime >= segStart) {
+                    var beatText = seg.text || '';
+                    if (beatText.trim().length > 0) {
+                        renderSubtitleKaraoke(subtitleEl, subtitleTextEl, beatText, segDur, sectionAtLoad);
+                    }
+                    segStart += segDur;
+                    segIdx++;
                 }
-            }, 2000);
-            timers.push(_stallCheck);
+            }, 100);
+            timers.push(_subInterval);
         }
-
-
+        }
 
         // ══════════════════════════════════════════════════════════
         // SECTION INITS
@@ -2226,23 +2265,32 @@
         function prevSection() { if (curSec > 0) loadSection(curSec - 1); }
 
         function togglePlayPause() {
-            var avVid    = document.getElementById('av-vid');
-            var wanVid   = document.getElementById('wan-vid');
-            var manimVid = document.getElementById('manim-vid');
-            var btn      = document.getElementById('play-pause-btn');
+            var avVid = document.getElementById('av-vid');
+            var wanVid = document.getElementById('wan-vid');
+            var btn = document.getElementById('play-pause-btn');
 
             if (!avVid) return;
 
             if (avVid.paused) {
                 avVid.play().catch(function () { });
-                if (wanVid   && wanVid.src   && wanVid.paused)   wanVid.play().catch(function () { });
-                if (manimVid && manimVid.src && manimVid.paused) manimVid.play().catch(function () { });
-                if (btn) btn.innerHTML = '&#10074;&#10074;';
+                if (wanVid && wanVid.src && wanVid.paused) {
+                    wanVid.src = sec.beat_video_paths[0];
+                    wanVid.load();
+                    wanVid.play().catch(function () { });
+
+                    var _stallCheck = setInterval(function () {
+                        if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
+                        if (wanVid.paused && !wanVid.ended && wanVid.readyState >= 3) {
+                            wanVid.play().catch(function () { });
+                        }
+                    }, 2000);
+                    timers.push(_stallCheck);
+                }
+                if (btn) btn.innerHTML = '&#10074;&#10074;'; // Pause icon
             } else {
                 avVid.pause();
-                if (wanVid   && !wanVid.paused)   wanVid.pause();
-                if (manimVid && !manimVid.paused) manimVid.pause();
-                if (btn) btn.innerHTML = '&#9654;';
+                if (wanVid && !wanVid.paused) wanVid.pause();
+                if (btn) btn.innerHTML = '&#9654;'; // Play icon
             }
         }
 
@@ -2293,35 +2341,12 @@
             function playQuizClip(url, onEnd) {
                 vid.onended = null;
                 if (url) {
-                    vid.src = getMediaSrc(url); vid.load();
+                    vid.src = url; vid.load();
                     vid.play().catch(function () { });
                     vid.onended = function () { if (onEnd) onEnd(); };
                 } else {
+                    // No clip — run callback after a brief pause
                     timers.push(setTimeout(onEnd || function () { }, 3000));
-                }
-            }
-
-            function playExplanationVisual(q) {
-                var ev = q.explanation_visual;
-                if (!ev) return;
-                var vpath = ev.video_path;
-                if (!vpath) return;
-                var renderer = ev.renderer || 'manim';
-                var manimLayer = document.getElementById('manim-layer');
-                var manimVid   = document.getElementById('manim-vid');
-                var wanLayer   = document.getElementById('wan-layer');
-                var wanVid     = document.getElementById('wan-vid');
-                // Clear both layers first
-                manimLayer.classList.remove('on');
-                wanLayer.classList.remove('on');
-                if (renderer === 'manim') {
-                    manimVid.src = getMediaSrc(vpath); manimVid.load();
-                    manimVid.play().catch(function(){});
-                    manimLayer.classList.add('on');
-                } else {
-                    wanVid.src = getMediaSrc(vpath); wanVid.load();
-                    wanVid.play().catch(function(){});
-                    wanLayer.classList.add('on');
                 }
             }
 
@@ -2379,23 +2404,14 @@
                             qFeedback.innerHTML = (isRight ? '✅ ' : '❌ ') + expl;
                         }
 
-                        // Play correct or wrong clip → then explanation visual + clip → next question
+                        // Play correct or wrong clip → on end advance to next question
                         var clips = q.avatar_clips || {};
                         var nextClip = isRight ? clips.correct : clips.wrong;
                         playQuizClip(nextClip, function () {
-                            // Play explanation visual (manim/video behind quiz overlay)
-                            playExplanationVisual(q);
-                            // Play explanation avatar clip
-                            var explClip = clips.explanation;
-                            playQuizClip(explClip, function () {
-                                timers.push(setTimeout(function () {
-                                    // Hide explanation visual layers
-                                    document.getElementById('manim-layer').classList.remove('on');
-                                    document.getElementById('wan-layer').classList.remove('on');
-                                    qIdx++;
-                                    showQuestion(qIdx);
-                                }, 900));
-                            });
+                            timers.push(setTimeout(function () {
+                                qIdx++;
+                                showQuestion(qIdx);
+                            }, 900));
                         });
                     };
 

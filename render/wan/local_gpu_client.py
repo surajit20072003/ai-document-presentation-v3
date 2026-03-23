@@ -1,5 +1,5 @@
 """
-Local GPU Video Client — `69.197.145.4:8000`
+Local GPU Video Client — `69.197.145.4:9090`
 
 Used for non-biology/anatomy video generation (general scenes, etc.)
 Routing decision is made by the Director LLM at generation time via `use_local_gpu` field.
@@ -22,7 +22,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-LOCAL_GPU_URL = os.environ.get("LOCAL_GPU_URL", "http://69.197.145.4:8000")
+LOCAL_GPU_URL = os.environ.get("LOCAL_GPU_URL", "http://69.197.145.4:9090")
 LOCAL_GPU_API_KEY = os.environ.get("LOCAL_GPU_API_KEY", "")
 
 POLL_INTERVAL = 30  # seconds between status polls
@@ -102,6 +102,7 @@ class LocalGPUClient:
         duration: int = 5,
         output_path: Optional[str] = None,
         image_path: Optional[str] = None,
+        image_path_end: Optional[str] = None,
     ) -> Optional[str]:
         """
         Generate a video on the local GPU server.
@@ -110,7 +111,8 @@ class LocalGPUClient:
             prompt: Text prompt for video generation
             duration: Video duration in seconds
             output_path: Where to save the video
-            image_path: Optional reference image for image-to-video
+            image_path: Optional start frame image for image-to-video
+            image_path_end: Optional end frame image for image-to-video (creates smooth transition)
 
         Returns:
             str: Path to downloaded .mp4 file on success
@@ -128,18 +130,26 @@ class LocalGPUClient:
         # Read image for image-to-video if provided
         image_token = None
         if image_path and Path(image_path).exists():
-            # Step 1: Upload image to get token
-            print(f"[LocalGPU] Uploading reference image: {image_path}")
+            # Upload start frame to get token
+            print(f"[LocalGPU] Uploading start-frame image: {image_path}")
             image_token = self.upload_file(image_path)
             if not image_token:
-                logger.error("[LocalGPU] Failed to upload image for i2v")
+                logger.error("[LocalGPU] Failed to upload start image for i2v")
                 return None
+
+        # Upload end frame if provided (non-fatal if it fails)
+        image_end_token = None
+        if image_path_end and Path(image_path_end).exists():
+            print(f"[LocalGPU] Uploading end-frame image: {image_path_end}")
+            image_end_token = self.upload_file(image_path_end)
+            if not image_end_token:
+                logger.warning("[LocalGPU] Failed to upload end image — continuing with start frame only")
 
         try:
             print(f"[LocalGPU] Submitting job: {prompt[:80]}...")
 
             # Step 2: Submit job
-            job_id = self._submit_job(prompt, duration, image_token)
+            job_id = self._submit_job(prompt, duration, image_token, image_end_token)
             if not job_id:
                 return None
 
@@ -161,7 +171,8 @@ class LocalGPUClient:
     # ------------------------------------------------------------------
 
     def _submit_job(
-        self, prompt: str, duration: int, image_token: str = None
+        self, prompt: str, duration: int,
+        image_token: str = None, image_end_token: str = None,
     ) -> Optional[str]:
         """POST /generate — returns job_id or None."""
         try:
@@ -173,15 +184,17 @@ class LocalGPUClient:
                 "prompt": prompt,
                 "video_length": video_length,
                 "resolution": "704x480",
-                "steps": 10,
-                "guidance_scale": 3.0,
+                "model": "ltx23_distilled_q6",
                 "seed": 42,
             }
 
-            # Add image token for image-to-video (use token from /upload)
+            # Add start-frame token for image-to-video
             if image_token:
                 payload["image_start_token"] = image_token
-                payload["image_prompt_type"] = "image"
+
+            # Add end-frame token for smooth start-to-end transition
+            if image_end_token:
+                payload["image_end_token"] = image_end_token
 
             resp = requests.post(
                 f"{self.base_url}/generate",

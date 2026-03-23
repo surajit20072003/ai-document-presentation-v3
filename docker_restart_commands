@@ -1,0 +1,5 @@
+docker restart ai-document-presentation-v3-api-1 && 
+
+
+---tail logs---
+timeout 30 docker logs -f ai-document-presentation-v3-api-1

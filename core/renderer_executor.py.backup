@@ -42,8 +42,7 @@ def _render_videos_parallel(
     No fallback - fails immediately on error.
 
     Args:
-        beats: List of dicts with 'beat_id', 'beat_idx', 'prompt', 'duration',
-               'image_path' (start frame, optional), 'image_path_end' (end frame, optional)
+        beats: List of dicts with 'beat_id', 'beat_idx', 'prompt', 'duration', 'image_path' (optional)
         output_dir: Output directory
         dry_run: Skip generation
         use_local_gpu: True=Local GPU (required, no Kie/WAN fallback)
@@ -80,13 +79,12 @@ def _render_videos_parallel(
             beat_idx = beat.get("beat_idx", 0)
             prompt = beat.get("prompt") or beat.get("video_prompt", "")
             duration = int(beat.get("duration", 15))
-            image_path = beat.get("image_path")          # start frame
-            image_path_end = beat.get("image_path_end")  # end frame (new)
+            image_path = beat.get("image_path")
 
-            # Filename: topic_{section_id}_{beat_id}.mp4
-            # e.g. topic_6_seg_1.mp4 (no double beat suffix)
+            # Filename: topic_{section_id}_{seg_id}_beat_{idx}.mp4
+            # e.g. topic_6_seg_1_beat_0.mp4
             prefix = f"topic_{topic_id}_" if topic_id else ""
-            out_path = str(Path(output_dir) / f"{prefix}{beat_id}.mp4")
+            out_path = str(Path(output_dir) / f"{prefix}{beat_id}_beat_{beat_idx}.mp4")
 
             future = executor.submit(
                 client.generate_video,
@@ -94,7 +92,6 @@ def _render_videos_parallel(
                 duration=duration,
                 output_path=out_path,
                 image_path=image_path,
-                image_path_end=image_path_end,   # ← pass end frame
             )
             future_to_beat[future] = beat_id
 
@@ -527,14 +524,11 @@ def execute_renderer(
         }
 
     # Check for specs at both render_spec level and top level (for explanation_visual)
-    manim_scene_spec = render_spec.get("manim_scene_spec") or render_spec.get("manim_beats") or topic.get(
+    manim_scene_spec = render_spec.get("manim_scene_spec") or topic.get(
         "manim_scene_spec", ""
-    ) or topic.get("manim_beats", [])
-    video_prompts = render_spec.get("video_prompts") or topic.get("video_prompts", [])
-    image_to_video_beats = (
-        render_spec.get("image_to_video_beats")
-        or topic.get("image_to_video_beats", [])
     )
+    video_prompts = render_spec.get("video_prompts") or topic.get("video_prompts", [])
+    image_to_video_beats = topic.get("image_to_video_beats", [])
     has_v12_specs = (
         bool(manim_scene_spec) or bool(video_prompts) or bool(image_to_video_beats)
     )
@@ -679,13 +673,19 @@ def execute_renderer(
                 # EXPLANATION_VISUAL FORMAT: image_to_video_beats[] from quiz explanation_visual
                 beats = []
                 for i, beat in enumerate(image_to_video_beats):
-                    # Keep start and end image prompts SEPARATE — generate 2 images per beat
+                    # Combine image_prompt_start and image_prompt_end into single image_prompt
+                    img_start = beat.get("image_prompt_start", "")
+                    img_end = beat.get("image_prompt_end", "")
+                    image_prompt = (
+                        f"{img_start}"
+                        if not img_end
+                        else f"{img_start} Then transition to: {img_end}"
+                    )
                     beats.append(
                         {
                             "beat_id": beat.get("beat_id", f"beat_{i + 1}"),
                             "beat_idx": i,
-                            "image_prompt_start": beat.get("image_prompt_start", ""),
-                            "image_prompt_end": beat.get("image_prompt_end", ""),
+                            "image_prompt": image_prompt,
                             "prompt": beat.get("video_prompt", ""),
                             "duration": beat.get("duration", 15),
                         }
@@ -748,50 +748,45 @@ def execute_renderer(
             image_paths = {}
             job_id = str(Path(output_dir).parent.name)
 
-            # Generate 2 images per beat in parallel: start frame + end frame
-            # image_paths[beat_id] = {"start": path, "end": path_or_None}
-            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-                future_to_key = {}  # future → (beat_id, "start"|"end")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                future_to_beat = {}
                 for beat in beats:
                     beat_id = beat.get("beat_id")
-                    for slot in ("start", "end"):
-                        img_prompt = beat.get(f"image_prompt_{slot}", "")
-                        if not img_prompt:
-                            continue
-                        future = executor.submit(
-                            generate_image_for_beat,
-                            beat={"beat_id": f"{beat_id}_{slot}", "image_prompt": img_prompt},
-                            job_id=job_id,
-                            section_id=str(topic_id),
-                            output_dir=output_dir,
-                        )
-                        future_to_key[future] = (beat_id, slot)
+                    img_prompt = beat.get("image_prompt", "")
+                    if not img_prompt:
+                        continue
+                    future = executor.submit(
+                        generate_image_for_beat,
+                        beat={"beat_id": beat_id, "image_prompt": img_prompt},
+                        job_id=job_id,
+                        section_id=str(topic_id),
+                        output_dir=output_dir,
+                    )
+                    future_to_beat[future] = beat_id
 
-                for future in concurrent.futures.as_completed(future_to_key):
-                    beat_id, slot = future_to_key[future]
+                for future in concurrent.futures.as_completed(future_to_beat):
+                    beat_id = future_to_beat[future]
                     try:
                         img_path = future.result()
                         if img_path:
-                            image_paths.setdefault(beat_id, {})[slot] = img_path
+                            image_paths[beat_id] = img_path
                             print(
-                                f"[IMAGE_TO_VIDEO] ✓ Image {beat_id}_{slot}: {Path(img_path).name}"
+                                f"[IMAGE_TO_VIDEO] ✓ Image {beat_id}: {Path(img_path).name}"
                             )
                     except Exception as e:
-                        print(f"[IMAGE_TO_VIDEO] ✗ Image {beat_id}_{slot}: {e}")
+                        print(f"[IMAGE_TO_VIDEO] ✗ Image {beat_id}: {e}")
 
-            # Step 2: Generate videos in parallel using start + end reference images
+            # Step 2: Generate videos in parallel using reference images
             video_beats = []
             for beat in beats:
                 beat_id = beat.get("beat_id")
-                imgs = image_paths.get(beat_id, {})
-                if imgs.get("start"):  # must have at least the start frame
+                if beat_id in image_paths:
                     video_beats.append(
                         {
                             "beat_id": beat_id,
                             "prompt": beat.get("prompt", ""),
                             "duration": beat.get("duration", 15),
-                            "image_path": imgs.get("start"),      # start frame
-                            "image_path_end": imgs.get("end"),    # end frame (may be None)
+                            "image_path": image_paths[beat_id],
                         }
                     )
 
@@ -800,17 +795,10 @@ def execute_renderer(
                 result["error"] = "No images generated successfully"
                 return result
 
-            # POLICY: image_to_video ALWAYS uses Local GPU (port 8000) to support
-            # image_start_token + image_end_token dual-frame API.
-            # Kie.ai WAN does NOT support dual-image. Hard-enforce here.
-            use_local = True
-            if topic.get("use_local_gpu") is False:
-                print(
-                    f"[IMAGE_TO_VIDEO] Section {topic_id}: use_local_gpu overridden to True "
-                    f"(policy: image_to_video always uses Local GPU for dual-frame support)"
-                )
+            # Get use_local_gpu routing
+            use_local = topic.get("use_local_gpu", True)
             print(
-                f"[IMAGE_TO_VIDEO] Section {topic_id}: Rendering {len(video_beats)} videos → Local GPU"
+                f"[IMAGE_TO_VIDEO] Section {topic_id}: Rendering {len(video_beats)} videos → {'Local GPU' if use_local else 'Kie/WAN'}"
             )
 
             # Render videos in parallel
@@ -825,6 +813,7 @@ def execute_renderer(
 
                 if render_results["success"]:
                     result["status"] = "success"
+                    result["video_path"] = render_results["success"][0]
                     result["all_video_paths"] = render_results["success"]
                     result["all_image_paths"] = list(image_paths.values())
 
@@ -847,49 +836,24 @@ def execute_renderer(
                         if isinstance(all_vps, list) and p.get("segment_id")
                     }
 
-                    # FIX 1: Sort success list by filename so beat_1 is always first
-                    render_results["success"].sort(key=lambda p: Path(p).name)
-
-                    beat_video_map = {}
-                    for video_path_abs in render_results["success"]:
-                        fname = Path(video_path_abs).name  # e.g. topic_4_beat_1.mp4
+                    for video_path in render_results["success"]:
+                        fname = Path(video_path).name  # e.g. topic_6_seg_1_beat_0.mp4
                         rel_path = f"videos/{fname}"
-                        m = re.search(rf"topic_{topic_id}_(.+)\.mp4", fname)
-                        extracted_id = m.group(1) if m else None
-                        if extracted_id:
-                            beat_video_map[extracted_id] = rel_path
+                        m = re.search(rf"topic_{topic_id}_(.+)_beat_\d+\.mp4", fname)
+                        seg_id = m.group(1) if m else None
 
-                    # 1. Update visual_beats
-                    for beat in topic.get("visual_beats", []):
-                        bid = beat.get("beat_id")
-                        if bid and bid in beat_video_map:
-                            beat["video_path"] = beat_video_map[bid]
-                            print(f"  [I2V WRITEBACK] visual_beat {bid} → {beat_video_map[bid]}")
+                        if seg_id and seg_id in narr_by_id:
+                            narr_by_id[seg_id]["video_path"] = rel_path
+                            narr_by_id[seg_id]["beat_videos"] = [rel_path]
+                            print(f"  [I2V WRITEBACK] {seg_id} → {rel_path}")
 
-                    # 2. Update narration by beat_id match
-                    for eid, rel_path in beat_video_map.items():
-                        if eid in narr_by_id:
-                            narr_by_id[eid]["video_path"] = rel_path
-                            narr_by_id[eid]["beat_videos"] = [rel_path]
-                        if eid in vp_by_id:
-                            vp_by_id[eid]["video_path"] = rel_path
+                        if seg_id and seg_id in vp_by_id:
+                            vp_by_id[seg_id]["video_path"] = rel_path
 
-                    # FIX 3: Index-based fallback (beat_ids != narration seg_ids for image_to_video)
-                    # Map i-th video to i-th narration segment when regex id match fails
-                    sorted_beat_paths = sorted(beat_video_map.values())
-                    for i, seg in enumerate(narration_segs):
-                        if seg.get("video_path") is None and i < len(sorted_beat_paths):
-                            seg["video_path"] = sorted_beat_paths[i]
-                            seg["beat_videos"] = [sorted_beat_paths[i]]
-                            print(f"  [I2V WRITEBACK] narr_seg[{i}] fallback → {sorted_beat_paths[i]}")
-
-                    # FIX 2: Write beat_video_paths + video_path into topic dict (saves to presentation.json)
-                    rel_paths = sorted(beat_video_map.values())
-                    topic["beat_video_paths"] = rel_paths
-                    topic["video_path"] = rel_paths[0] if rel_paths else None
-                    result["beat_video_paths"] = rel_paths
-                    result["video_path"] = topic["video_path"]
-
+                    # Set section-level video_path
+                    topic["video_path"] = (
+                        f"videos/{Path(render_results['success'][0]).name}"
+                    )
 
                 else:
                     result["status"] = "failed"
@@ -976,16 +940,10 @@ def execute_renderer(
                         )
                         return result
 
-            # POLICY: text_to_video ALWAYS uses Local GPU (port 8000) for consistency.
-            # If Director mistakenly sets use_local_gpu=False, we override it here.
-            use_local = True
-            if topic.get("use_local_gpu") is False:
-                print(
-                    f"[TEXT_TO_VIDEO] Section {topic_id}: use_local_gpu overridden to True "
-                    f"(policy: text_to_video always uses Local GPU)"
-                )
+            # Get use_local_gpu routing decision
+            use_local = topic.get("use_local_gpu", True)
             print(
-                f"[TEXT_TO_VIDEO] Section {topic_id}: {len(beats)} videos → Local GPU"
+                f"[TEXT_TO_VIDEO] Section {topic_id}: {len(beats)} videos → {'Local GPU' if use_local else 'Kie/WAN'}"
             )
 
             # Render in parallel using GPU
@@ -1000,6 +958,7 @@ def execute_renderer(
 
                 if render_results["success"]:
                     result["status"] = "success"
+                    result["video_path"] = render_results["success"][0]
                     result["all_video_paths"] = render_results["success"]
 
                     # ── WRITEBACK: update narration segments + video_prompts ──
@@ -1013,42 +972,28 @@ def execute_renderer(
                         if isinstance(video_prompts, list) and p.get("segment_id")
                     }
 
-                    import re
-
-                    # FIX 1: Sort success list by filename so seg_1 is always first
-                    render_results["success"].sort(key=lambda p: Path(p).name)
-
-                    beat_video_map = {}
-                    for video_path_abs in render_results["success"]:
-                        fname = Path(video_path_abs).name  # e.g. topic_6_seg_1.mp4
+                    for video_path in render_results["success"]:
+                        fname = Path(video_path).name  # e.g. topic_6_seg_1_beat_0.mp4
                         rel_path = f"videos/{fname}"
-                        m = re.search(rf"topic_{topic_id}_(.+)\.mp4", fname)
-                        extracted_id = m.group(1) if m else None
-                        if extracted_id:
-                            beat_video_map[extracted_id] = rel_path
+                        # Derive seg_id: topic_6_seg_1_beat_0 → seg_1
+                        # strip prefix topic_{id}_ and suffix _beat_{n}
+                        import re
 
-                    # 1. Update visual_beats
-                    for beat in topic.get("visual_beats", []):
-                        bid = beat.get("beat_id")
-                        if bid and bid in beat_video_map:
-                            beat["video_path"] = beat_video_map[bid]
-                            print(f"  [T2V WRITEBACK] visual_beat {bid} → {beat_video_map[bid]}")
+                        m = re.search(rf"topic_{topic_id}_(.+)_beat_\d+\.mp4", fname)
+                        seg_id = m.group(1) if m else None
 
-                    # 2. Update narration / video_prompts
-                    for eid, rel_path in beat_video_map.items():
-                        if eid in narr_by_id:
-                            narr_by_id[eid]["video_path"] = rel_path
-                            narr_by_id[eid]["beat_videos"] = [rel_path]
-                            print(f"  [T2V WRITEBACK] narr_seg {eid} → {rel_path}")
-                        if eid in vp_by_id:
-                            vp_by_id[eid]["video_path"] = rel_path
+                        if seg_id and seg_id in narr_by_id:
+                            narr_by_id[seg_id]["video_path"] = rel_path
+                            narr_by_id[seg_id]["beat_videos"] = [rel_path]
+                            print(f"  [T2V WRITEBACK] {seg_id} → {rel_path}")
 
-                    # FIX 2: Write beat_video_paths + video_path into topic dict (saves to presentation.json)
-                    rel_paths = sorted(beat_video_map.values())
-                    topic["beat_video_paths"] = rel_paths
-                    topic["video_path"] = rel_paths[0] if rel_paths else None
-                    result["beat_video_paths"] = rel_paths
-                    result["video_path"] = topic["video_path"]
+                        if seg_id and seg_id in vp_by_id:
+                            vp_by_id[seg_id]["video_path"] = rel_path
+
+                    # Set section-level video_path
+                    topic["video_path"] = (
+                        f"videos/{Path(render_results['success'][0]).name}"
+                    )
 
                 else:
                     result["status"] = "failed"
@@ -1205,10 +1150,8 @@ def execute_renderer(
             failed_count = len(video_path) - len(valid_paths)
 
             if valid_paths:
-                result["video_path"] = f"videos/{Path(valid_paths[0]).name}"
-                result["beat_video_paths"] = [f"videos/{Path(p).name}" for p in valid_paths]
-                result["beat_videos"] = result["beat_video_paths"]
-                result["all_video_paths"] = valid_paths
+                result["video_path"] = valid_paths[0]
+                result["beat_videos"] = valid_paths
                 result["status"] = "success" if failed_count == 0 else "partial"
                 if failed_count > 0:
                     result["video_status"] = (
@@ -1217,45 +1160,6 @@ def execute_renderer(
                 print(
                     f"[RENDER] Manim multi-beat: {len(valid_paths)}/{len(video_path)} beat videos for section {topic_id}"
                 )
-                
-                # --- NEW WRITEBACK LOGIC for MANIM ---
-                beat_video_map = {}
-                import re
-                for path_str in valid_paths:
-                    fname = Path(path_str).name
-                    rel_path = f"videos/{fname}"
-                    m = re.search(rf"topic_{topic_id}_(.+)\.mp4", fname)
-                    if m:
-                        beat_video_map[m.group(1)] = rel_path
-                        
-                # Update visual_beats
-                for beat in topic.get("visual_beats", []):
-                    bid = beat.get("beat_id")
-                    if bid and bid in beat_video_map:
-                        beat["video_path"] = beat_video_map[bid]
-
-                # Update narration
-                narr_segs = topic.get("narration", {}).get("segments", [])
-                for seg in narr_segs:
-                    eid = seg.get("segment_id")
-                    if eid in beat_video_map:
-                        seg["video_path"] = beat_video_map[eid]
-                        seg["beat_videos"] = [beat_video_map[eid]]
-                        
-                # FIX: Index-based fallback for manim (manim outputs beat_0, beat_1... but json has beat_1, seg_1)
-                sorted_beat_paths = sorted(beat_video_map.values())
-                
-                # 1. Fallback for visual_beats
-                for i, beat in enumerate(topic.get("visual_beats", [])):
-                    if beat.get("video_path") is None and i < len(sorted_beat_paths):
-                        beat["video_path"] = sorted_beat_paths[i]
-                
-                # 2. Fallback for narration
-                for i, seg in enumerate(narr_segs):
-                    if seg.get("video_path") is None and i < len(sorted_beat_paths):
-                        seg["video_path"] = sorted_beat_paths[i]
-                        seg["beat_videos"] = [sorted_beat_paths[i]]
-                # ------------------------------------
             else:
                 result["status"] = "failed"
                 result["video_status"] = "generation_failed"
