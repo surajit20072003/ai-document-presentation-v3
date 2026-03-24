@@ -67,12 +67,18 @@ class JobCertifier:
         if 'recap' in types:
             try:
                 recap = next(s for s in sections if s['section_type'] == 'recap')
-                prompts = recap.get("video_prompts", [])
-                long_prompts = sum(1 for p in prompts if len((p.get("prompt", "") if isinstance(p, dict) else str(p)).split()) > 70)
-                report_lines.append(f"Recap 5-Scene Story: {len(prompts)}/5 Scenes {'✅' if len(prompts)==5 else '❌'}")
-                report_lines.append(f"Cinematic Detail (>70 words): {long_prompts}/{len(prompts)}")
+                render_spec = recap.get("render_spec", {})
+                # Support both new image_to_video_beats and legacy video_prompts
+                beats = render_spec.get("image_to_video_beats", []) or recap.get("image_to_video_beats", [])
+                if not beats:
+                    beats = render_spec.get("video_prompts", []) or recap.get("video_prompts", [])
+                long_prompts = sum(1 for b in beats if len(
+                    (b.get("video_prompt", "") or b.get("prompt", "") if isinstance(b, dict) else str(b)).split()
+                ) > 70)
+                report_lines.append(f"Recap Scenes: {len(beats)} {'✅' if len(beats) >= 1 else '❌'}")
+                report_lines.append(f"Cinematic Detail (>70 words): {long_prompts}/{len(beats)}")
             except:
-                 report_lines.append("Recap Error: Malformed structure")
+                report_lines.append("Recap Error: Malformed structure")
 
         # 4. CONTENT & INTELLIGENCE
         report_lines.append("\n[3] CONTENT INTELLIGENCE")

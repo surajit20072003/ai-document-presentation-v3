@@ -39,7 +39,11 @@
 | [UI-001](#ui-001) | Avatar squeezed (aspect ratio warped) + green screen from GLSL smoothstep bug | Player UI | 🟡 Medium | ✅ Done |
 | [UI-002](#ui-002) | Playback button does not match V2 styling (lacks gradient/shadow) | Player UI | 🟢 Low | ✅ Done |
 | [UI-003](#ui-003) | Global font sizes too small (titles, subtitles, buttons) | Player UI | 🟢 Low | ✅ Done |
-| [DEV-001](#dev-001) | Need an in-browser Dev Mode overlay to adjust avatar size/position/transparency | Player UI | 🟢 Low | ✅ Done |
+| [UI-004](#ui-004) | Play/Pause button logic overwritten by stall checker | Player UI | 🟡 Medium | 🔄 Analyzed |
+| [SUB-002](#sub-002) | Subtitle visual clutter - display current words only | Player UI | 🟢 Low | 🔄 Analyzed |
+| [MEM-001](#mem-001) | Memory slides require manual clicks during narration | Player UI | 🟡 Medium | 🔄 Analyzed |
+| [PROMPT-001](#prompt-001) | Hardcoded "Grade 12" hallucinations in titles/narration | Pipeline | 🟢 Low | 🔄 Analyzed |
+| [IMG-001](#img-001) | Image loading fails if extension mismatch | Player UI | 🟡 Medium | 🔄 Analyzed |
 
 ---
 
@@ -617,4 +621,101 @@ Fixes to `threejs_system_prompt_v2.txt` (font size, animation density, arc geome
 4. **Show Raw AV Video** checkbox — bypasses WebGL, shows original green-screen video for debugging
 
 **File:** `player/player_v3.html`  
-**Status:** ✅ Done — 2026-03-10
+| 2026-03-24 | Verified root causes for 5 player issues: Play/Pause (stall checker), Subtitle (karaoke DOM), Memory (missing driver), Grade 12 (hidden inputs), and Image (fallback logic). |
+
+---
+
+## UI-004 🔴 RESOLUTION
+
+### Play/Pause button logic overwritten by automated healing loops
+
+**Status:** Verified Bug
+
+**Root Cause:**
+Manual pausing is actively overwritten by three independent automated check loops in `player_v3.html`:
+1. **Startup Check** (`_startCheck`, line 1152): Polls 500ms to kickstart playback.
+2. **Stall Check** (`_stallCheck`, line 1657): Polls 2s. If `vid.paused && vid.readyState >= 3`, calls `vid.play()`.
+3. **Sync Loop** (`_syncInt`, line 2335): Calls `v.play()` if paused but not ended.
+
+These loops lack a state check for **intent**.
+
+**Exact Resolution:**
+1. Define `var G_PLAYBACK_INTENDED = true;` in the global script scope.
+2. Modify `togglePlayPause()` to sync this flag: `G_PLAYBACK_INTENDED = !avVid.paused;`.
+3. Inject the guard `if (!G_PLAYBACK_INTENDED) return;` at the beginning of all three loops (`_startCheck`, `_stallCheck`, `_syncInt`).
+4. Update `initPlayer()` and `loadSection()` to reset `G_PLAYBACK_INTENDED = true` on new section load.
+
+---
+
+## SUB-002 🟢 RESOLUTION
+
+### Subtitle visual clutter — ensure only current words are displayed
+
+**Status:** UI Enhancement
+
+**Root Cause:**
+`renderSubtitleKaraoke` (line 1830) appends all word spans to the DOM at the start of the beat. Use of CSS classes `active` and `spoken` only changes the color, not the visibility.
+
+**Exact Resolution:**
+Update CSS rules to manage word visibility:
+1. Add `.sub-word { display: none; }` to the style block.
+2. Add `.sub-word.spoken, .sub-word.active { display: inline; }` to show only "reached" words.
+3. This creates a "teleprompter" effect where words appear as they are narrated, matching the user requirement exactly.
+
+---
+
+## MEM-001 🟡 RESOLUTION
+
+### Memory slides missing automatic transition driver
+
+**Status:** Missing Feature
+
+**Root Cause:**
+`player_v3.html` has no `initMemorySection` function. Sections of type `memory` are loaded but have no clock-driven logic to transition between the 5 flashcards, forcing manual user interaction.
+
+**Exact Resolution:**
+1. Implement `function initMemorySection(sec)`:
+   - Identify narration segment durations for each card.
+   - Use a `timeupdate` listener on `av-vid` to track progress.
+   - When `currentTime` crosses a segment boundary, call `nextCard()`.
+2. Register `initMemorySection` in the `loadSection` router (line 1762).
+
+---
+
+## PROMPT-001 🟢 RESOLUTION
+
+### Hardcoded "Grade 12 General Science" Hallucination
+
+**Status:** Configuration Error
+
+**Root Cause:**
+Verified in `player/dashboard.html` (lines 364–365):
+```html
+<input type="hidden" id="subject" name="subject" value="General Science">
+<input type="hidden" id="grade" name="grade" value="12">
+```
+These values are **hidden** and **hardcoded** in the UI. Every job submitted via the dashboard is tagged "General Science" Grade 12. The LLM then generates the "Namaste! Welcome to our Grade 12..." intro based on these prompt context variables.
+
+**Exact Resolution:**
+1. **Pipeline UI**: Modify `dashboard.html` to change these inputs from `type="hidden"` to `type="text"` with appropriate labels, allowing user override.
+2. **Prompts**: Update `core/prompts/director_global_prompt.txt` to use the template: `"MUST start with 'Namaste! Welcome to our lesson on {{subject}} for {{grade}}.'"` to ensure placeholders are respected over conversational fillers.
+
+---
+
+## IMG-001 🟡 RESOLUTION
+
+### Image loading fallback logic (.png priority)
+
+**Status:** Resilience Fix
+
+**Root Cause:**
+`switchToBeat` (line 2198) and `showQuestion` set `img.src` once. There is no retry logic if the extension saved by the pipeline doesn't match the one expected by the player or if an asset is in an alternative format.
+
+**Exact Resolution:**
+1. Implement a helper `function safeLoadImage(imgEl, baseUrl)`:
+   - Set `imgEl.src = baseUrl + '.png'`.
+   - Attach `imgEl.onerror` handler that sequentially attempts `.jpg` then `.jpeg`.
+2. Apply `safeLoadImage` in `switchToBeat()` (for content images) and `showExplanationVisual()` (for quiz images).
+3. Update `getMediaSrc` to return the base path without extension when calling these loaders.
+
+

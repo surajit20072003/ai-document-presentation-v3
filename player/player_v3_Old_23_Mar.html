@@ -296,19 +296,10 @@
 
         @media (max-width: 600px) {
             #subtitle-overlay {
-                width: 92%;
+                width: 96%;
                 bottom: 68px;
-                max-height: 3.6em;
-                overflow: hidden;
+                font-size: 15px;
             }
-            /* sub-word has its own font-size rule — must override explicitly */
-            .sub-word, .subtitle-text {
-                font-size: 15px !important;
-                line-height: 1.5 !important;
-            }
-        }
-        @media (max-width: 400px) {
-            .sub-word, .subtitle-text { font-size: 13px !important; }
         }
 
         /* individual word tokens */
@@ -1075,24 +1066,21 @@
 
         <!-- MAIN -->
         <div id="main">
-            <!-- Layer 1: WAN/LTX video -->
+            <!-- Layer 1: WAN/LTX video (renderer: video / text_to_video / image_to_video) -->
             <div id="wan-layer">
-                <video id="wan-vid" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>
-                <!-- Preload buffer — caches next beat before boundary -->
-                <video id="wan-vid-pre" muted playsinline style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"></video>
+                <video id="wan-vid" autoplay muted playsinline loop></video>
             </div>
-            <!-- Layer 2a: Three.js legacy -->
+            <!-- Layer 2a: Three.js (renderer: "threejs" - legacy/compat) -->
             <div id="threejs-layer"></div>
-            <!-- Layer 2b: Manim beat videos -->
+            <!-- Layer 2b: Manim beat videos (renderer: "manim") -->
             <div id="manim-layer">
                 <video id="manim-vid" muted playsinline></video>
-                <video id="manim-vid-pre" muted playsinline style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"></video>
             </div>
-            <!-- Layer 4: Source image / infographic overlay -->
+            <!-- Layer 4: Source image / infographic overlay (infographic_beats) -->
             <div id="image-layer">
                 <img id="image-display" src="" alt="">
             </div>
-            <!-- Layer 3: Scene content -->
+            <!-- Layer 3: Scene content (intro/summary/memory/recap/quiz HTML) -->
             <div id="scenes-container"></div>
         </div>
 
@@ -1214,12 +1202,7 @@
             quiz: { label: 'QUIZ', cls: 'badge-quiz' },
         };
 
-        var _playerBooted = false;
         window.onerror = function (msg, src, line, col, err) {
-            if (_playerBooted) {
-                console.warn('[V3] Runtime error (non-fatal):', msg, 'line', line);
-                return true;
-            }
             var ls = document.getElementById('loading-screen');
             var es = document.getElementById('error-screen');
             var em = document.getElementById('error-msg');
@@ -1280,22 +1263,10 @@
 
         function initAvatarWebGL() {
             var canvas = document.getElementById('av-canvas');
-            var video  = document.getElementById('av-vid');
-            if (typeof THREE === 'undefined') {
-                canvas.style.display = 'none';
-                video.style.cssText = 'position:absolute;width:100%;height:100%;opacity:1;pointer-events:none;';
-                return;
-            }
+            var video = document.getElementById('av-vid');
+            if (typeof THREE === 'undefined') return;
 
-            var renderer;
-            try {
-                renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
-            } catch(e) {
-                console.warn('[V3] WebGL unavailable, falling back to raw video');
-                canvas.style.display = 'none';
-                video.style.cssText = 'position:absolute;width:100%;height:100%;opacity:1;pointer-events:none;';
-                return;
-            }
+            var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
             var overlay = document.getElementById('av-overlay');
             var dpr = window.devicePixelRatio || 1;
             renderer.setSize(overlay.offsetWidth, overlay.offsetHeight, false);
@@ -1433,7 +1404,6 @@
                 loadSection(0);
             }
             window._initGestures && window._initGestures();
-            _playerBooted = true;
         }
 
         // ══════════════════════════════════════════════════════════
@@ -1602,10 +1572,8 @@
 
             var wanLayer = document.getElementById('wan-layer');
             var wanVid = document.getElementById('wan-vid');
-            var wanPre = document.getElementById('wan-vid-pre');
             wanLayer.classList.remove('on');
             wanVid.pause(); wanVid.src = '';
-            if (wanPre) { wanPre.pause(); wanPre.src = ''; }
 
             var prevEl = document.getElementById('scene-' + curSec);
             if (prevEl) prevEl.classList.remove('on');
@@ -1665,7 +1633,6 @@
                 vid.addEventListener('loadeddata', function resampleKey() {
                     vid.removeEventListener('loadeddata', resampleKey);
                     window.dispatchEvent(new Event('resize'));
-                    if (!avWebGL || !avWebGL.material) return; // WebGL not ready yet on mobile
                     try {
                         var sc = document.createElement('canvas');
                         sc.width = 16; sc.height = 16;
@@ -1764,61 +1731,35 @@
         }
 
         // ══════════════════════════════════════════════════════════
-        // SUBTITLES — unified driver for all section types
-        //
-        // Schema A (content): segments have start_seconds + end_seconds
-        // Schema B (summary/memory/recap): segments have only duration_seconds
-        //
-        // Builds a normalised timing table once, then uses avatar timeupdate.
-        // Last segment stays visible until avatar ends (no 3-second black gap).
+        // SUBTITLES
         // ══════════════════════════════════════════════════════════
         function startSubtitleDriver(sec, sectionAtLoad) {
             if (!sec.narration || !sec.narration.segments) return;
             var segments = sec.narration.segments;
-            var avEl        = document.getElementById('av-vid');
-            var subtitleEl  = document.getElementById('subtitle-overlay');
-            var textEl      = document.getElementById('subtitle-text');
-
-            // Normalise both schemas into { start, end, dur, text }
-            var table = [];
-            var accum = 0;
-            for (var i = 0; i < segments.length; i++) {
-                var seg = segments[i];
-                var start, end, dur;
-                if (seg.start_seconds !== undefined && seg.end_seconds !== undefined) {
-                    // Schema A — director-authored timestamps
-                    start = seg.start_seconds;
-                    end   = seg.end_seconds;
-                    dur   = end - start;
-                } else {
-                    // Schema B — accumulate from duration_seconds
-                    dur   = seg.duration_seconds || seg.duration || 5;
-                    start = accum;
-                    end   = accum + dur;
-                    accum = end;
-                }
-                table.push({ start: start, end: end, dur: dur, text: (seg.text || '').trim() });
-            }
-
-            var lastIdx = -1;
+            var avEl = document.getElementById('av-vid');
+            var subtitleEl = document.getElementById('subtitle-overlay');
+            var subtitleTextEl = document.getElementById('subtitle-text');
+            var lastSegIdx = -1;
 
             function onTimeUpdate() {
                 if (curSec !== sectionAtLoad) {
                     avEl.removeEventListener('timeupdate', onTimeUpdate);
-                    if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
-                    subtitleEl.style.display = 'none';
                     return;
                 }
                 var t = avEl.currentTime;
-                for (var i = 0; i < table.length; i++) {
-                    var row    = table[i];
-                    var isLast = (i === table.length - 1);
-                    // Last segment: show from its start until avatar ends
-                    var active = isLast ? (t >= row.start) : (t >= row.start && t < row.end);
-                    if (active && i !== lastIdx) {
-                        lastIdx = i;
-                        if (row.text) {
-                            renderSubtitleKaraoke(subtitleEl, textEl, row.text, row.dur, sectionAtLoad);
+                for (var i = 0; i < segments.length; i++) {
+                    var seg = segments[i];
+                    var start = seg.start_seconds !== undefined ? seg.start_seconds
+                        : (seg.start_time !== undefined ? seg.start_time : 0);
+                    var end = seg.end_seconds !== undefined ? seg.end_seconds
+                        : (seg.end_time !== undefined ? seg.end_time
+                            : start + (seg.duration_seconds || seg.duration || 5));
+                    if (t >= start && t < end && i !== lastSegIdx) {
+                        lastSegIdx = i;
+                        var txt = seg.text || '';
+                        if (txt.trim()) {
+                            renderSubtitleKaraoke(subtitleEl, subtitleTextEl, txt,
+                                seg.duration_seconds || (end - start) || 5, sectionAtLoad);
                         }
                         break;
                     }
@@ -1880,178 +1821,83 @@
         // ══════════════════════════════════════════════════════════
         // VIDEO SCENE LOADER
         // ══════════════════════════════════════════════════════════
-        // ══════════════════════════════════════════════════════════
-        // VIDEO SCENE LOADER — image_to_video / text_to_video / recap
-        //
-        // Schedule built from visual_beats[] (authoritative timing):
-        //   image_to_video beats → beat_video_paths[] assigned sequentially
-        //   image/infographic    → infographic_beats[].image_source by start_seconds
-        //
-        // For recap/sections without visual_beats: fall back to narration
-        // segments with beat_videos[] / beat_video_paths[].
-        //
-        // Sync:   avatar timeupdate → switch at beat_start_seconds boundary
-        // Smooth: preload next video 3s early into wan-vid-pre (browser caches it)
-        // ══════════════════════════════════════════════════════════
         function loadVideoScene(sec, avatarDuration, _avBox) {
             if (!_avBox) _avBox = { started: true };
             var wanLayer = document.getElementById('wan-layer');
-            var wanVid   = document.getElementById('wan-vid');
-            var wanPre   = document.getElementById('wan-vid-pre');
-            var imgLayer = document.getElementById('image-layer');
-            var imgEl    = document.getElementById('image-display');
-            var avEl     = document.getElementById('av-vid');
+            var wanVid = document.getElementById('wan-vid');
             var sectionAtLoad = curSec;
 
-            // ── Build beat schedule ──────────────────────────────
-            var schedule = [];  // [{ start, end, type:'video'|'image', src }]
-
-            var vbeats = sec.visual_beats || [];
-            var bvp    = sec.beat_video_paths || [];
-            var rs     = sec.render_spec || {};
-            var infos  = rs.infographic_beats || [];
-
-            // Index infographic beats by start_seconds for O(1) lookup
-            var infoByStart = {};
-            infos.forEach(function(b) {
-                if (b.start_seconds !== undefined) infoByStart[String(b.start_seconds)] = b;
-            });
-
-            if (vbeats.length > 0) {
-                // Content sections: schedule from visual_beats[] (has precise timestamps)
-                var vidIdx = 0;
-                vbeats.forEach(function(vb) {
-                    var start = vb.beat_start_seconds;
-                    var end   = vb.beat_end_seconds;
-                    var vtype = vb.visual_type;
-
-                    if (vtype === 'image' || vtype === 'infographic') {
-                        var info   = infoByStart[String(start)] || {};
-                        var imgSrc = vb.image_source || info.image_source || '';
-                        schedule.push({ start: start, end: end, type: 'image', src: imgSrc });
-                    } else {
-                        // image_to_video — assign sequentially from beat_video_paths[]
-                        var path = bvp[vidIdx] || '';
-                        vidIdx++;
-                        schedule.push({ start: start, end: end, type: 'video', src: path });
-                    }
-                });
-            } else {
-                // Recap / sections without visual_beats: build from narration segments
-                var segs = (sec.narration && sec.narration.segments) ? sec.narration.segments : [];
-                var flatFiles = [];
-                segs.forEach(function(seg, i) {
-                    var bv = (seg.beat_videos && seg.beat_videos.length > 0)
-                           ? seg.beat_videos[0]
-                           : (seg.video_path || bvp[i] || '');
-                    flatFiles.push(bv);
-                });
-                if (flatFiles.every(function(f){ return !f; })) flatFiles = bvp;
-
-                var accum = 0;
-                segs.forEach(function(seg, i) {
-                    var dur   = seg.duration_seconds || seg.duration || 15;
-                    var start = (seg.start_seconds !== undefined) ? seg.start_seconds : accum;
-                    var end   = start + dur;
-                    accum     = end;
-                    schedule.push({ start: start, end: end, type: 'video', src: flatFiles[i] || '' });
+            var files = [];
+            if (sec.beat_video_paths && sec.beat_video_paths.length > 0) {
+                files = sec.beat_video_paths;
+            } else if (sec.narration && sec.narration.segments) {
+                sec.narration.segments.forEach(function (seg) {
+                    var bv = seg.beat_videos && seg.beat_videos.length > 0
+                        ? seg.beat_videos[0]
+                        : (seg.video_path || null);
+                    if (bv) files.push(bv);
                 });
             }
-
-            if (schedule.length === 0) return;
+            if (files.length === 0 && sec.render_spec && sec.render_spec.video_prompts) {
+                sec.render_spec.video_prompts.forEach(function (vp) {
+                    if (vp.video_path) files.push(vp.video_path);
+                });
+            }
+            if (files.length === 0 && (sec.video_path || sec.video_url)) {
+                files = [sec.video_path || sec.video_url];
+            }
+            if (files.length === 0) return;
 
             wanLayer.classList.add('on');
 
-            var currentIdx = -1;
-            var preloadedSrc = '';
+            var segs = sec.narration && sec.narration.segments ? sec.narration.segments : [];
+            var totalDur = (avatarDuration && isFinite(avatarDuration) && avatarDuration > 0)
+                ? avatarDuration : (sec.segment_duration_seconds || sec.dur || 15);
+            var beatDurations = files.map(function (_, i) {
+                if (segs[i] && segs[i].duration_seconds) return segs[i].duration_seconds;
+                var vp = sec.render_spec && sec.render_spec.video_prompts && sec.render_spec.video_prompts[i];
+                if (vp && vp.duration) return vp.duration;
+                return totalDur / files.length;
+            });
 
-            function showBeat(idx) {
-                if (idx < 0 || idx >= schedule.length) return;
-                var beat = schedule[idx];
-                currentIdx = idx;
+            var currentBeatIdx = 0;
+            var accumulatedTime = 0;
 
-                if (beat.type === 'image') {
-                    wanVid.pause();
-                    if (beat.src) {
-                        imgEl.src = getMediaSrc(beat.src);
-                        imgLayer.classList.add('on');
-                        // Small rAF delay so display:flex registers before opacity transition
-                        requestAnimationFrame(function() { imgLayer.classList.add('vis'); });
-                    }
-                } else {
-                    // Hide image overlay
-                    imgLayer.classList.remove('vis');
-                    setTimeout(function() { imgLayer.classList.remove('on'); }, 440);
+            function playNextBeat() {
+                if (curSec !== sectionAtLoad) return;
+                if (currentBeatIdx >= files.length) return;
 
-                    if (!beat.src) return;
-                    var fullSrc = getMediaSrc(beat.src);
-                    wanVid.src = fullSrc;
-                    wanVid.load();
-                    wanVid.play().catch(function(){});
+                var vPath = getMediaSrc(files[currentBeatIdx]);
+                var beatDuration = beatDurations[currentBeatIdx];
+
+                wanVid.src = vPath;
+                wanVid.load();
+                wanVid.play().catch(function () { });
+
+                var _sc = setInterval(function () {
+                    if (curSec !== sectionAtLoad) { clearInterval(_sc); return; }
+                    if (wanVid.paused && !wanVid.ended && wanVid.readyState >= 3) wanVid.play().catch(function () { });
+                }, 2000);
+                timers.push(_sc);
+
+                accumulatedTime += beatDuration;
+                currentBeatIdx++;
+
+                if (currentBeatIdx < files.length) {
+                    var _ci = setInterval(function () {
+                        if (curSec !== sectionAtLoad) { clearInterval(_ci); return; }
+                        var avT = document.getElementById('av-vid');
+                        if (avT && avT.currentTime >= accumulatedTime) { clearInterval(_ci); playNextBeat(); }
+                    }, 50);
+                    timers.push(_ci);
                 }
             }
 
-            function preloadNext(idx) {
-                if (idx < 0 || idx >= schedule.length) return;
-                var b = schedule[idx];
-                if (b.type !== 'video' || !b.src) return;
-                var src = getMediaSrc(b.src);
-                if (preloadedSrc === src) return;  // already buffering
-                preloadedSrc = src;
-                wanPre.src = src;
-                wanPre.load();  // buffer without playing
-            }
-
-            function onTimeUpdate() {
-                if (curSec !== sectionAtLoad) {
-                    avEl.removeEventListener('timeupdate', onTimeUpdate);
-                    return;
-                }
-                var t = avEl.currentTime;
-
-                // Find active beat
-                var activeIdx = -1;
-                for (var i = 0; i < schedule.length; i++) {
-                    var isLast = (i === schedule.length - 1);
-                    var hit    = isLast ? (t >= schedule[i].start)
-                                        : (t >= schedule[i].start && t < schedule[i].end);
-                    if (hit) { activeIdx = i; break; }
-                }
-                if (activeIdx < 0) return;
-
-                // Switch beat
-                if (activeIdx !== currentIdx) {
-                    showBeat(activeIdx);
-                    // Preload the one after next
-                    preloadNext(activeIdx + 1);
-                }
-
-                // Stall recovery for video beats
-                if (currentIdx >= 0 && schedule[currentIdx].type === 'video') {
-                    if (wanVid.paused && !wanVid.ended && wanVid.readyState >= 3 && !avEl.paused) {
-                        wanVid.play().catch(function(){});
-                    }
-                }
-            }
-
-            // Preload beat 1 now so it's buffered before we need it
-            if (schedule.length > 1) preloadNext(1);
-
-            // Wait for avatar to start, then begin
-            if (_avBox.started) {
-                avEl.addEventListener('timeupdate', onTimeUpdate);
-                showBeat(0);
-            } else {
-                function waitStart() {
-                    if (curSec !== sectionAtLoad) return;
-                    if (_avBox.started) {
-                        avEl.removeEventListener('timeupdate', waitStart);
-                        avEl.addEventListener('timeupdate', onTimeUpdate);
-                        showBeat(0);
-                    }
-                }
-                avEl.addEventListener('timeupdate', waitStart);
-            }
+            var _sc2 = setInterval(function () {
+                if (curSec !== sectionAtLoad) { clearInterval(_sc2); return; }
+                if (_avBox.started) { clearInterval(_sc2); playNextBeat(); }
+            }, 50);
+            timers.push(_sc2);
         }
 
         // ══════════════════════════════════════════════════════════
@@ -2412,28 +2258,13 @@
         // ══════════════════════════════════════════════════════════
         // BRANCHING QUIZ
         // ══════════════════════════════════════════════════════════
-        // ══════════════════════════════════════════════════════════
-        // QUIZ — Pre-baked branching with synced option reveals
-        //
-        // Flow per question:
-        //  1. Play question clip
-        //  2. While clip plays: reveal A/B/C/D at option_reveal_seconds[0..3]
-        //  3. Clip ends → reveal any remaining options (fallback)
-        //  4. Student clicks:
-        //     a. Highlight correct (green) / wrong (red)
-        //     b. Show explanation text
-        //     c. Play correct/wrong clip
-        //     d. Show explanation_visual behind quiz overlay (if video_path exists)
-        //     e. Play explanation clip simultaneously
-        //     f. Advance to next question / next section
-        // ══════════════════════════════════════════════════════════
         function initQuizSection(sec) {
-            var overlay   = document.getElementById('quiz-overlay');
-            var qLabel    = document.getElementById('quiz-q-label');
-            var qText     = document.getElementById('quiz-q-text');
-            var qOptions  = document.getElementById('quiz-options');
+            var overlay = document.getElementById('quiz-overlay');
+            var qLabel = document.getElementById('quiz-q-label');
+            var qText = document.getElementById('quiz-q-text');
+            var qOptions = document.getElementById('quiz-options');
             var qFeedback = document.getElementById('quiz-feedback');
-            var vid       = document.getElementById('av-vid');
+            var vid = document.getElementById('av-vid');
 
             overlay.style.display = 'flex';
             qFeedback.style.display = 'none';
@@ -2441,199 +2272,120 @@
             var questions = (sec.questions && sec.questions.length > 0)
                 ? sec.questions
                 : (sec.understanding_quiz ? [sec.understanding_quiz] : []);
-            if (questions.length === 0) {
-                overlay.style.display = 'none';
-                if (curSec < SECTIONS.length - 1) loadSection(curSec + 1);
-                return;
-            }
             var qIdx = 0;
-
-            // ── helpers ─────────────────────────────────────────
-
-            function playClip(url, onEnd) {
-                vid.onended = null;
-                if (url) {
-                    vid.src = getMediaSrc(url);
-                    vid.load();
-                    vid.play().catch(function(){});
-                    vid.onended = function() { if (onEnd) onEnd(); };
-                } else {
-                    // No clip — fire callback after brief pause so UI settles
-                    timers.push(setTimeout(onEnd || function(){}, 2000));
-                }
-            }
-
-            function showExplanationVisual(q) {
-                var ev = q.explanation_visual;
-                if (!ev) return;
-                // Resolve video path: try direct video_path, then image_to_video_beats[0]
-                var vpath = ev.video_path;
-                if (!vpath && ev.image_to_video_beats && ev.image_to_video_beats.length > 0) {
-                    vpath = ev.image_to_video_beats[0].video_path || null;
-                }
-                if (!vpath) return;  // No visual rendered yet — explanation clip still plays
-
-                var renderer   = ev.renderer || 'manim';
-                var manimLayer = document.getElementById('manim-layer');
-                var manimVid   = document.getElementById('manim-vid');
-                var wanLayer   = document.getElementById('wan-layer');
-                var wanVid     = document.getElementById('wan-vid');
-
-                // Clear both visual layers first
-                manimLayer.classList.remove('on');
-                wanLayer.classList.remove('on');
-
-                if (renderer === 'manim') {
-                    manimVid.src = getMediaSrc(vpath);
-                    manimVid.load();
-                    manimVid.play().catch(function(){});
-                    manimLayer.classList.add('on');
-                } else {
-                    // image_to_video / text_to_video
-                    wanVid.src = getMediaSrc(vpath);
-                    wanVid.load();
-                    wanVid.play().catch(function(){});
-                    wanLayer.classList.add('on');
-                }
-            }
-
-            // ── main question renderer ───────────────────────────
 
             function showQuestion(qi) {
                 var q = questions[qi];
                 if (!q) {
-                    // All done — close quiz, advance section
                     overlay.style.display = 'none';
-                    document.getElementById('manim-layer').classList.remove('on');
-                    document.getElementById('wan-layer').classList.remove('on');
-                    timers.push(setTimeout(function() {
+                    timers.push(setTimeout(function () {
                         if (curSec < SECTIONS.length - 1) loadSection(curSec + 1);
                     }, 600));
                     return;
                 }
-
-                var quizSecAtLoad = curSec;  // guard for delayed timeouts
                 qLabel.textContent = 'QUESTION ' + (qi + 1) + ' / ' + questions.length;
-                qText.textContent  = q.question_text || q.question || '';
+                qText.textContent = q.question_text || q.question || '';
                 qOptions.innerHTML = '';
                 qFeedback.style.display = 'none';
+                var clips = q.avatar_clips || {};
+                playQuizClip(clips.question, function () { buildOptionButtons(q, qi); });
+            }
 
-                var clips       = q.avatar_clips || {};
-                var narr        = q.narration || {};
-                var revealTimes = narr.option_reveal_seconds || [];
-                var opts        = q.options || {};
-                var keys        = Object.keys(opts);
-                var answered    = false;
+            function playQuizClip(url, onEnd) {
+                vid.onended = null;
+                if (url) {
+                    vid.src = getMediaSrc(url); vid.load();
+                    vid.play().catch(function () { });
+                    vid.onended = function () { if (onEnd) onEnd(); };
+                } else {
+                    timers.push(setTimeout(onEnd || function () { }, 3000));
+                }
+            }
 
-                // Create all buttons hidden — revealed one-by-one per option_reveal_seconds
-                var buttons = {};
-                keys.forEach(function(key) {
+            function playExplanationVisual(q) {
+                var ev = q.explanation_visual;
+                if (!ev) return;
+                var vpath = ev.video_path;
+                if (!vpath) return;
+                var renderer = ev.renderer || 'manim';
+                var manimLayer = document.getElementById('manim-layer');
+                var manimVid = document.getElementById('manim-vid');
+                var wanLayer = document.getElementById('wan-layer');
+                var wanVid = document.getElementById('wan-vid');
+                manimLayer.classList.remove('on');
+                wanLayer.classList.remove('on');
+                if (renderer === 'manim') {
+                    manimVid.src = getMediaSrc(vpath); manimVid.load();
+                    manimVid.play().catch(function () { });
+                    manimLayer.classList.add('on');
+                } else {
+                    wanVid.src = getMediaSrc(vpath); wanVid.load();
+                    wanVid.play().catch(function () { });
+                    wanLayer.classList.add('on');
+                }
+            }
+
+            function buildOptionButtons(q, qi) {
+                qOptions.innerHTML = '';
+                var opts = q.options || {};
+                var keys = Object.keys(opts);
+                var answered = false;
+
+                keys.forEach(function (key) {
                     var btn = document.createElement('button');
-                    btn.id  = 'quiz-opt-' + key;
+                    btn.id = 'quiz-opt-' + key;
                     btn.textContent = key + ': ' + opts[key];
                     btn.style.cssText = [
-                        'display:none', 'width:100%',
-                        'padding:14px 18px', 'border-radius:10px', 'cursor:pointer',
-                        'font-family:\'Sora\',sans-serif', 'font-size:17px', 'text-align:left',
+                        'padding:16px 20px', 'border-radius:10px', 'cursor:pointer',
+                        'font-family:\'Sora\',sans-serif', 'font-size:18px', 'text-align:left',
                         'background:#21262d', 'color:#e6edf3',
-                        'border:1px solid rgba(255,255,255,0.08)',
-                        'transition:all .25s ease', 'opacity:0'
+                        'border:1px solid rgba(255,255,255,0.08)', 'transition:all .25s'
                     ].join(';');
+                    btn.onmouseover = function () { if (!answered) btn.style.borderColor = '#f6c44e'; };
+                    btn.onmouseout = function () { if (!answered) btn.style.borderColor = 'rgba(255,255,255,0.08)'; };
 
-                    btn.addEventListener('mouseover', function() {
-                        if (!answered) btn.style.borderColor = '#f6c44e';
-                    });
-                    btn.addEventListener('mouseout', function() {
-                        if (!answered) btn.style.borderColor = 'rgba(255,255,255,0.08)';
-                    });
-
-                    btn.addEventListener('click', function() {
+                    btn.onclick = function () {
                         if (answered) return;
                         answered = true;
-                        onAnswer(key);
-                    });
-
-                    qOptions.appendChild(btn);
-                    buttons[key] = btn;
-                });
-
-                function revealButton(key) {
-                    var b = buttons[key];
-                    if (!b || b.style.display !== 'none') return;
-                    b.style.display = 'block';
-                    requestAnimationFrame(function() {
-                        b.style.opacity = '1';
-                        b.style.transform = 'translateY(0)';
-                    });
-                }
-
-                function revealAllButtons() {
-                    keys.forEach(function(k) { revealButton(k); });
-                }
-
-                function onAnswer(key) {
-                    var correct = q.correct_option || q.correct || '';
-                    var isRight = (key === correct);
-
-                    // Style: green=correct, red=wrong-chosen
-                    keys.forEach(function(k) {
-                        var b = buttons[k];
-                        if (!b) return;
-                        if (k === correct) {
-                            b.style.background   = 'rgba(126,231,135,0.14)';
-                            b.style.borderColor  = '#7ee787';
-                            b.style.color        = '#7ee787';
-                        } else if (k === key && !isRight) {
-                            b.style.background   = 'rgba(255,107,138,0.14)';
-                            b.style.borderColor  = '#ff6b8a';
-                            b.style.color        = '#ff6b8a';
-                        }
-                        b.style.cursor = 'default';
-                        b.style.pointerEvents = 'none';
-                    });
-
-                    // Show explanation text strip
-                    var expl = q.explanation || '';
-                    if (expl) {
-                        qFeedback.style.display = 'block';
-                        qFeedback.style.background   = isRight ? 'rgba(126,231,135,0.07)' : 'rgba(255,107,138,0.07)';
-                        qFeedback.style.borderColor  = isRight ? 'rgba(126,231,135,0.25)' : 'rgba(255,107,138,0.25)';
-                        qFeedback.style.color        = '#e6edf3';
-                        qFeedback.innerHTML          = (isRight ? '✅ ' : '❌ ') + esc(expl);
-                    }
-
-                    // correct/wrong clip → then explanation visual + explanation clip → advance
-                    var nextClip = isRight ? clips.correct : clips.wrong;
-                    playClip(nextClip, function() {
-                        // Show explanation visual behind quiz overlay (z:52 keeps overlay on top)
-                        showExplanationVisual(q);
-                        // Play explanation clip simultaneously
-                        playClip(clips.explanation, function() {
-                            timers.push(setTimeout(function() {
-                                document.getElementById('manim-layer').classList.remove('on');
-                                document.getElementById('wan-layer').classList.remove('on');
-                                qIdx++;
-                                showQuestion(qIdx);
-                            }, 900));
+                        var correct = q.correct_option || q.correct || '';
+                        var isRight = (key === correct);
+                        keys.forEach(function (k) {
+                            var b = document.getElementById('quiz-opt-' + k);
+                            if (!b) return;
+                            if (k === correct) {
+                                b.style.background = 'rgba(126,231,135,0.14)';
+                                b.style.borderColor = '#7ee787';
+                                b.style.color = '#7ee787';
+                            } else if (k === key && !isRight) {
+                                b.style.background = 'rgba(255,107,138,0.14)';
+                                b.style.borderColor = '#ff6b8a';
+                                b.style.color = '#ff6b8a';
+                            }
+                            b.style.cursor = 'default';
                         });
-                    });
-                }
-
-                // Schedule option reveals during the question clip
-                keys.forEach(function(key, idx) {
-                    var delay = (revealTimes[idx] !== undefined)
-                              ? Math.round(revealTimes[idx] * 1000)
-                              : (idx + 1) * 2500;
-                    timers.push(setTimeout(function() {
-                        if (curSec !== quizSecAtLoad) return;
-                        revealButton(key);
-                    }, delay));
-                });
-
-                // Play question clip; on end reveal any options not yet shown
-                playClip(clips.question, function() {
-                    if (curSec !== quizSecAtLoad) return;
-                    revealAllButtons();
+                        var expl = q.explanation || '';
+                        if (expl) {
+                            qFeedback.style.display = 'block';
+                            qFeedback.style.background = isRight ? 'rgba(126,231,135,0.07)' : 'rgba(255,107,138,0.07)';
+                            qFeedback.style.borderColor = isRight ? 'rgba(126,231,135,0.25)' : 'rgba(255,107,138,0.25)';
+                            qFeedback.style.color = '#e6edf3';
+                            qFeedback.innerHTML = (isRight ? '✅ ' : '❌ ') + expl;
+                        }
+                        var clips = q.avatar_clips || {};
+                        var nextClip = isRight ? clips.correct : clips.wrong;
+                        playQuizClip(nextClip, function () {
+                            playExplanationVisual(q);
+                            playQuizClip(clips.explanation, function () {
+                                timers.push(setTimeout(function () {
+                                    document.getElementById('manim-layer').classList.remove('on');
+                                    document.getElementById('wan-layer').classList.remove('on');
+                                    qIdx++;
+                                    showQuestion(qIdx);
+                                }, 900));
+                            });
+                        });
+                    };
+                    qOptions.appendChild(btn);
                 });
             }
 

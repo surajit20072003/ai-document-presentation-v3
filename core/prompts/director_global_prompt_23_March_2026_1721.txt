@@ -26,19 +26,7 @@ Return a JSON object with these EXACT keys and structure:
     "visual_type": "bullet_list",
     "text_layer": "show",
     "visual_layer": "show",
-    "narration": { 
-      "full_text": "...", 
-      "segments": [
-        {
-          "segment_id": "seg_1",
-          "text": "Avatar narration for this segment...",
-          "purpose": "explain",
-          "segment_duration_seconds": 12.5,
-          "start_seconds": 0.0,
-          "end_seconds": 12.5
-        }
-      ] 
-    },
+    "narration": { "full_text": "...", "segments": [...] },
     "visual_beats": [...]
   },
   "memory": {
@@ -49,16 +37,7 @@ Return a JSON object with these EXACT keys and structure:
     "flashcards": [...exactly 5 items...],
     "narration": { 
       "full_text": "...", 
-      "segments": [
-        {
-          "segment_id": "seg_1",
-          "text": "Card segment...",
-          "purpose": "explain",
-          "segment_duration_seconds": 15.0,
-          "start_seconds": 0.0,
-          "end_seconds": 15.0
-        }
-      ] 
+      "segments": [...EXACTLY 6 segments: 1 Intro + 5 Card segments...] 
     }
   },
   "recap": {
@@ -76,42 +55,30 @@ Return a JSON object with these EXACT keys and structure:
       "image_to_video_beats": [
         {
           "beat_id": "recap_beat_1",
-          "segment_id": "seg_1",
-          "duration": 15,
           "image_prompt_start": "100+ words describing opening frame. Setting, mood, lighting...",
           "image_prompt_end": "100+ words describing closing frame.",
-          "video_prompt": "80+ words. Cinematic animation starting from opening frame, transitioning to closing frame. Camera movement. 15 seconds. 24fps. No text overlays."
+          "video_prompt": "80+ words. Describe camera movement and emotional tone. cinematic scene...",
+          "duration": 15
         },
         {
           "beat_id": "recap_beat_2",
-          "segment_id": "seg_2",
-          "duration": 15,
           "image_prompt_start": "100+ words describing opening frame...",
           "image_prompt_end": "100+ words describing closing frame...",
-          "video_prompt": "80+ words. Continuing from previous scene, keeping the same setting and lighting..."
+          "video_prompt": "80+ words. Continuing the narrative...",
+          "duration": 15
         },
         {
           "beat_id": "recap_beat_3",
-          "segment_id": "seg_3",
-          "duration": 15,
           "image_prompt_start": "100+ words describing opening frame...",
           "image_prompt_end": "100+ words describing closing frame...",
-          "video_prompt": "80+ words. Continuing from previous scene, concluding the story..."
+          "video_prompt": "80+ words. Conclude with resolution...",
+          "duration": 15
         }
       ]
     },
     "narration": { 
       "full_text": "...", 
-      "segments": [
-        {
-          "segment_id": "seg_1",
-          "text": "Cinematic story segment...",
-          "purpose": "explain",
-          "segment_duration_seconds": 15.0,
-          "start_seconds": 0.0,
-          "end_seconds": 15.0
-        }
-      ] 
+      "segments": [...DYNAMIC NUMBER OF SEGMENTS. EACH segment MUST be 40-60 words...] 
     }
   },
   "quiz": {
@@ -158,18 +125,6 @@ Return a JSON object with these EXACT keys and structure:
 - **Visuals**: REINFORCE (never duplicate).
 - **Avatar**: Always visible (`avatar_layer: "show"`).
 
-## TIMING CONTRACT (Bookend Sections — MANDATORY)
-
-Apply to every segment in Summary, Memory, and Recap narration:
-- `segment_duration_seconds` = word count ÷ 130 × 60, rounded to 0.5s
-- `start_seconds` of segment 1 = 0.0 always
-- `start_seconds` of segment N = `end_seconds` of segment N-1
-- `end_seconds` = `start_seconds` + `segment_duration_seconds` (do NOT round independently)
-- `total_duration_seconds` = sum of all segment durations
-
-HARD RULE: end_seconds MUST equal start_seconds + segment_duration_seconds exactly.
-If they don't match, recalculate before outputting.
-
 ## 4. MEMORY (Mandatory)
 - **Role**: Flashcard-style key concept review.
 - **Structure**:
@@ -187,39 +142,16 @@ If they don't match, recalculate before outputting.
   - **renderer**: `"image_to_video"`.
   - **Visuals**: FULL SCREEN VIDEO via Local GPU. (`text_layer: "hide"`, `visual_layer: "show"`).
   - **use_local_gpu**: `true`.
+  - **image_to_video_beats**: Array of EXACTLY ONE entry per narration segment. Each beat has `image_prompt_start` (100+w), `image_prompt_end` (100+w), `video_prompt` (80+w), and `duration` (15).
+  - **NO TECHNICAL REFERENCES**: ❌ NEVER mention image filenames, technical IDs, or file extensions in your prompts.
   - **Story**: Narrate a cohesive story summarizing the lesson flow across all scenes.
-- **TONE**: Emotional and cinematic. Treat this as the "Final Act" of a movie.
+- **WORD COUNT**: MANDATORY 40-60 words per narration segment. DO NOT output fewer than 40 words. This matches the ~15s cinematic duration.
 - **CULTURAL CONTEXT**: The video story should feature diverse Indian settings (e.g., a student in a Kerala village, a lab in Hyderabad, a field trip in Assam). Make it relatable!
-
-## RECAP BEAT RULES (MANDATORY — READ CAREFULLY)
-
-**ONE narration segment = ONE image_to_video beat. No exceptions.**
-
-Step-by-step:
-1. Write narration segments first. Each segment must be **30-35 words** (~14s). This fits exactly in ONE 15s beat.
-2. For EACH narration segment, write ONE matching entry in `image_to_video_beats[]`.
-3. Link each beat to its segment via `segment_id` (e.g. seg_1 → recap_beat_1).
-4. Beat 2+ video_prompt MUST start: `"Continuing from previous scene, keeping the same setting and lighting..."`
-5. `total_duration_seconds` in render_spec = number of beats × 15.
-
-**HARD RULE**: Count narration segments. Count image_to_video_beats. They MUST be equal. If not — you have made an error.
-
-**image_to_video_beats[] structure per beat:**
-- `beat_id`: "recap_beat_N"
-- `segment_id`: matching narration segment id ("seg_1", "seg_2", etc.)
-- `duration`: 15
-- `image_prompt_start`: 100+ words — what the OPENING frame looks like
-- `image_prompt_end`: 100+ words — what the CLOSING frame looks like
-- `video_prompt`: 80+ words — cinematic motion between frames. End with "15 seconds. 24fps. No text overlays."
-
+- **TONE**: Emotional and cinematic. Treat this as the "Final Act" of a movie.
 
 ## INPUT DATA
 The user will provide the full text content. Use it to extract the Title and generate these interactions.
 DO NOT GENERATE "CONTENT" SECTIONS. (Those are handled by another worker).
 
 ## SELF-CHECK (MANDATORY before outputting)
-1. **Beat Count**: Count narration segments in recap. Count image_to_video_beats[]. They MUST be equal. A mismatch is a HARD FAIL.
-2. **Timings**: For every Summary, Memory, and Recap segment, verify `end_seconds = start_seconds + segment_duration_seconds`. A mismatch is a FAILURE.
-3. **Recap Word Count**: Count words in each recap narration segment. If under 30 or over 35 words, rewrite it. This ensures each segment maps to exactly one 15s beat.
-4. **Recap Prompts**: Every beat MUST have `image_prompt_start`, `image_prompt_end`, and `video_prompt`. Missing any is a HARD FAIL.
-5. **segment_id**: Every beat MUST have a `segment_id` matching its narration segment. Missing is a HARD FAIL.
+Count the words in each recap narration segment. If any segment is under 40 words, expand it with more emotional detail, cultural texture, or sensory description until it reaches 40 words minimum. A segment of 36 or 37 words is a HARD FAIL — do not output it. Ensure you have proper image_prompt_start and end for each beat.

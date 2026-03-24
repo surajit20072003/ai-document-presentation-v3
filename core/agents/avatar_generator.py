@@ -653,10 +653,11 @@ class AvatarGenerator:
         """
         V3: Generate 3 avatar clips per quiz question.
 
-        For each quiz section and each question, submits 3 separate avatar jobs:
-          1. question clip  — avatar reads the question
-          2. correct clip   — avatar reacts "Correct! [explanation]"
-          3. wrong clip     — avatar reacts "Not quite. The answer is [correct_option]..."
+        For each quiz section and each question, submits 4 separate avatar jobs:
+          1. question clip     — avatar reads the question
+          2. correct clip      — avatar reacts "Correct! [explanation]"
+          3. wrong clip        — avatar reacts "Not quite. The answer is [correct_option]..."
+          4. explanation clip  — avatar explains WHY the answer is correct (plays after both correct and wrong)
 
         Output filenames (stored under avatars/{language or 'en'}/):
           quiz_{section_id}_q{n}_question.mp4
@@ -688,7 +689,7 @@ class AvatarGenerator:
             logger.info("[AVATAR-QUIZ] No quiz sections found — skipping.")
             return results
 
-        CLIP_TYPES = ["question", "correct", "wrong"]
+        CLIP_TYPES = ["question", "correct", "wrong", "explanation"]
 
         for section in quiz_sections:
             sec_id = section.get("section_id", "0")
@@ -699,9 +700,10 @@ class AvatarGenerator:
                 narr = q.get("narration", {})
 
                 scripts = {
-                    "question": narr.get("question_script", ""),
-                    "correct":  narr.get("correct_script", ""),
-                    "wrong":    narr.get("wrong_script", ""),
+                    "question":    narr.get("question_script", ""),
+                    "correct":     narr.get("correct_script", ""),
+                    "wrong":       narr.get("wrong_script", ""),
+                    "explanation": narr.get("explanation_script", ""),
                 }
 
                 # Auto-generate fallback scripts if missing
@@ -716,6 +718,11 @@ class AvatarGenerator:
                     correct_key = q.get("correct_option", "")
                     correct_txt = q.get("options", {}).get(correct_key, "")
                     scripts["wrong"] = f"Not quite. The correct answer is option {correct_key}: {correct_txt}. Let me explain why."
+                if not scripts["explanation"]:
+                    expl = q.get("explanation", "")
+                    correct_key = q.get("correct_option", "")
+                    correct_txt = q.get("options", {}).get(correct_key, "")
+                    scripts["explanation"] = expl or f"The correct answer is {correct_key}: {correct_txt}."
 
                 clip_paths: Dict[str, str] = {}
 

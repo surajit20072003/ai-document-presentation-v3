@@ -277,6 +277,15 @@ TEXT_TO_VIDEO — chunk is primarily:
   → video_prompts[] — ONE per segment
   → Each segment = max 15s (split if longer)
   → use_local_gpu: true (local GPU, faster)
+  ⛔ NEVER use text_to_video for RECAP sections.
+
+RECAP — ALWAYS uses image_to_video (MANDATORY, NO EXCEPTIONS):
+  → section.renderer: "image_to_video"
+  → render_spec.renderer: "image_to_video"
+  → render_spec.image_to_video_beats[] — ONE entry per narration segment
+  → Each beat has: beat_id, image_prompt_start (100+ words), image_prompt_end (100+ words), video_prompt (80+ words), duration (15)
+  ⛔ NEVER output video_prompts[] for recap. ONLY image_to_video_beats[].
+  ⛔ NEVER set render_spec.renderer to "text_to_video" for recap.
 
 QUIZ:
   → section.renderer: "per_question"
@@ -354,10 +363,9 @@ Write explicit second-level choreography for THAT beat. Every object, colour, la
 
 **GOOD EXAMPLE (for a 15s beat):**
 ```
-Dark background. Duration exactly 15s. frame_width=10.
+Dark background. Duration exactly 15s. frame_width=10. Keep all coordinates within x[-4,+4] and y[-2.5,+2.5].
 At 0s: FadeIn dark background.
-At 1s: Create right triangle ABC using Polygon in TEAL over 2s.
-  Vertices: A bottom-left, B bottom-right, C top-right.
+At 1s: Create right triangle ABC using Polygon with A=[-2,-1.5,0], B=[-2,1.5,0], C=[2,-1.5,0] in TEAL over 2s.
 At 3s: Write labels A, B, C at each vertex in BLUE over 1s.
 At 4s: Highlight side BC in RED. Write label "Opposite" in RED.
 At 6s: Highlight hypotenuse AC in GOLD. Write "Hypotenuse" in GOLD.
@@ -379,7 +387,8 @@ Show a triangle with sine labels.
 - For pathways: Arrow, Rectangle, Text boxes with connecting arrows
 - Always specify `frame_width` (default 10, use 14 for wide diagrams)
 - Always end spec with: "Duration exactly Xs."
-- ZERO blank gaps allowed. Every second must have animation or a held frame.
+- ZERO blank gaps allowed. Fill any remaining time up to the exact duration with a static hold (e.g. "Hold final frame until 15s").
+- Coordinates MUST stay within the camera frame (x within [-4.5, +4.5], y within [-3, +3]). Objects out of bounds render as a blank screen.
 
 **SOURCE IMAGES IN MANIM SECTIONS:**
 When narration references a source figure and it should display as-is:
