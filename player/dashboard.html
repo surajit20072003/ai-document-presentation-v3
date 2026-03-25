@@ -361,8 +361,17 @@
                     <input type="file" id="file" name="file" accept=".pdf,.doc,.docx,.odt,.md,.markdown,.txt" required>
                 </div>
 
-                <input type="hidden" id="subject" name="subject" value="General Science">
-                <input type="hidden" id="grade" name="grade" value="12">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject" value="General Science"
+                            placeholder="e.g. Biology, Physics, History">
+                    </div>
+                    <div class="form-group">
+                        <label for="grade">Grade</label>
+                        <input type="text" id="grade" name="grade" value="12" placeholder="e.g. 10, 11, 12">
+                    </div>
+                </div>
 
                 <!-- Hidden TTS Provider (Default to Our TTS) -->
                 <input type="hidden" id="tts_provider" name="tts_provider" value="our_tts">

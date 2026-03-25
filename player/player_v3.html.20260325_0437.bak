@@ -1496,22 +1496,17 @@
         }
 
         function buildSummaryHTML(sec) {
-            var allSegments = (sec.narration && sec.narration.segments) ? sec.narration.segments : [];
-
-            // SUMM-02: Only render actual objectives — skip the intro sentence
-            var bulletSegments = allSegments.filter(function (seg) {
-                return seg.purpose !== 'introduce';
-            });
-
-            var items = bulletSegments.slice(0, 6).map(function (seg, i) {
-                // IMPORTANT: use the original segment index for the DOM id
-                // so initSummarySection can still find it by segment position
-                var origIdx = allSegments.indexOf(seg);
-                return '<div class="sbullet" id="sb-' + sec.section_id + '-' + origIdx + '">' +
+            var bullets = [];
+            if (sec.narration && sec.narration.segments) {
+                sec.narration.segments.forEach(function (seg) {
+                    if (seg.text) bullets.push(seg.text.substring(0, 120));
+                });
+            }
+            var items = bullets.slice(0, 6).map(function (t, i) {
+                return '<div class="sbullet" id="sb-' + sec.section_id + '-' + i + '">' +
                     '<div class="sbullet-n">' + (i + 1) + '</div>' +
-                    '<div class="sbullet-t">' + esc((seg.text || '').substring(0, 120)) + '</div></div>';
+                    '<div class="sbullet-t">' + esc(t) + '</div></div>';
             }).join('');
-
             return '<div style="align-items:flex-start;max-width:680px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:10px">' +
                 '<div class="sum-hd">By the end of this section, you will...</div>' + items + '</div>';
         }
@@ -2391,33 +2386,16 @@
 
         function initSummarySection(sec) {
             if (!sec.narration || !sec.narration.segments) return;
-            var segments = sec.narration.segments;
-            var sectionAtLoad = curSec;
-            var avEl = document.getElementById('av-vid');
-
-            // Hide all bullets on entry
-            segments.forEach(function (_, i) {
+            sec.narration.segments.forEach(function (_, i) {
                 var el = document.getElementById('sb-' + sec.section_id + '-' + i);
                 if (el) el.classList.remove('show');
+                timers.push(setTimeout(function (idx) {
+                    return function () {
+                        var el2 = document.getElementById('sb-' + sec.section_id + '-' + idx);
+                        if (el2) el2.classList.add('show');
+                    };
+                }(i), 400 + i * 1800));
             });
-
-            function onTimeUpdate() {
-                if (curSec !== sectionAtLoad) {
-                    avEl.removeEventListener('timeupdate', onTimeUpdate);
-                    return;
-                }
-                var t = avEl.currentTime;
-                segments.forEach(function (seg, i) {
-                    // SUMM-01: Use start_seconds if available, fall back to accumulated duration
-                    var threshold = (seg.start_seconds !== undefined) ? seg.start_seconds : (i * 5);
-                    if (t >= threshold) {
-                        var el = document.getElementById('sb-' + sec.section_id + '-' + i);
-                        if (el && !el.classList.contains('show')) el.classList.add('show');
-                    }
-                });
-            }
-
-            avEl.addEventListener('timeupdate', onTimeUpdate);
         }
 
         function initRecapSection(sec) {
@@ -2592,19 +2570,12 @@
             function showExplanationVisual(q) {
                 var ev = q.explanation_visual;
                 if (!ev) return;
-
+                // Resolve video path: try direct video_path, then image_to_video_beats[0]
                 var vpath = ev.video_path;
                 if (!vpath && ev.image_to_video_beats && ev.image_to_video_beats.length > 0) {
                     vpath = ev.image_to_video_beats[0].video_path || null;
                 }
-                if (!vpath) return;
-
-                // QUIZ-EXP: Dim overlay + card + options so video layer shows through all of them
-                document.getElementById('quiz-overlay').style.background = 'rgba(13,17,23,0.4)';
-                var card = document.getElementById('quiz-question-card');
-                var opts = document.getElementById('quiz-options');
-                if (card) card.style.background = 'rgba(22,27,34,0.45)';
-                if (opts) opts.style.opacity = '0.55';
+                if (!vpath) return;  // No visual rendered yet — explanation clip still plays
 
                 var renderer = ev.renderer || 'manim';
                 var manimLayer = document.getElementById('manim-layer');
@@ -2612,6 +2583,7 @@
                 var wanLayer = document.getElementById('wan-layer');
                 var wanVid = document.getElementById('wan-vid');
 
+                // Clear both visual layers first
                 manimLayer.classList.remove('on');
                 wanLayer.classList.remove('on');
 
@@ -2621,6 +2593,7 @@
                     manimVid.play().catch(function () { });
                     manimLayer.classList.add('on');
                 } else {
+                    // image_to_video / text_to_video
                     wanVid.src = getMediaSrc(vpath);
                     wanVid.load();
                     wanVid.play().catch(function () { });
@@ -2741,18 +2714,11 @@
                         // Play explanation clip simultaneously
                         playClip(clips.explanation, function () {
                             timers.push(setTimeout(function () {
-                    // QUIZ-EXP: Restore full opacity on all three elements before next question
-                    document.getElementById('quiz-overlay').style.background = 'rgba(13,17,23,0.96)';
-                    var card = document.getElementById('quiz-question-card');
-                    var opts = document.getElementById('quiz-options');
-                    if (card) card.style.background = '#161b22';
-                    if (opts) opts.style.opacity = '1';
-
-                    document.getElementById('manim-layer').classList.remove('on');
-                    document.getElementById('wan-layer').classList.remove('on');
-                    qIdx++;
-                    showQuestion(qIdx);
-                }, 900));
+                                document.getElementById('manim-layer').classList.remove('on');
+                                document.getElementById('wan-layer').classList.remove('on');
+                                qIdx++;
+                                showQuestion(qIdx);
+                            }, 900));
                         });
                     });
                 }

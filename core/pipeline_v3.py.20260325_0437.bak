@@ -30,31 +30,6 @@ class V3PipelineError(Exception):
         self.phase = phase
 
 
-def substitute_placeholders(presentation_data: dict, subject: str, grade: str) -> dict:
-    """
-    Replace {{subject}} and {{grade}} in all narration text fields
-    before avatar generation is triggered.
-    Recursively scans the dict for string values containing placeholders.
-    """
-    replacements = {
-        "{{subject}}": subject,
-        "{{grade}}": str(grade),
-    }
-
-    def replace_in_value(val):
-        if isinstance(val, str):
-            for placeholder, replacement in replacements.items():
-                val = val.replace(placeholder, replacement)
-            return val
-        elif isinstance(val, dict):
-            return {k: replace_in_value(v) for k, v in val.items()}
-        elif isinstance(val, list):
-            return [replace_in_value(item) for item in val]
-        return val
-
-    return replace_in_value(presentation_data)
-
-
 def run_v3_pipeline(
     markdown_content: str,
     subject: str,
@@ -176,67 +151,48 @@ def run_v3_pipeline(
 
     # ─────────────────────────────────────────────
     # Phase 1.5: Normalize image_source filenames
-    # ALWAYS run normalization Pass — browser cannot resolve absolute paths.
-    log("image_normalize", "Phase 1.5: Normalizing image_source filenames to match disk...")
-    try:
-        from pathlib import Path as _Path
+    # The Director LLM copies _img.jpg filenames from the raw markdown,
+    # but save_datalab_images() saves them as .png on disk.
+    # This pass corrects every image_source field in the presentation
+    # to match the actual file on disk (stem-based lookup).
+    # Only runs when source images were uploaded with the PDF.
+    # ─────────────────────────────────────────────
+    if saved_images:
+        log("image_normalize", "Phase 1.5: Normalizing image_source filenames to match disk...")
+        try:
+            from pathlib import Path as _Path
 
-        images_dir_path = output_path / "images"
+            images_dir_path = output_path / "images"
 
-        # Build stem → actual filename map from what exists on disk
-        stem_map = {}
-        if images_dir_path.exists():
-            for f in images_dir_path.iterdir():
-                if f.suffix in (".png", ".jpg", ".jpeg", ".webp"):
-                    stem_map[f.stem] = f.name  # e.g. "b0d31e64_img" → "b0d31e64_img.png"
+            # Build stem → actual filename map from what exists on disk
+            stem_map = {}
+            if images_dir_path.exists():
+                for f in images_dir_path.iterdir():
+                    if f.suffix in (".png", ".jpg", ".jpeg", ".webp"):
+                        stem_map[f.stem] = f.name  # e.g. "b0d31e64_img" → "b0d31e64_img.png"
 
-        fixed_count = 0
+            fixed_count = 0
 
-        def _fix_image_source(obj):
-            """
-            Normalize an image_source path to be relative to output_dir.
-            Strips any absolute path prefix, then searches images/ and
-            generated_images/ for a filename stem match.
-            """
-            nonlocal fixed_count
-            if isinstance(obj, dict):
-                for k, v in obj.items():
-                    if k == "image_source" and isinstance(v, str):
-                        # Step 1 — strip absolute prefix down to bare filename
-                        filename = os.path.basename(v)
-                        stem = os.path.splitext(filename)[0]
+            def _fix_image_source(obj):
+                nonlocal fixed_count
+                if isinstance(obj, dict):
+                    for k, v in obj.items():
+                        if k == "image_source" and isinstance(v, str) and "_img." in v:
+                            stem = v.rsplit(".", 1)[0]  # strip extension
+                            if stem in stem_map and stem_map[stem] != v:
+                                obj[k] = stem_map[stem]
+                                fixed_count += 1
+                        else:
+                            _fix_image_source(v)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        _fix_image_source(item)
 
-                        found_rel = None
-                        # Step 2 — search images/ then generated_images/ for a stem match
-                        for subdir in ["images", "generated_images"]:
-                            search_dir = output_path / subdir
-                            if not search_dir.is_dir():
-                                continue
-                            for f in search_dir.iterdir():
-                                if f.stem == stem:
-                                    found_rel = f"{subdir}/{f.name}"
-                                    break
-                            if found_rel:
-                                break
-
-                        if found_rel and obj[k] != found_rel:
-                            obj[k] = found_rel
-                            fixed_count += 1
-                        elif not found_rel and "/" in v:
-                            # Fallback — return bare filename if absolute path but not found on disk
-                            obj[k] = filename
-                            fixed_count += 1
-                    else:
-                        _fix_image_source(v)
-            elif isinstance(obj, list):
-                for item in obj:
-                    _fix_image_source(item)
-
-        _fix_image_source(presentation)
-        log("image_normalize", f"✅ Phase 1.5 complete: {fixed_count} path(s) corrected.")
-    except Exception as e:
-        logger.warning(f"[V3] Image normalize error (non-fatal): {e}")
-        log("image_normalize", f"⚠️ Phase 1.5 error (non-fatal): {e}")
+            _fix_image_source(presentation)
+            log("image_normalize", f"✅ Phase 1.5 complete: {fixed_count} image_source path(s) corrected.")
+        except Exception as e:
+            logger.warning(f"[V3] Image normalize error (non-fatal): {e}")
+            log("image_normalize", f"⚠️ Phase 1.5 error (non-fatal): {e}")
 
     # ─────────────────────────────────────────────
     # Phase 2: V3 Validator
@@ -350,14 +306,6 @@ def run_v3_pipeline(
                     "avatar",
                     "Phase 3.3: Starting avatar generation for all sections...",
                 )
-
-                # SUBST-001: Substitute placeholders before avatar generation
-                presentation = substitute_placeholders(
-                    presentation,
-                    subject=subject,
-                    grade=grade
-                )
-
                 avatar_gen = AvatarGenerator(api_url=avatar_api_url)
 
                 languages = [language] if language else [None]

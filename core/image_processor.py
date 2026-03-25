@@ -149,7 +149,10 @@ def save_datalab_images(images_dict: dict, output_dir: str, apply_green_screen: 
             
             processed_img.save(output_path, 'PNG')
             
-            saved_images[filename] = {
+            # Key by OUTPUT filename (.png) — not original (.jpg) —
+            # so that images_list passed to the Director LLM contains
+            # the actual filenames on disk, preventing .jpg/.png mismatch.
+            saved_images[output_filename] = {
                 'filename': output_filename,
                 'path': output_path,
                 'width': processed_img.width,

@@ -289,7 +289,7 @@ def generate_image_for_beat(
         output_dir: Base output directory
 
     Returns:
-        Path to generated image (relative to output_dir), or None
+        Path to generated image, or None
     """
     image_prompt = beat.get("image_prompt", "")
     if not image_prompt:
@@ -305,10 +305,4 @@ def generate_image_for_beat(
 
     # Generate
     gen = ImageGenerator()
-    abs_path = gen.generate_image(image_prompt, output_path)
-    
-    if abs_path is None:
-        return None
-        
-    # Return relative path only for browser compatibility
-    return os.path.join("images", os.path.basename(abs_path))
+    return gen.generate_image(image_prompt, output_path)

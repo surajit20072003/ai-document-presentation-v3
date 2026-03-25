@@ -718,4 +718,283 @@ These values are **hidden** and **hardcoded** in the UI. Every job submitted via
 2. Apply `safeLoadImage` in `switchToBeat()` (for content images) and `showExplanationVisual()` (for quiz images).
 3. Update `getMediaSrc` to return the base path without extension when calling these loaders.
 
+---
 
+## Issue Index Update — 2026-03-25
+
+| ID | Title | Severity | Status |
+|---|---|---|---|
+| [IMG-002](#img-002) | Image paths in presentation.json may point to wrong locations (Phase 1.5 gaps) | 🟡 Medium | ✅ Fixed |
+| [SUBST-001](#subst-001) | {{subject}} placeholders spoken literally by TTS | 🔴 High | ✅ Fixed |
+| [SUMM-001](#summ-001) | Summary bullets desynced from avatar narration | 🟡 Medium | ✅ Fixed |
+| [SUMM-002](#summ-002) | Summary intro sentence rendered as a bullet | 🟢 Low | ✅ Fixed |
+| [QUIZ-EXP](#quiz-exp) | Quiz explanation video hidden behind solid overlay | 🟡 Medium | ✅ Fixed |
+| [VIDEO-001](#video-001) | WAN/Manim background video plays at 1x — should be 0.90x | 🟢 Low | 🔵 Analyzed |
+| [BEAT-001](#beat-001) | Beat-to-beat transition feels stuck — no smooth handoff between beats | 🔴 High | 🔴 Analyzed |
+| [QUIZ-003](#quiz-003) | Quiz option reveals not in sync with avatar narration of options | 🔴 High | 🔴 Analyzed |
+
+---
+
+## IMG-002 🟡 ANALYZED — 2026-03-25
+
+### Image paths in presentation.json may point to wrong locations (Phase 1.5 coverage gap)
+
+**Reported:** Issue 1 (user-reported, 2026-03-25)
+**Relates to:** CHANGELOG Fix #13 (Phase 1.5 — Image Source Extension Normalizer)
+
+---
+
+### What Phase 1.5 Already Does
+
+Fix #13 (Phase 1.5 in `pipeline_v3.py` lines 153–195) added a stem-based correction pass that:
+1. Scans `jobs/<id>/images/` for actual files on disk
+2. Builds a stem → filename map (e.g. `b0d31e64_img` → `b0d31e64_img.png`)
+3. Walks every `image_source` key in `presentation.json` and corrects `.jpg` → `.png` when the disk file is `.png`
+
+**Condition:** only triggers when `saved_images` is truthy — i.e. only when source images were uploaded alongside the PDF.
+
+---
+
+### Remaining Gaps (Root Cause)
+
+| Gap | Description | Risk |
+|-----|-------------|------|
+| **Gap A — Absolute paths from `image_generator.py`** | AI-generated images written by `render/image/image_generator.py` may return an absolute filesystem path (e.g. `/nvme0n1-disk/.../images/topic_3_seg_1.png`). If this absolute path is written into `presentation.json`, `getMediaSrc()` in the player builds a broken double-path URL like `http://server/jobs/id//nvme0n1-disk/.../topic.png`. | 🟡 Medium |
+| **Gap B — AI-generated images: no normalizer pass** | Phase 1.5 only runs when `saved_images` (PDF source images) is truthy. AI-generated images (WAN visual beats, infographic renders) are NOT covered by Phase 1.5. If `image_generator.py` returns an absolute path, no correction pass exists. | 🟡 Medium |
+| **Gap C — No-PDF jobs** | When no PDF is uploaded, Phase 1.5 is entirely skipped. All image paths are whatever the LLM or `image_generator.py` writes — no validation or normalization occurs. | 🟡 Medium |
+| **Gap D — Extension already correct, but subdirectory wrong** | Even if the extension is correct (`.png`), if the image is written to `images/` while `presentation.json` references `generated_images/`, the player 404s. Phase 1.5 only checks the stem + extension, not the subdirectory prefix. | 🟢 Low |
+
+---
+
+### Exact Resolution (analysis only)
+
+1. **Audit `image_generator.py`** — Confirm whether its return value is a relative path (`images/topic_3_seg_1.png`) or an absolute path. If absolute, add `Path(abs_path).relative_to(output_dir)` normalization before the writeback to `presentation.json`.
+2. **Extend Phase 1.5 to always run** — Remove the `if saved_images:` gate. Run the stem-based normalizer unconditionally, scanning all `images/` and `generated_images/` subdirectories. This closes Gap B and Gap C.
+3. **Player fallback is already safe** — `safeLoadImage()` (Fix #4) retries `.png → .jpg → .jpeg` if the initial load fails — a last-resort safety net for extension mismatches.
+
+**Impact of change:**
+- Phase 1.5 extension (Gap B/C): **zero risk** — pure JSON read/write pass, no generation logic.
+- `image_generator.py` path fix (Gap A): **low risk** — only changes what string is persisted, not where the file is saved.
+
+**Status:** 🔵 Analyzed — implementation pending
+
+---
+
+## VIDEO-001 🟢 ANALYZED — 2026-03-25
+
+### Background WAN/LTX MP4 and Manim video play at 1x speed — target is 0.90x
+
+**Reported:** Issue 2 (user-reported, 2026-03-25)
+
+---
+
+### Root Cause
+
+`wanVid.play()` and `manimVid.play()` in `player_v3.html` use the browser's default `playbackRate = 1.0`. No JavaScript or HTML attribute sets a custom rate. The calls are at:
+
+| Line | Element | Context |
+|------|---------|---------|
+| 2036 | `#wan-vid` | `showBeat()` in `loadVideoScene()` — main beat starter |
+| 2078 | `#wan-vid` | Stall recovery in `onTimeUpdate()` |
+| 2316 | `#manim-vid` | `_startCheck` in `loadManimScene()` |
+| 2325 | `#manim-vid` | Stall recovery in `_stallCheck` |
+
+The avatar video (`#av-vid`) at line 1667 also starts at 1.0x.
+
+> **Sync consideration:** The beat schedule is driven by `avEl.currentTime` (avatar clock). If only the WAN/Manim videos are slowed to 0.9x but the avatar remains at 1.0x, the beat *switch* still happens at the correct avatar timestamp — but within each beat the background MP4 will run longer than its window allows, and the next beat fires before the slow video finishes. This creates a 10% over-run per beat.
+
+> **Recommended:** Slow the avatar (`#av-vid`) to `0.9x` as well. Since all timing is driven by `avEl.currentTime`, slowing the avatar stretches every timestamp proportionally — the whole presentation runs 11% longer but remains perfectly synced.
+
+---
+
+### Exact Resolution (analysis only)
+
+**Option A (Full sync — slow all three elements):**
+
+Set `playbackRate = 0.9` on:
+- `vid` (`#av-vid`) immediately after `vid.play()` in `loadSection()` (~line 1667)
+- `wanVid` (`#wan-vid`) after every `wanVid.play()` call in `showBeat()` and stall recovery (~lines 2036, 2078)
+- `manimVid` (`#manim-vid`) after every `manimVid.play()` in `_startCheck` and `_stallCheck` (~lines 2316, 2325)
+
+**Option B (Background only — tolerable drift within each beat):**
+Set `playbackRate = 0.9` on `wanVid` and `manimVid` only. Beat switches still happen at correct avatar timestamps. Within-beat video drift is bounded by one beat duration (~15s × 10% = 1.5s per beat). Acceptable if avatar speech speed is the concern, not the visual pacing.
+
+**Recommended:** Option A for full consistency.
+
+**Impact of change:**
+- HTML5 `playbackRate` is a first-class browser property — universally supported, zero risk of breaking playback.
+- Total presentation duration increases by ~11% (a 20-minute presentation becomes 22 minutes) — acceptable trade-off for better speech pacing.
+- The stall-checker intervals (`2000ms`) and sync loop intervals (`120ms`) are time-based and unaffected by `playbackRate`.
+
+**Status:** 🔵 Analyzed — implementation pending
+
+---
+
+## BEAT-001 🔴 ANALYZED — 2026-03-25
+
+### Beat-to-beat transition feels stuck — next beat video does not load instantly
+
+**Reported:** Issue 3 (user-reported, 2026-03-25)
+
+---
+
+### Root Cause
+
+In `loadVideoScene()` → `showBeat()` (lines 2014–2037), a beat switch for a video type does:
+
+```javascript
+wanVid.pause();
+wanVid.src = fullSrc;   // ← discards any existing buffer
+wanVid.load();           // ← starts async re-fetch from scratch
+wanVid.play().catch(…);
+```
+
+`wanVid.load()` resets the media element completely and begins a new HTTP fetch + decode cycle. On a local LAN this takes 300–800ms; on slower storage it can exceed 1 second. During this window the old video was paused but the new one isn't rendering — the layer shows **a black frame or frozen last frame**, which the user sees as the beat "stuck."
+
+**The preload mechanism exists but is broken for this purpose:**
+`preloadNext()` (lines 2040–2049) buffers the next video into `#wan-vid-pre` with `wanPre.src = src; wanPre.load()`. However, in `showBeat()` a fresh `wanVid.src = fullSrc` assignment is made regardless — this **re-fetches the same URL** that `wanPre` already has buffered, throwing away the cached data.
+
+**Manim scene loader** uses `setInterval(..., 120ms)` (line 2266). The same `manimVid.src = newSrc; load(); play()` pattern is used in `switchToBeat()` (line 2257–2263), with identical buffering gap.
+
+---
+
+### Exact Resolution (analysis only)
+
+**Fix A — Honour the preloaded `wanPre` element (primary fix):**
+
+In `showBeat()`, instead of always fetching fresh, check if `wanPre.src === fullSrc && wanPre.readyState >= 2`:
+- If yes: swap `wanVid.src = wanPre.src` WITHOUT calling `wanVid.load()` — the browser reuses its in-memory buffer. Then call `wanVid.play()`.
+- If no: fall through to the existing `src + load + play` path.
+
+This eliminates the buffering gap for every beat that was successfully pre-buffered (which is all beats except the current when the section first loads).
+
+**Fix B — CSS cross-fade to mask residual gaps:**
+In `#wan-layer` CSS, add `transition: opacity 200ms ease`. When `showBeat()` starts, fade out (`opacity: 0`), set `src`, then fade in on `canplay` event. A 200ms fade means any gap ≤ 200ms is invisible.
+
+**Fix B for Manim:** Same approach — add `transition: opacity 200ms` to `#manim-layer` and use the `canplay` event to fade in.
+
+**Recommended:** Fix A to eliminate the gap, Fix B as visual polish for any residual.
+
+**Impact of change:**
+- Fix A: **Low risk.** The `src` swap without `load()` is a standard browser optimization. Must verify on Safari/iOS where behaviour can differ — add a fallback to `load()` if `readyState < 2` after the swap.
+- Fix B: **Zero risk.** Pure CSS change, no logic affected.
+
+**Status:** 🔴 Analyzed — HIGH priority, directly visible to end users as a freeze/stuck transition
+
+---
+
+## QUIZ-003 🔴 ANALYZED — 2026-03-25
+
+### Quiz option reveal timing does not match avatar narration of options
+
+**Reported:** Issue 4 (user-reported, 2026-03-25)
+
+---
+
+### Root Cause — Three compounding problems
+
+#### Problem 1 — `setTimeout` delays not tied to avatar clock
+
+In `showQuestion()` (line 2727–2734), option reveals use static wall-clock timeouts:
+```javascript
+var delay = (revealTimes[idx] !== undefined)
+    ? Math.round(revealTimes[idx] * 1000)
+    : (idx + 1) * 2500;
+timers.push(setTimeout(function () { revealButton(key); }, delay));
+```
+
+These `setTimeout` delays start counting from the moment `showQuestion()` is called — **not** from when `clips.question` actually begins playing. Network buffer time before `clips.question` starts (100ms–2000ms) shifts every option reveal by the same buffering lag, progressively drifting away from the avatar's spoken timing.
+
+This is in direct contrast to content section subtitles which use `avEl.addEventListener('timeupdate', ...)` driven by `avEl.currentTime` — making them immune to buffering delay.
+
+#### Problem 2 — `option_reveal_seconds` are word-count estimates
+
+`narr.option_reveal_seconds` is generated by the Director LLM during generation (Phase 1), before any avatar MP4 exists. The LLM estimates when each option will be spoken based on word count. The real `clips.question` avatar MP4 is generated much later (Phase 6). If the real MP4 duration differs from the estimate by ±15%, all reveal timestamps are shifted.
+
+#### Problem 3 — Default fallback stagger is too fast
+
+When `option_reveal_seconds` is absent, the fallback `(idx + 1) * 2500` reveals all 4 options at 2.5s, 5.0s, 7.5s, 10.0s. Question clips are typically 18–25 seconds long. All options are visible after 10s while the avatar continues reading options B, C, D — the narration describes something already on screen.
+
+---
+
+### Exact Resolution (analysis only)
+
+**Fix A — Replace `setTimeout` with `timeupdate` listener (primary fix):**
+
+Inside `showQuestion()`, after `playClip(clips.question, ...)` sets `vid.src`, add:
+```javascript
+// Avatar-clock-driven option reveals (immune to buffering lag)
+function onQuizTimeUpdate() {
+    var t = vid.currentTime;
+    keys.forEach(function (key, idx) {
+        var threshold = revealTimes[idx];
+        if (threshold !== undefined && t >= threshold && !buttons[key]._revealed) {
+            buttons[key]._revealed = true;
+            revealButton(key);
+        }
+    });
+}
+vid.addEventListener('timeupdate', onQuizTimeUpdate);
+// Must remove this listener before onAnswer() plays a different clip
+```
+
+Remove the listener in `onAnswer()` before `playClip(nextClip, ...)` is called.
+
+**Fix B — Improve `option_reveal_seconds` generation in the Director prompt:**
+
+Update `director_global_prompt.txt` quiz narration instructions to:
+- Compute `option_reveal_seconds[0]` as the cumulative word count of the question text ÷ 2.5 WPS
+- Compute subsequent entries by adding each option text's word count ÷ 2.5 WPS
+- This example makes the LLM explicitly derive timing from the narration text it is also writing — making the estimates self-consistent
+
+This is a prompt-only change and requires no player code modification. It will not fix existing jobs but improves all future jobs.
+
+**Recommended:** Both Fix A + Fix B. Fix A makes the mechanism robust regardless of estimate accuracy. Fix B improves the starting estimates for new jobs.
+
+**Impact of change:**
+- Fix A: **Moderate risk** — requires careful listener cleanup to prevent leaks across questions. The listener must be removed before `vid.src` is changed to the correct/wrong clip, otherwise the old `onQuizTimeUpdate` fires against the wrong clip's timestamps.
+- Fix B: **Zero risk** — prompt-only, no pipeline or player code changes.
+
+**Status:** 🔴 Analyzed — HIGH priority, directly impacts quiz educational effectiveness
+
+---
+
+## Status Log (2026-03-25 additions)
+
+| Date | Update |
+|------|--------|
+| 2026-03-25 | **IMG-002** Analyzed — Phase 1.5 does not cover AI-generated image paths or no-PDF jobs. Gaps A/B/C documented. |
+| 2026-03-25 | **VIDEO-001** Analyzed — Missing `playbackRate = 0.9` on `#wan-vid`, `#manim-vid`, `#av-vid`. Option A (all three) recommended for sync integrity. |
+| 2026-03-25 | **BEAT-001** Analyzed — `wanVid.src = newSrc; load()` discards `wanPre` pre-buffer on every beat switch. Preload is buffered but never used at swap time. Fix A: honour `wanPre` at swap; Fix B: CSS cross-fade. |
+| 2026-03-25 | **QUIZ-003** Analyzed — Dual root cause: static `setTimeout` delays not connected to avatar clock, and LLM-estimated `option_reveal_seconds` generated before real MP4 exists. Fix A: `timeupdate`-driven reveals; Fix B: prompt improvement. |
+
+---
+
+## IMG-002 ✅ FIXED
+**Status:** ✅ Fixed (2026-03-25)
+**Resolution:** Removed 'saved_images' gate in 'pipeline_v3.py' Phase 1.5. Extended stem-matcher to scan both 'images/' and 'generated_images/' and strip absolute prefixes. Updated 'image_generator.py' to return relative 'images/' paths.
+
+---
+
+## SUBST-001 ✅ FIXED
+**Status:** ✅ Fixed (2026-03-25)
+**Root Cause:** Variables like '{{subject}}' were being passed raw to the Avatar API.
+**Resolution:** Added 'substitute_placeholders()' to 'pipeline_v3.py' to pre-process narration text recursively before queuing avatar generation.
+
+---
+
+## SUMM-001 ✅ FIXED
+**Status:** ✅ Fixed (2026-03-25)
+**Resolution:** Switched 'initSummarySection' in 'player_v3.html' from staggered 'setTimeout' to 'timeupdate' listeners mapped to 'start_seconds' (origIdx).
+
+---
+
+## SUMM-002 ✅ FIXED
+**Status:** ✅ Fixed (2026-03-25)
+**Resolution:** Added filter in 'buildSummaryHTML' to skip segments where 'purpose === "introduce"'.
+
+---
+
+## QUIZ-EXP ✅ FIXED
+**Status:** ✅ Fixed (2026-03-25)
+**Resolution:** Granularly dimmed '#quiz-overlay', '#quiz-question-card', and '#quiz-options' using rgba backgrounds and opacity while the explanation video plays. Full opacity is restored when the next question begins.
