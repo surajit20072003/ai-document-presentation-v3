@@ -97,6 +97,22 @@ Here is the complete list of fixes and improvements applied to the V3 pipeline a
     - **Fix:** Updated `buildSummaryHTML` to filter out segments with `purpose: "introduce"`.
     - **Result:** The "intro" sentence is no longer rendered as a redundant first bullet point.
 
-19. **Quiz Explanation Visibility (QUIZ-EXP)**
-    - **Fix:** Granularly dimmed the quiz UI during explanation videos (Overlay background 0.4, Card background 0.45, Options opacity 0.55).
-    - **Result:** The explanation video playing behind the quiz is now clearly visible to the student while keeping the text legible.
+19. **Quiz Explanation Visibility (QUIZ-EXP / QUIZ-HIDE)**
+    - **Fix:** Granularly dimmed the quiz UI and implemented `display: 'none'` for the question card and options during explanation videos. Later refined the overlay backdrop to be 100% `transparent` for a cleaner full-screen effect.
+    - **Result:** The explanation video playing behind the quiz is now perfectly visible to the student without UI clutter.
+
+20. **Quiz Navigation Strip (QUIZ-NAV)**
+    - **Fix:** Added a navigation strip with "PREV SECTION" and "SKIP QUIZ" buttons. Repositioned to the bottom-left with `position: fixed` and raised `z-index: 65` to ensure visibility above the avatar.
+    - **Result:** Students can now navigate between sections reliably, even during a quiz.
+
+21. **Clock-Anchored Karaoke (SUB-DRIFT)**
+    - **Fix:** Replaced the fixed `setInterval` ticker with a logic anchored to `av-vid.currentTime`.
+    - **Result:** Subtitles now remain perfectly synchronized even after video stalls, buffering, or manual pauses.
+
+22. **Quiz Narration Subtitles (SUB-QUIZ)**
+    - **Fix:** Updated `initQuizSection` to clear content subs and enhanced `playClip` to display quiz narration as full-text subtitles.
+    - **Result:** Students can now read the narration text during quiz question, response, and explanation clips.
+
+23. **Gapless Beat Transitions (VIDEO-BUFFER)**
+    - **Fix:** Implemented a 3.0s early preload trigger in `loadVideoScene` and a "hot swap" logic in `showBeat` to utilize the `wan-vid-pre` buffer.
+    - **Result:** Video beats now transition instantly and smoothly once buffered, eliminating black frames between clips.

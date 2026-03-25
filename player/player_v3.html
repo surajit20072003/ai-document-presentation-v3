@@ -1155,6 +1155,25 @@
                 font-size:13px; line-height:1.6; display:none;
                 border:1px solid rgba(255,255,255,0.07);
             "></div>
+
+            <!-- QUIZ-NAV: Positioned bottom-left to avoid competing with question card or avatar -->
+            <div id="quiz-nav" style="
+                position:fixed;
+                bottom:16px;
+                left:20px;
+                display:flex;
+                gap:10px;
+                align-items:center;
+                z-index:65;
+                font-family:'JetBrains Mono',monospace; font-size:11px;
+            ">
+                <button onclick="prevSection()"
+                    style="background:none; border:none; color:var(--dim); cursor:pointer; padding:5px;">&larr; PREV
+                    SECTION</button>
+                <button onclick="nextSection()"
+                    style="background:none; border:none; color:var(--dim); cursor:pointer; padding:5px;">SKIP QUIZ
+                    &rarr;</button>
+            </div>
         </div>
 
         <!-- AVATAR OVERLAY -->
@@ -1839,7 +1858,7 @@
                     if (active && i !== lastIdx) {
                         lastIdx = i;
                         if (row.text) {
-                            renderSubtitleKaraoke(subtitleEl, textEl, row.text, row.dur, sectionAtLoad);
+                            renderSubtitleKaraoke(subtitleEl, textEl, row.text, row.dur, sectionAtLoad, row.start);
                         }
                         break;
                     }
@@ -1848,7 +1867,7 @@
             avEl.addEventListener('timeupdate', onTimeUpdate);
         }
 
-        function renderSubtitleKaraoke(overlay, textEl, beatText, beatDur, sectionAtLoad) {
+        function renderSubtitleKaraoke(overlay, textEl, beatText, beatDur, sectionAtLoad, beatStart) {
             if (window.SUB_CONFIG.mode === 'off') {
                 overlay.style.display = 'none';
                 return;
@@ -1864,7 +1883,6 @@
             textEl.className = '';
             overlay.style.display = 'block';
 
-            // _karaokeTimer is now a properly declared global — safe to read and write
             if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
 
             var words = beatText.split(/\s+/).filter(function (w) { return w.length > 0; });
@@ -1876,29 +1894,34 @@
             }).join(' ');
             textEl.innerHTML = html;
 
-            var wordDurMs = Math.max((beatDur * 1000) / words.length, 150);
-            var currentWord = 0;
+            var wordDur = beatDur / words.length;
+            var lastIdx = -1;
 
+            // SUB-DRIFT: Anchor karaoke to master video clock
             _karaokeTimer = setInterval(function () {
                 if (curSec !== sectionAtLoad) {
-                    clearInterval(_karaokeTimer);
-                    _karaokeTimer = null;
-                    return;
+                    clearInterval(_karaokeTimer); _karaokeTimer = null; return;
                 }
-                // Pause subtitle ticking when avatar is paused
-                var avEl2 = document.getElementById('av-vid');
-                if (avEl2 && avEl2.paused) return;
-                var prevEl = document.getElementById('kw-' + currentWord);
-                if (prevEl) prevEl.className = 'sub-word spoken';
-                currentWord++;
-                if (currentWord >= words.length) {
-                    clearInterval(_karaokeTimer);
-                    _karaokeTimer = null;
-                    return;
+                var avVid2 = document.getElementById('av-vid');
+                if (!avVid2) return;
+
+                var elapsed = avVid2.currentTime - beatStart;
+                var wordIdx = Math.floor(elapsed / wordDur);
+                if (wordIdx < 0) wordIdx = 0;
+                if (wordIdx >= words.length) wordIdx = words.length - 1;
+
+                if (wordIdx !== lastIdx) {
+                    for (var i = 0; i <= wordIdx; i++) {
+                        var el = document.getElementById('kw-' + i);
+                        if (el) el.className = (i === wordIdx) ? 'sub-word active' : 'sub-word spoken';
+                    }
+                    for (var j = wordIdx + 1; j < words.length; j++) {
+                        var el2 = document.getElementById('kw-' + j);
+                        if (el2) el2.className = 'sub-word future';
+                    }
+                    lastIdx = wordIdx;
                 }
-                var nextEl = document.getElementById('kw-' + currentWord);
-                if (nextEl) nextEl.className = 'sub-word active';
-            }, wordDurMs);
+            }, 50);
         }
 
         // ══════════════════════════════════════════════════════════
@@ -2026,19 +2049,26 @@
                     if (beat.src) {
                         imgEl.src = getMediaSrc(beat.src);
                         imgLayer.classList.add('on');
-                        // Small rAF delay so display:flex registers before opacity transition
                         requestAnimationFrame(function () { imgLayer.classList.add('vis'); });
                     }
                 } else {
-                    // Hide image overlay
                     imgLayer.classList.remove('vis');
                     setTimeout(function () { imgLayer.classList.remove('on'); }, 440);
 
                     if (!beat.src) return;
                     var fullSrc = getMediaSrc(beat.src);
-                    wanVid.src = fullSrc;
-                    wanVid.load();
-                    wanVid.play().catch(function () { });
+
+                    // VIDEO-BUFFER: Gapless swap if preloaded buffer is ready
+                    if (wanPre.src === fullSrc && wanPre.readyState >= 2) {
+                        console.log("[GAPLESS] Buffer swap:", beat.src);
+                        wanVid.src = fullSrc;
+                        wanVid.currentTime = wanPre.currentTime;
+                        wanVid.play().catch(function () { });
+                    } else {
+                        wanVid.src = fullSrc;
+                        wanVid.load();
+                        wanVid.play().catch(function () { });
+                    }
                 }
             }
 
@@ -2047,10 +2077,10 @@
                 var b = schedule[idx];
                 if (b.type !== 'video' || !b.src) return;
                 var src = getMediaSrc(b.src);
-                if (preloadedSrc === src) return;  // already buffering
+                if (preloadedSrc === src) return;
                 preloadedSrc = src;
                 wanPre.src = src;
-                wanPre.load();  // buffer without playing
+                wanPre.load();
             }
 
             function onTimeUpdate() {
@@ -2060,7 +2090,6 @@
                 }
                 var t = avEl.currentTime;
 
-                // Find active beat
                 var activeIdx = -1;
                 for (var i = 0; i < schedule.length; i++) {
                     var isLast = (i === schedule.length - 1);
@@ -2070,14 +2099,16 @@
                 }
                 if (activeIdx < 0) return;
 
-                // Switch beat
                 if (activeIdx !== currentIdx) {
                     showBeat(activeIdx);
-                    // Preload the one after next
+                }
+
+                // VIDEO-BUFFER: Trigger preload 3.0s before current beat ends
+                var curBeat = schedule[activeIdx];
+                if (curBeat && curBeat.end && (curBeat.end - t) < 3.0) {
                     preloadNext(activeIdx + 1);
                 }
 
-                // Stall recovery for video beats
                 if (currentIdx >= 0 && schedule[currentIdx].type === 'video') {
                     if (wanVid.paused && !wanVid.ended && wanVid.readyState >= 3 && !avEl.paused) {
                         wanVid.play().catch(function () { });
@@ -2564,6 +2595,11 @@
             overlay.style.display = 'flex';
             qFeedback.style.display = 'none';
 
+            // SUB-QUIZ: Clear content subs on entry
+            if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
+            var subOverlay = document.getElementById('subtitle-overlay');
+            if (subOverlay) subOverlay.style.display = 'none';
+
             var questions = (sec.questions && sec.questions.length > 0)
                 ? sec.questions
                 : (sec.understanding_quiz ? [sec.understanding_quiz] : []);
@@ -2576,15 +2612,31 @@
 
             // ── helpers ─────────────────────────────────────────
 
-            function playClip(url, onEnd) {
+            // SUB-QUIZ: playClip now takes scriptText for quiz subtitles
+            function playClip(url, onEnd, scriptText) {
                 vid.onended = null;
+                // Double-tap clear to be safe
+                if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
+
                 if (url) {
+                    if (scriptText) {
+                        var stText = document.getElementById('subtitle-text');
+                        var stOverlay = document.getElementById('subtitle-overlay');
+                        if (stText && stOverlay) {
+                            stText.className = 'subtitle-text';
+                            stText.innerHTML = esc(scriptText);
+                            stOverlay.style.display = 'block';
+                        }
+                    } else {
+                        var stOverlay2 = document.getElementById('subtitle-overlay');
+                        if (stOverlay2) stOverlay2.style.display = 'none';
+                    }
+
                     vid.src = getMediaSrc(url);
                     vid.load();
                     vid.play().catch(function () { });
                     vid.onended = function () { if (onEnd) onEnd(); };
                 } else {
-                    // No clip — fire callback after brief pause so UI settles
                     timers.push(setTimeout(onEnd || function () { }, 2000));
                 }
             }
@@ -2599,12 +2651,12 @@
                 }
                 if (!vpath) return;
 
-                // QUIZ-EXP: Dim overlay + card + options so video layer shows through all of them
-                document.getElementById('quiz-overlay').style.background = 'rgba(13,17,23,0.4)';
+                // QUIZ-HIDE: Completely hide question/options card during video
+                document.getElementById('quiz-overlay').style.background = 'transparent';
                 var card = document.getElementById('quiz-question-card');
                 var opts = document.getElementById('quiz-options');
-                if (card) card.style.background = 'rgba(22,27,34,0.45)';
-                if (opts) opts.style.opacity = '0.55';
+                if (card) card.style.display = 'none';
+                if (opts) opts.style.display = 'none';
 
                 var renderer = ev.renderer || 'manim';
                 var manimLayer = document.getElementById('manim-layer');
@@ -2706,7 +2758,6 @@
                     var correct = q.correct_option || q.correct || '';
                     var isRight = (key === correct);
 
-                    // Style: green=correct, red=wrong-chosen
                     keys.forEach(function (k) {
                         var b = buttons[k];
                         if (!b) return;
@@ -2723,7 +2774,6 @@
                         b.style.pointerEvents = 'none';
                     });
 
-                    // Show explanation text strip
                     var expl = q.explanation || '';
                     if (expl) {
                         qFeedback.style.display = 'block';
@@ -2733,28 +2783,27 @@
                         qFeedback.innerHTML = (isRight ? '✅ ' : '❌ ') + esc(expl);
                     }
 
-                    // correct/wrong clip → then explanation visual + explanation clip → advance
                     var nextClip = isRight ? clips.correct : clips.wrong;
+                    var nextScript = isRight ? narr.correct : narr.wrong;
+
                     playClip(nextClip, function () {
-                        // Show explanation visual behind quiz overlay (z:52 keeps overlay on top)
                         showExplanationVisual(q);
-                        // Play explanation clip simultaneously
                         playClip(clips.explanation, function () {
                             timers.push(setTimeout(function () {
-                    // QUIZ-EXP: Restore full opacity on all three elements before next question
-                    document.getElementById('quiz-overlay').style.background = 'rgba(13,17,23,0.96)';
-                    var card = document.getElementById('quiz-question-card');
-                    var opts = document.getElementById('quiz-options');
-                    if (card) card.style.background = '#161b22';
-                    if (opts) opts.style.opacity = '1';
+                                // QUIZ-HIDE: Restore opacity AND grid display
+                                document.getElementById('quiz-overlay').style.background = 'rgba(13,17,23,0.96)';
+                                var card = document.getElementById('quiz-question-card');
+                                var opts = document.getElementById('quiz-options');
+                                if (card) card.style.display = 'block';
+                                if (opts) { opts.style.display = 'grid'; opts.style.opacity = '1'; }
 
-                    document.getElementById('manim-layer').classList.remove('on');
-                    document.getElementById('wan-layer').classList.remove('on');
-                    qIdx++;
-                    showQuestion(qIdx);
-                }, 900));
-                        });
-                    });
+                                document.getElementById('manim-layer').classList.remove('on');
+                                document.getElementById('wan-layer').classList.remove('on');
+                                qIdx++;
+                                showQuestion(qIdx);
+                            }, 900));
+                        }, narr.explanation);
+                    }, nextScript);
                 }
 
                 // Schedule option reveals during the question clip
@@ -2772,7 +2821,7 @@
                 playClip(clips.question, function () {
                     if (curSec !== quizSecAtLoad) return;
                     revealAllButtons();
-                });
+                }, narr.question);
             }
 
             showQuestion(qIdx);

@@ -128,7 +128,7 @@ Return a JSON object with these EXACT keys and structure:
 **CRITICAL**: Every section MUST include the `renderer` field. Valid values: "none", "text_to_video", "image_to_video", "manim".
 
 ## 1. INTRO (Mandatory)
-- **Start Phrase**: MUST start with "Namaste!" (or "Namaskaram!" for South Indian context).
+- **Start Phrase**: MUST start with "Namaste! Welcome to our lesson on {{subject}} for Grade {{grade}}." (use "Namaskaram!" instead of "Namaste!" for South Indian context). Use the EXACT placeholder variables `{{subject}}` and `{{grade}}` — do NOT replace them with actual values in the JSON; the pipeline will substitute them.
 - **Role**: Welcome the student and introduce the topic.
 - **Visuals**: AVATAR-ONLY.
 - **Settings**: `text_layer: "hide"`, `visual_layer: "hide"`, `avatar_layer: "show"`.
@@ -188,6 +188,26 @@ If they don't match, recalculate before outputting.
   - **Visuals**: FULL SCREEN VIDEO via Local GPU. (`text_layer: "hide"`, `visual_layer: "show"`).
   - **use_local_gpu**: `true`.
   - **Story**: Narrate a cohesive story summarizing the lesson flow across all scenes.
+
+RECAP VISUAL STRATEGY (MANDATORY):
+
+Each recap beat MUST follow a "MECHANISM REVEAL" structure:
+
+Start with a clear visual subject (object, system, or environment)
+Progressively reveal the concept through transformation
+
+Choose ONE per beat:
+
+OBJECT-FOCUSED:
+Single central subject (cell, neuron, molecule, device)
+Show internal mechanism (cross-section, reveal, transformation)
+SYSTEM-FLOW:
+Multiple elements showing relationships (flows, signals, loops)
+
+CRITICAL RULES:
+Avoid generic cinematic scenes (cities, random people, landscapes)
+Every scene must TEACH the concept visually
+Motion must represent cause-effect (not decoration)
 - **TONE**: Emotional and cinematic. Treat this as the "Final Act" of a movie.
 - **CULTURAL CONTEXT**: The video story should feature diverse Indian settings (e.g., a student in a Kerala village, a lab in Hyderabad, a field trip in Assam). Make it relatable!
 
