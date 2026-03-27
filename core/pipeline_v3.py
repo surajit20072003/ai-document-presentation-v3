@@ -332,6 +332,24 @@ def run_v3_pipeline(
     log("save_json", f"Saved presentation.json ({pres_path.stat().st_size} bytes)")
 
     # ─────────────────────────────────────────────
+    # SUBST-001: Substitute placeholders (always run this, even on dry_run)
+    # ─────────────────────────────────────────────
+    log("substitute", "Substituting {{subject}} and {{grade}} placeholders...")
+    try:
+        from core.tts_generator import substitute_placeholders
+        presentation = substitute_placeholders(
+            presentation,
+            subject=subject,
+            grade=grade
+        )
+        # Re-save presentation.json with placeholders filled
+        with open(pres_path, "w", encoding="utf-8") as f:
+            json.dump(presentation, f, indent=2, ensure_ascii=False)
+        log("substitute", "✅ Placeholders substituted successfully.")
+    except Exception as e:
+        logger.warning(f"[V3] Placeholder substitution error (non-fatal): {e}")
+
+    # ─────────────────────────────────────────────
     # Phase 3.3: Avatar Generation (section clips)
     # MOVED UP: Generates MP4s so we have exact real duration for Manim.
     # ─────────────────────────────────────────────
@@ -351,12 +369,6 @@ def run_v3_pipeline(
                     "Phase 3.3: Starting avatar generation for all sections...",
                 )
 
-                # SUBST-001: Substitute placeholders before avatar generation
-                presentation = substitute_placeholders(
-                    presentation,
-                    subject=subject,
-                    grade=grade
-                )
 
                 avatar_gen = AvatarGenerator(api_url=avatar_api_url)
 

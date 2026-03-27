@@ -1,4 +1,4 @@
-<!-- Last updated: 2026-03-26 14:12 UTC -->
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -325,7 +325,8 @@
         }
 
         .sub-word.spoken {
-            display: none;
+            display: inline;
+            color: #fff;
         }
 
         .sub-word.active {
@@ -1196,7 +1197,6 @@
         var loadedScripts = {};
         var JOB_BASE_URL = '';
         var _karaokeTimer = null;
-        var _subtitleEpoch = 0; // incremented to kill stale subtitle drivers on quiz entry
 
         function getMediaSrc(url) {
             if (!url) return '';
@@ -1797,11 +1797,9 @@
             }
 
             var lastIdx = -1;
-            var myEpoch = _subtitleEpoch; // capture current epoch; invalidated when quiz starts
 
             function onTimeUpdate() {
-                // Kill this driver if the section changed OR a quiz entry invalidated it
-                if (curSec !== sectionAtLoad || _subtitleEpoch !== myEpoch) {
+                if (curSec !== sectionAtLoad) {
                     avEl.removeEventListener('timeupdate', onTimeUpdate);
                     if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
                     subtitleEl.style.display = 'none';
@@ -1852,9 +1850,9 @@
 
             var wordDur = beatDur / words.length;
             var lastIdx = -1;
-            var myKaraokeEpoch = _subtitleEpoch; // snapshot
+
             _karaokeTimer = setInterval(function () {
-                if (curSec !== sectionAtLoad || _subtitleEpoch !== myKaraokeEpoch) {
+                if (curSec !== sectionAtLoad) {
                     clearInterval(_karaokeTimer); _karaokeTimer = null; return;
                 }
                 var avVid2 = document.getElementById('av-vid');
@@ -2463,9 +2461,6 @@
             var qFeedback = document.getElementById('quiz-feedback');
             var vid = document.getElementById('av-vid');
 
-            // FIX 1: Sever the main section's metadata listener so it doesn't restart the main subtitle driver
-            vid.onloadedmetadata = null;
-
             overlay.style.display = 'flex';
             // Restore full quiz UI state on entry
             overlay.style.background = 'rgba(13,17,23,0.96)';
@@ -2478,9 +2473,7 @@
             var qNav = document.getElementById('quiz-nav');
             if (qNav) qNav.style.display = 'flex';
 
-            // Kill any running subtitle driver from the preceding content section
-            // (curSec doesn't change on quiz entry so the normal guard won't fire)
-            _subtitleEpoch++;
+            // Clear subtitles on quiz entry
             if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
             var subOverlay = document.getElementById('subtitle-overlay');
             if (subOverlay) subOverlay.style.display = 'none';
@@ -2497,31 +2490,24 @@
 
             // ── helpers ─────────────────────────────────────────
 
-            // playClip with optional subtitle text (karaoke-synced)
+            // playClip with optional subtitle text
             function playClip(url, onEnd, scriptText) {
                 vid.onended = null;
-                _subtitleEpoch++; // kills any running karaoke from previous clip
                 // Always clear karaoke before playing a new clip
                 if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
 
-                var stText = document.getElementById('subtitle-text');
-                var stOverlay = document.getElementById('subtitle-overlay');
-
                 if (url) {
-                    if (scriptText && stText && stOverlay) {
-                        stText.innerHTML = ''; // clear stale words before new clip loads
-                        // FIX: drive subtitle via karaoke (word-by-word) synced to clip duration
-                        // rather than dumping the full paragraph as a static block
-                        var _quizSubSecAtLoad = curSec;
-                        vid.addEventListener('loadedmetadata', function onClipMeta() {
-                            vid.removeEventListener('loadedmetadata', onClipMeta);
-                            if (curSec !== _quizSubSecAtLoad) return;
-                            var dur = (vid.duration && isFinite(vid.duration)) ? vid.duration : 10;
-                            renderSubtitleKaraoke(stOverlay, stText, scriptText, dur, _quizSubSecAtLoad, 0);
-                        });
-                        stOverlay.style.display = 'block';
-                    } else if (stOverlay) {
-                        stOverlay.style.display = 'none';
+                    if (scriptText) {
+                        var stText = document.getElementById('subtitle-text');
+                        var stOverlay = document.getElementById('subtitle-overlay');
+                        if (stText && stOverlay) {
+                            stText.className = 'subtitle-text';
+                            stText.innerHTML = esc(scriptText);
+                            stOverlay.style.display = 'block';
+                        }
+                    } else {
+                        var stOverlay2 = document.getElementById('subtitle-overlay');
+                        if (stOverlay2) stOverlay2.style.display = 'none';
                     }
 
                     vid.src = getMediaSrc(url);
@@ -2529,7 +2515,6 @@
                     vid.play().catch(function () { });
                     vid.onended = function () { if (onEnd) onEnd(); };
                 } else {
-                    if (stOverlay) stOverlay.style.display = 'none';
                     timers.push(setTimeout(onEnd || function () { }, 2000));
                 }
             }
@@ -2598,11 +2583,6 @@
 
             // ── Restore all quiz UI after explanation finishes ──
             function restoreQuizUI() {
-                if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
-                var subEl2 = document.getElementById('subtitle-overlay');
-                if (subEl2) subEl2.style.display = 'none';
-                document.getElementById('subtitle-text').innerHTML = '';
-
                 document.getElementById('quiz-overlay').style.background = 'rgba(13,17,23,0.96)';
 
                 var card = document.getElementById('quiz-question-card');
@@ -2726,8 +2706,7 @@
                     }
 
                     var nextClip = isRight ? clips.correct : clips.wrong;
-                    // FIX 2: Use the _script keys present in the JSON payload
-                    var nextScript = isRight ? (narr.correct_script || narr.correct) : (narr.wrong_script || narr.wrong);
+                    var nextScript = isRight ? narr.correct : narr.wrong;
 
                     // Step 1: Play correct/wrong clip
                     playClip(nextClip, function () {
@@ -2742,9 +2721,6 @@
                             if (curSec !== quizSecAtLoad) return;
 
                             // Step 3: Play explanation avatar clip alongside the visual
-                            // Pass the explanation script to render subtitles
-                            var explScript = narr.explanation_script || narr.explanation || q.explanation || '';
-
                             playClip(clips.explanation, function () {
                                 if (curSec !== quizSecAtLoad) return;
 
@@ -2755,7 +2731,7 @@
                                     qIdx++;
                                     showQuestion(qIdx);
                                 }, 900));
-                            }, explScript);  // <--- Pass the text instead of null
+                            }, narr.explanation);
 
                         }, 300)); // 300 ms delay gives video element time to load
 
@@ -2777,7 +2753,7 @@
                 playClip(clips.question, function () {
                     if (curSec !== quizSecAtLoad) return;
                     revealAllButtons();
-                }, narr.question_script || narr.question); // FIX 3: Catch the proper question script
+                }, narr.question);
             }
 
             showQuestion(qIdx);

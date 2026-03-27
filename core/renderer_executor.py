@@ -647,13 +647,20 @@ def execute_renderer(
                 beats = []
                 for i, img_p in enumerate(image_prompts):
                     vid_p = video_prompts[i] if i < len(video_prompts) else {}
+                    
+                    img_prompt_text = img_p if isinstance(img_p, str) else img_p.get("prompt", "")
+                    beat_id = f"seg_{i + 1}" if isinstance(img_p, str) else img_p.get("segment_id", f"seg_{i + 1}")
+                    duration = 15 if isinstance(img_p, str) else img_p.get("duration", 15)
+                    
+                    vid_prompt_text = vid_p if isinstance(vid_p, str) else (vid_p.get("prompt", "") if isinstance(vid_p, dict) else "")
+
                     beats.append(
                         {
-                            "beat_id": img_p.get("segment_id", f"seg_{i + 1}"),
+                            "beat_id": beat_id,
                             "beat_idx": i,
-                            "image_prompt": img_p.get("prompt", ""),
-                            "prompt": vid_p.get("prompt", ""),
-                            "duration": img_p.get("duration", 15),
+                            "image_prompt": img_prompt_text,
+                            "prompt": vid_prompt_text,
+                            "duration": duration,
                         }
                     )
                 print(
@@ -663,13 +670,17 @@ def execute_renderer(
                 # Only video_prompts[] - need to generate images from video prompts
                 beats = []
                 for i, vid_p in enumerate(video_prompts):
+                    beat_id = f"seg_{i + 1}" if isinstance(vid_p, str) else vid_p.get("segment_id", f"seg_{i + 1}")
+                    vid_prompt_text = vid_p if isinstance(vid_p, str) else vid_p.get("prompt", "")
+                    duration = 15 if isinstance(vid_p, str) else vid_p.get("duration", 15)
+                    
                     beats.append(
                         {
-                            "beat_id": vid_p.get("segment_id", f"seg_{i + 1}"),
+                            "beat_id": beat_id,
                             "beat_idx": i,
-                            "image_prompt": f"Reference image for scene: {vid_p.get('prompt', '')[:200]}...",
-                            "prompt": vid_p.get("prompt", ""),
-                            "duration": vid_p.get("duration", 15),
+                            "image_prompt": f"Reference image for scene: {vid_prompt_text[:200]}...",
+                            "prompt": vid_prompt_text,
+                            "duration": duration,
                         }
                     )
                 print(
@@ -922,15 +933,19 @@ def execute_renderer(
 
             if video_prompts and isinstance(video_prompts, list):
                 # NEW FORMAT: video_prompts[] array - one video per segment
-                beats = [
-                    {
-                        "beat_id": p.get("segment_id", f"seg_{i + 1}"),
-                        "beat_idx": i,
-                        "prompt": p.get("prompt", ""),
-                        "duration": p.get("duration", 15),
-                    }
-                    for i, p in enumerate(video_prompts)
-                ]
+                beats = []
+                for i, p in enumerate(video_prompts):
+                    beat_id = f"seg_{i + 1}" if isinstance(p, str) else p.get("segment_id", f"seg_{i + 1}")
+                    prompt_text = p if isinstance(p, str) else p.get("prompt", "")
+                    duration = 15 if isinstance(p, str) else p.get("duration", 15)
+                    beats.append(
+                        {
+                            "beat_id": beat_id,
+                            "beat_idx": i,
+                            "prompt": prompt_text,
+                            "duration": duration,
+                        }
+                    )
                 print(
                     f"[TEXT_TO_VIDEO] Section {topic_id}: Using video_prompts[] array ({len(beats)} videos)"
                 )

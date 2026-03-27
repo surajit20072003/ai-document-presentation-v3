@@ -33,42 +33,6 @@ ENHANCER_MODEL = os.environ.get("ENHANCER_MODEL", "openai/gpt-4o")
 ELIGIBLE_RENDERERS = {"image_to_video", "image", "infographic"}
 
 
-# ── Quality enforcement helpers ────────────────────────────────────────────────
-
-BANNED_WORDS = [
-    "cinematic", "beautiful", "dynamic", "abstract",
-    "smooth animation", "flows gracefully", "elegantly",
-    "stunning", "dramatic", "seamlessly", "breathtaking"
-]
-MIN_IMAGE_PROMPT = 100
-MIN_VIDEO_PROMPT = 80
-MAX_REPAIR_ATTEMPTS = 3
-
-def _wc(text: str) -> int:
-    return len(text.split()) if text else 0
-
-def _banned_in(text: str) -> list:
-    return [w for w in BANNED_WORDS if w.lower() in text.lower()]
-
-def _beat_issues(b: dict) -> list:
-    issues = []
-    ips = b.get("image_prompt_start", "")
-    ipe = b.get("image_prompt_end", "")
-    vp  = b.get("video_prompt", "")
-    if _wc(ips) < MIN_IMAGE_PROMPT:
-        issues.append(f"image_prompt_start {_wc(ips)} words (need {MIN_IMAGE_PROMPT})")
-    if _wc(ipe) < MIN_IMAGE_PROMPT:
-        issues.append(f"image_prompt_end {_wc(ipe)} words (need {MIN_IMAGE_PROMPT})")
-    if _wc(vp) < MIN_VIDEO_PROMPT:
-        issues.append(f"video_prompt {_wc(vp)} words (need {MIN_VIDEO_PROMPT})")
-    for field_name, text in [("IPS", ips), ("IPE", ipe), ("VP", vp)]:
-        found = _banned_in(text)
-        if found:
-            issues.append(f"banned words in {field_name}: {found}")
-    return issues
-
-
-
 # ── Beat extraction ────────────────────────────────────────────────────────────
 
 def extract_beats(section: dict) -> list:
@@ -173,163 +137,6 @@ def apply_enhanced_prompts(section: dict, enhanced_beats: list) -> None:
                 spec["image_prompt"] = spec["image_prompt_start"]
 
 
-def _call_api(messages: list, temperature: float = 0.2) -> Optional[str]:
-    """Shared API call used by both enhance_section and repair_beat."""
-    import requests
-    try:
-        resp = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "HTTP-Referer": "https://opencode.ai",
-                "X-Title": "AI Document Presentation Enhancer",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": ENHANCER_MODEL,
-                "temperature": temperature,
-                "messages": messages,
-            },
-            timeout=180,
-        )
-        resp.raise_for_status()
-        raw = resp.json()["choices"][0]["message"]["content"]
-        if raw.strip().startswith("```"):
-            raw = "\n".join(
-                line for line in raw.splitlines()
-                if not line.strip().startswith("```")
-            )
-        return raw
-    except Exception as e:
-        logger.error(f"[Enhancer] API call failed: {e}")
-        return None
-
-
-def _repair_beat(beat: dict, issues: list) -> Optional[dict]:
-    """Targeted single-beat repair call for specific issues."""
-    issue_text = "\n".join(f"- {i}" for i in issues)
-    instructions = []
-
-    ips = beat.get("image_prompt_start", "")
-    ipe = beat.get("image_prompt_end", "")
-    vp  = beat.get("video_prompt", "")
-
-    if _wc(ips) < MIN_IMAGE_PROMPT:
-        deficit = MIN_IMAGE_PROMPT - _wc(ips)
-        instructions.append(
-            f"image_prompt_start is {_wc(ips)} words. Add {deficit} more words. "
-            f"Expand by adding: material texture detail, exact color values (#hex), "
-            f"rim lighting placement, spatial position of elements in frame."
-        )
-    if _wc(ipe) < MIN_IMAGE_PROMPT:
-        deficit = MIN_IMAGE_PROMPT - _wc(ipe)
-        instructions.append(
-            f"image_prompt_end is {_wc(ipe)} words. Add {deficit} more words. "
-            f"Describe what visually changed vs the start frame in more specific detail."
-        )
-    if _wc(vp) < MIN_VIDEO_PROMPT:
-        deficit = MIN_VIDEO_PROMPT - _wc(vp)
-        instructions.append(
-            f"video_prompt is {_wc(vp)} words. Add {deficit} more words. "
-            f"Expand the MECHANISM section: describe step-by-step what moves, "
-            f"in which direction, at what rate, and what triggers each stage."
-        )
-    for field_name, text in [
-        ("image_prompt_start", ips),
-        ("image_prompt_end",   ipe),
-        ("video_prompt",       vp),
-    ]:
-        found = _banned_in(text)
-        if found:
-            replacements = {
-                "dynamic":      "replace with specific physical behavior (e.g. 'flowing leftward', 'expanding outward')",
-                "cinematic":    "replace with material and lighting description",
-                "abstract":     "replace with specific shape and color (e.g. 'spherical teal particle, 8px')",
-                "seamlessly":   "replace with physical description of how the join occurs",
-                "beautiful":    "remove entirely or replace with a measurable property",
-                "stunning":     "remove entirely",
-                "breathtaking": "remove entirely",
-                "elegantly":    "remove entirely",
-                "dramatically": "remove entirely",
-            }
-            hints = "; ".join(replacements.get(w, f"remove '{w}'") for w in found)
-            instructions.append(f"{field_name} contains banned words {found}. {hints}.")
-
-    repair_prompt = f"""You are repairing specific issues in a single visual prompt beat.
-
-BEAT TO REPAIR:
-{json.dumps(beat, indent=2)}
-
-ISSUES TO FIX:
-{issue_text}
-
-SPECIFIC INSTRUCTIONS:
-{chr(10).join(instructions)}
-
-RULES:
-- Fix ONLY the issues listed. Do not change fields that are already correct.
-- Maintain the existing SUBJECT/INITIAL STATE/MECHANISM/RESULT/CAMERA structure in video_prompt.
-- Keep beat_id unchanged.
-- Background must remain #0d1117.
-- Do not use banned words: {', '.join(BANNED_WORDS)}
-
-OUTPUT: Return ONLY a valid JSON object for this single beat:
-{{
-  "beat_id": "...",
-  "image_prompt_start": "...",
-  "image_prompt_end": "...",
-  "video_prompt": "...",
-  "visual_reasoning": "..."
-}}
-No markdown. No explanation. JSON only."""
-
-    raw = _call_api(
-        messages=[{"role": "user", "content": repair_prompt}],
-        temperature=0.3,
-    )
-    if not raw:
-        return None
-    try:
-        return json.loads(raw)
-    except Exception as e:
-        logger.error(f"[Enhancer] Repair parse error: {e}")
-        return None
-
-
-def _enforce_quality(enhanced_beats: list, section_id) -> list:
-    """
-    Programmatic enforcement loop. For each failing beat, make targeted
-    repair calls until it passes or MAX_REPAIR_ATTEMPTS is exhausted.
-    """
-    for beat in enhanced_beats:
-        issues = _beat_issues(beat)
-        if not issues:
-            continue
-
-        bid = beat.get("beat_id", "?")
-        logger.info(f"[Enhancer] Section {section_id} [{bid}]: {len(issues)} issue(s) — repairing...")
-
-        for attempt in range(1, MAX_REPAIR_ATTEMPTS + 1):
-            repaired = _repair_beat(beat, issues)
-            if not repaired:
-                logger.warning(f"[Enhancer] [{bid}] Repair attempt {attempt} failed — keeping current.")
-                break
-            for field in ("image_prompt_start", "image_prompt_end", "video_prompt", "visual_reasoning"):
-                if repaired.get(field):
-                    beat[field] = repaired[field]
-            issues = _beat_issues(beat)
-            if not issues:
-                logger.info(f"[Enhancer] [{bid}] PASS after {attempt} repair(s).")
-                break
-            else:
-                logger.warning(f"[Enhancer] [{bid}] Attempt {attempt} still failing: {issues}")
-
-        if issues:
-            logger.warning(f"[Enhancer] [{bid}] Could not fully repair after {MAX_REPAIR_ATTEMPTS} attempts.")
-
-    return enhanced_beats
-
-
 # ── API call ───────────────────────────────────────────────────────────────────
 
 def enhance_section(section: dict) -> Optional[list]:
@@ -356,22 +163,40 @@ def enhance_section(section: dict) -> Optional[list]:
     }
 
     try:
-        raw = _call_api(
-            messages=[
-                {"role": "system", "content": ENHANCER_SYSTEM_PROMPT},
-                {"role": "user",   "content": json.dumps(user_payload)},
-            ],
-            temperature=0.2,
+        resp = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "HTTP-Referer": "https://opencode.ai",
+                "X-Title": "AI Document Presentation Enhancer",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": ENHANCER_MODEL,
+                "temperature": 0.2,  # FIX-5: deterministic JSON rewriting — lower temp
+                "messages": [
+                    {"role": "system", "content": ENHANCER_SYSTEM_PROMPT},
+                    {"role": "user", "content": json.dumps(user_payload)},
+                ],
+            },
+            timeout=120,
         )
-        if not raw:
-            return None
+        resp.raise_for_status()
+        raw = resp.json()["choices"][0]["message"]["content"]
+
+        # Strip markdown code fences if model wraps JSON in ```
+        if raw.strip().startswith("```"):
+            raw = "\n".join(
+                line for line in raw.splitlines()
+                if not line.strip().startswith("```")
+            )
+
         data = json.loads(raw)
         return data.get("beats", [])
 
     except Exception as e:
         logger.error(f"[Enhancer] Section {section.get('section_id')} enhance failed: {e}")
         return None
-
 
 
 # ── Main entry point ───────────────────────────────────────────────────────────
@@ -401,14 +226,11 @@ def run_prompt_enhancement(presentation: dict, log_fn=None) -> dict:
         try:
             enhanced_beats = enhance_section(section)
             if enhanced_beats:
-                # ── NEW: enforce word counts and banned words programmatically ──
-                enhanced_beats = _enforce_quality(enhanced_beats, sec_id)
                 apply_enhanced_prompts(section, enhanced_beats)
                 _log(f"  ✅ Section {sec_id}: {len(enhanced_beats)} beat(s) enhanced.")
                 enhanced_count += 1
             else:
                 _log(f"  ⚠️ Section {sec_id}: no enhancement returned, keeping original prompts.")
-
         except Exception as e:
             _log(f"  ⚠️ Section {sec_id}: enhancement error (non-fatal): {e}")
 
