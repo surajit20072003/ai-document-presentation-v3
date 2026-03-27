@@ -1,4 +1,3 @@
-<!-- Last updated: 2026-03-26 14:12 UTC -->
 <html lang="en">
 
 <head>
@@ -191,7 +190,9 @@
         #wan-vid {
             width: 100%;
             height: 100%;
-            object-fit: cover
+            object-fit: contain;
+            /* Un-cropped video fix */
+            background: #0d1117;
         }
 
         #manim-layer {
@@ -271,6 +272,26 @@
             }
         }
 
+        /* ── MOBILE LANDSCAPE FULL SCREEN ── */
+        @media (max-width: 950px) and (orientation: landscape) {
+
+            #topbar,
+            #botbar,
+            #av-overlay,
+            #gesture-hud,
+            #subtitle-overlay {
+                display: none !important;
+            }
+
+            #main {
+                height: 100vh !important;
+                width: 100vw !important;
+                position: fixed;
+                inset: 0;
+                z-index: 9999;
+            }
+        }
+
         #subtitle-overlay {
             position: fixed;
             bottom: 70px;
@@ -310,22 +331,23 @@
             }
         }
 
+        /* ── UPDATED SUBTITLE CSS ── */
         .sub-word {
-            display: none;
+            display: inline;
             font-size: 20px;
             font-weight: 600;
             line-height: 1.6;
             padding: 0 2px;
             transition: color 0.1s, text-shadow 0.1s;
+            color: rgba(255, 255, 255, 0.4);
             text-shadow:
                 0 0 8px rgba(0, 0, 0, 1),
-                0 0 16px rgba(0, 0, 0, 0.9),
-                1px 1px 3px rgba(0, 0, 0, 1),
-                -1px -1px 3px rgba(0, 0, 0, 1);
+                1px 1px 3px rgba(0, 0, 0, 1);
         }
 
         .sub-word.spoken {
-            display: none;
+            display: inline;
+            color: #e6edf3;
         }
 
         .sub-word.active {
@@ -334,12 +356,12 @@
             text-shadow:
                 0 0 12px rgba(246, 196, 78, 0.6),
                 0 0 8px rgba(0, 0, 0, 1),
-                1px 1px 3px rgba(0, 0, 0, 1),
-                -1px -1px 3px rgba(0, 0, 0, 1);
+                1px 1px 3px rgba(0, 0, 0, 1);
         }
 
         .sub-word.future {
-            display: none;
+            display: inline;
+            color: rgba(255, 255, 255, 0.4);
         }
 
         .scene {
@@ -966,7 +988,6 @@
 <body>
     <div id="app">
 
-        <!-- MOBILE TAP TO START -->
         <div id="tap-to-start" style="
             display:none; position:fixed; inset:0; z-index:200;
             background:rgba(13,17,23,0.92); flex-direction:column;
@@ -978,7 +999,6 @@
             <div style="font-size:13px;color:rgba(230,237,243,0.5)">Audio required</div>
         </div>
 
-        <!-- DEV OVERLAY -->
         <div id="dev-overlay" style="
             display:none; position:absolute; top:40px; left:20px; z-index:999;
             background:rgba(13,17,23,0.95); border:1px solid rgba(255,255,255,0.08);
@@ -1037,19 +1057,21 @@
             </label>
         </div>
 
-        <!-- HTML SCENES LAYER -->
         <div id="loading-screen">
             <div class="loading-spinner"></div>
             <div class="loading-text">Loading lesson...</div>
         </div>
 
-        <!-- ERROR -->
         <div id="error-screen">
             <div class="error-icon">⚠️</div>
             <div class="error-msg" id="error-msg">Could not load presentation.json</div>
         </div>
 
-        <!-- TOP BAR -->
+        <div id="video-buffering"
+            style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 80;">
+            <div class="loading-spinner"></div>
+        </div>
+
         <div id="topbar">
             <div class="tb-badge badge-intro" id="top-badge">INTRO</div>
             <div class="tb-title" id="tb-title">Lesson</div>
@@ -1057,32 +1079,24 @@
             <div class="tb-dots" id="tb-dots"></div>
         </div>
 
-        <!-- MAIN -->
         <div id="main">
-            <!-- Layer 1: WAN/LTX video -->
             <div id="wan-layer">
-                <video id="wan-vid" muted playsinline
-                    style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+                <video id="wan-vid" muted playsinline style="display:block;"></video>
                 <video id="wan-vid-pre" muted playsinline
                     style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"></video>
             </div>
-            <!-- Layer 2a: Three.js legacy -->
             <div id="threejs-layer"></div>
-            <!-- Layer 2b: Manim beat videos -->
             <div id="manim-layer">
                 <video id="manim-vid" muted playsinline></video>
                 <video id="manim-vid-pre" muted playsinline
                     style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"></video>
             </div>
-            <!-- Layer 4: Source image / infographic overlay -->
             <div id="image-layer">
                 <img id="image-display" src="" alt="">
             </div>
-            <!-- Layer 3: Scene content -->
             <div id="scenes-container"></div>
         </div>
 
-        <!-- GESTURE HUD -->
         <div id="gesture-hud">
             <div id="g-dot" title="Camera gesture control"></div>
             <div id="g-lbl"></div>
@@ -1090,7 +1104,6 @@
         </div>
         <video id="cam-vid" autoplay playsinline muted></video>
 
-        <!-- INTERACTION HINT -->
         <div id="interaction-hint" style="
             position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
             background:rgba(0,0,0,0.60); color:#f6c44e;
@@ -1100,12 +1113,10 @@
             z-index:55; white-space:nowrap;
         "></div>
 
-        <!-- SUBTITLES OVERLAY -->
         <div id="subtitle-overlay">
             <div class="subtitle-text" id="subtitle-text"></div>
         </div>
 
-        <!-- C1: QUIZ OVERLAY -->
         <div id="quiz-overlay" style="
             display:none; position:fixed; inset:0; z-index:52;
             flex-direction:column; align-items:center; justify-content:center;
@@ -1130,7 +1141,6 @@
                 border:1px solid rgba(255,255,255,0.07);
             "></div>
 
-            <!-- QUIZ-NAV -->
             <div id="quiz-nav" style="
                 position:fixed;
                 bottom:16px;
@@ -1150,7 +1160,6 @@
             </div>
         </div>
 
-        <!-- AVATAR OVERLAY -->
         <div id="av-overlay">
             <video id="av-vid" autoplay playsinline
                 style="position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;"
@@ -1161,7 +1170,6 @@
             <div id="av-narr"></div>
         </div>
 
-        <!-- BOTTOM BAR -->
         <div id="botbar">
             <button class="nb" onclick="prevSection()" id="btn-prev" title="Previous Section">&#8592;</button>
             <button class="pb" onclick="togglePlayPause()" id="play-pause-btn" title="Pause">&#10074;&#10074;</button>
@@ -1180,8 +1188,7 @@
             <button class="nb" onclick="nextSection()">&#8594;</button>
         </div>
 
-    </div><!-- /app -->
-
+    </div>
     <script>
         // ══════════════════════════════════════════════════════════
         // V3 PLAYER — Data-driven from presentation.json
@@ -1234,6 +1241,29 @@
             if (em) em.textContent = 'JS Error: ' + msg + ' (line ' + line + ')';
             return false;
         };
+
+        // ══════════════════════════════════════════════════════════
+        // BUFFERING TRACKER
+        // ══════════════════════════════════════════════════════════
+        function setupBufferingTracker() {
+            var spinner = document.getElementById('video-buffering');
+            var videoIds = ['av-vid', 'wan-vid', 'manim-vid'];
+
+            videoIds.forEach(function (id) {
+                var vidEl = document.getElementById(id);
+                if (vidEl) {
+                    vidEl.addEventListener('waiting', function () {
+                        spinner.style.display = 'block';
+                    });
+                    vidEl.addEventListener('playing', function () {
+                        spinner.style.display = 'none';
+                    });
+                    vidEl.addEventListener('canplay', function () {
+                        spinner.style.display = 'none';
+                    });
+                }
+            });
+        }
 
         // ══════════════════════════════════════════════════════════
         // BOOTSTRAP
@@ -1411,6 +1441,7 @@
 
             buildTopDots();
             buildScenes();
+            setupBufferingTracker();
 
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('topbar').style.display = 'flex';
@@ -1850,9 +1881,41 @@
             }).join(' ');
             textEl.innerHTML = html;
 
-            var wordDur = beatDur / words.length;
+            // --- THE FIX: Smart Weighting for Natural Speech Pacing ---
+            var wordWeights = [];
+            var totalWeight = 0;
+
+            for (var i = 0; i < words.length; i++) {
+                var w = words[i];
+                var weight = w.length; // Base weight = number of characters
+
+                // Mimic human pauses by adding extra time to punctuation
+                if (w.indexOf(',') !== -1) weight += 3; // Short pause for comma
+                if (w.match(/[.!?]/)) weight += 6;      // Longer pause for end of sentence
+
+                // Give tiny words (like "a", "I", "to") a minimum baseline so they don't flash instantly
+                if (weight < 3) weight = 3;
+
+                wordWeights.push(weight);
+                totalWeight += weight;
+            }
+
+            var timePerWeightUnit = beatDur / totalWeight;
+            var wordTimes = [];
+            var currentStartTime = 0;
+
+            for (var j = 0; j < words.length; j++) {
+                var duration = wordWeights[j] * timePerWeightUnit;
+                wordTimes.push({
+                    start: currentStartTime,
+                    end: currentStartTime + duration
+                });
+                currentStartTime += duration;
+            }
+
             var lastIdx = -1;
-            var myKaraokeEpoch = _subtitleEpoch; // snapshot
+            var myKaraokeEpoch = _subtitleEpoch;
+
             _karaokeTimer = setInterval(function () {
                 if (curSec !== sectionAtLoad || _subtitleEpoch !== myKaraokeEpoch) {
                     clearInterval(_karaokeTimer); _karaokeTimer = null; return;
@@ -1860,23 +1923,33 @@
                 var avVid2 = document.getElementById('av-vid');
                 if (!avVid2) return;
 
-                var elapsed = avVid2.currentTime - beatStart;
-                var wordIdx = Math.floor(elapsed / wordDur);
-                if (wordIdx < 0) wordIdx = 0;
-                if (wordIdx >= words.length) wordIdx = words.length - 1;
+                // Add a tiny 150ms artificial delay to the start because audio usually has a fraction of a second of silence before the voice actually kicks in
+                var elapsed = avVid2.currentTime - beatStart - 0.15;
+
+                var wordIdx = words.length - 1;
+                if (elapsed < 0) {
+                    wordIdx = 0;
+                } else {
+                    for (var k = 0; k < wordTimes.length; k++) {
+                        if (elapsed >= wordTimes[k].start && elapsed < wordTimes[k].end) {
+                            wordIdx = k;
+                            break;
+                        }
+                    }
+                }
 
                 if (wordIdx !== lastIdx) {
-                    for (var i = 0; i <= wordIdx; i++) {
-                        var el = document.getElementById('kw-' + i);
-                        if (el) el.className = (i === wordIdx) ? 'sub-word active' : 'sub-word spoken';
+                    for (var m = 0; m <= wordIdx; m++) {
+                        var el = document.getElementById('kw-' + m);
+                        if (el) el.className = (m === wordIdx) ? 'sub-word active' : 'sub-word spoken';
                     }
-                    for (var j = wordIdx + 1; j < words.length; j++) {
-                        var el2 = document.getElementById('kw-' + j);
+                    for (var n = wordIdx + 1; n < words.length; n++) {
+                        var el2 = document.getElementById('kw-' + n);
                         if (el2) el2.className = 'sub-word future';
                     }
                     lastIdx = wordIdx;
                 }
-            }, 50);
+            }, 30);
         }
 
         // ══════════════════════════════════════════════════════════
@@ -2534,18 +2607,26 @@
                 }
             }
 
-            // ── FIX: showExplanationVisual now hides ALL quiz UI elements ──
+            // ── PROPER FIX: showExplanationVisual ──
             function showExplanationVisual(q) {
                 var ev = q.explanation_visual;
-                if (!ev) return;
+                if (!ev) return; // Abort if no visual block exists
 
+                // 1. Find out if we actually have a video or image path in the JSON
                 var vpath = ev.video_path;
                 if (!vpath && ev.image_to_video_beats && ev.image_to_video_beats.length > 0) {
                     vpath = ev.image_to_video_beats[0].video_path || null;
                 }
-                if (!vpath) return;
+                var imageSrc = ev.image_source || null;
 
-                // ── Hide ALL quiz overlay UI elements for clean video display ──
+                // 2. CRITICAL FIX: If we have NEITHER a video NOR an image, 
+                // do NOT hide the quiz UI. Leave it visible so the user can read the text!
+                if (!vpath && !imageSrc) {
+                    return;
+                }
+
+                // 3. If we reach here, we DEFINITELY have a video or image to show.
+                // NOW we can safely hide the quiz UI for a clean background display.
                 document.getElementById('quiz-overlay').style.background = 'transparent';
 
                 var card = document.getElementById('quiz-question-card');
@@ -2554,45 +2635,53 @@
                 var optsEl = document.getElementById('quiz-options');
                 if (optsEl) optsEl.style.display = 'none';
 
-                // FIX 1: Hide feedback box (was showing over the manim video)
                 var feedbackEl = document.getElementById('quiz-feedback');
                 if (feedbackEl) feedbackEl.style.display = 'none';
 
-                // FIX 2: Hide quiz nav buttons (PREV / SKIP QUIZ) during explanation
                 var navEl = document.getElementById('quiz-nav');
                 if (navEl) navEl.style.display = 'none';
 
-                // FIX 3: Hide subtitles during visual playback to avoid text clash
                 var subEl = document.getElementById('subtitle-overlay');
                 if (subEl) subEl.style.display = 'none';
                 if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
 
+                // 4. Reset video/image layers
                 var renderer = ev.renderer || 'manim';
                 var manimLayer = document.getElementById('manim-layer');
                 var manimVid = document.getElementById('manim-vid');
                 var wanLayer = document.getElementById('wan-layer');
                 var wanVid = document.getElementById('wan-vid');
+                var imgLayer = document.getElementById('image-layer');
+                var imgDisplay = document.getElementById('image-display');
 
                 manimLayer.classList.remove('on');
                 wanLayer.classList.remove('on');
+                imgLayer.classList.remove('vis');
+                imgLayer.classList.remove('on');
 
-                if (renderer === 'manim') {
-                    manimVid.src = getMediaSrc(vpath);
-                    manimVid.load();
-                    // FIX 4: Wait for canplay before starting to avoid black first frame
-                    manimVid.oncanplay = function () {
-                        manimVid.oncanplay = null;
-                        manimVid.play().catch(function () { });
-                    };
-                    manimLayer.classList.add('on');
-                } else {
-                    wanVid.src = getMediaSrc(vpath);
-                    wanVid.load();
-                    wanVid.oncanplay = function () {
-                        wanVid.oncanplay = null;
-                        wanVid.play().catch(function () { });
-                    };
-                    wanLayer.classList.add('on');
+                // 5. Play the video or show the fallback image
+                if (vpath) {
+                    if (renderer === 'manim') {
+                        manimVid.src = getMediaSrc(vpath);
+                        manimVid.load();
+                        manimVid.oncanplay = function () {
+                            manimVid.oncanplay = null;
+                            manimVid.play().catch(function () { });
+                        };
+                        manimLayer.classList.add('on');
+                    } else {
+                        wanVid.src = getMediaSrc(vpath);
+                        wanVid.load();
+                        wanVid.oncanplay = function () {
+                            wanVid.oncanplay = null;
+                            wanVid.play().catch(function () { });
+                        };
+                        wanLayer.classList.add('on');
+                    }
+                } else if (imageSrc) {
+                    safeLoadImage(imgDisplay, getMediaSrc(imageSrc));
+                    imgLayer.classList.add('on');
+                    setTimeout(function () { imgLayer.classList.add('vis'); }, 20);
                 }
             }
 

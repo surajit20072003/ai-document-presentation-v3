@@ -173,35 +173,6 @@ def apply_enhanced_prompts(section: dict, enhanced_beats: list) -> None:
                 spec["image_prompt"] = spec["image_prompt_start"]
 
 
-def _enhance_quiz_explanation(section: dict) -> bool:
-    """Enhance quiz explanation_visual beats if present and eligible."""
-    quiz = section.get("understanding_quiz", {})
-    ev = quiz.get("explanation_visual", {})
-    if not ev:
-        return False
-    ev_renderer = ev.get("renderer", "")
-    if ev_renderer not in ELIGIBLE_RENDERERS:
-        return False
-    ev_beats = ev.get("image_to_video_beats", [])
-    if not ev_beats:
-        return False
-
-    synthetic = {
-        "section_id": str(section.get("section_id", "?")) + "_quiz_expl",
-        "section_type": "quiz_explanation",
-        "renderer": ev_renderer,
-        "render_spec": {"image_to_video_beats": ev_beats},
-        "narration": {"segments": [{"text": quiz.get("explanation", "")}]},
-    }
-    enhanced = enhance_section(synthetic)
-    if enhanced:
-        enhanced = _enforce_quality(enhanced, synthetic["section_id"])
-        _apply_by_position(ev_beats, enhanced, id_key="beat_id")
-        return True
-    return False
-
-
-
 def _call_api(messages: list, temperature: float = 0.2) -> Optional[str]:
     """Shared API call used by both enhance_section and repair_beat."""
     import requests
@@ -441,18 +412,5 @@ def run_prompt_enhancement(presentation: dict, log_fn=None) -> dict:
         except Exception as e:
             _log(f"  ⚠️ Section {sec_id}: enhancement error (non-fatal): {e}")
 
-    # ── Phase 2.5b: enhance quiz explanation beats ─────────────────────────
-    _log("Enhancing quiz explanation visuals...")
-    quiz_enhanced = 0
-    for section in sections:
-        try:
-            if _enhance_quiz_explanation(section):
-                _log(f"  ✅ Section {section.get('section_id')} quiz explanation enhanced.")
-                quiz_enhanced += 1
-        except Exception as e:
-            _log(f"  ⚠️ Section {section.get('section_id')} quiz explanation error (non-fatal): {e}")
-    _log(f"Quiz explanations complete: {quiz_enhanced} enhanced.")
-
     _log(f"Enhancement complete: {enhanced_count}/{len(eligible)} section(s) improved.")
-
     return presentation

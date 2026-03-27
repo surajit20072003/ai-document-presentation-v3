@@ -123,26 +123,6 @@ Even if the structure looks correct, the content is always too brief — expand 
 
 DO NOT replace Indian settings with generic laboratories or classrooms.
 
-IPS/VP CONSISTENCY (MANDATORY FOR RECAP):
-- The video_prompt MUST animate the SAME SCENE described in image_prompt_start.
-- If IPS shows "Indian village courtyard" → VP must animate elements IN that courtyard.
-- NEVER write a VP about generic science metaphors (gears, scales, thermostats,
-  nerve pathways) when the IPS shows a cultural setting.
-- The VP SUBJECT line must name the same location or setting as the IPS.
-- The VP MECHANISM must describe motion of objects WITHIN that cultural setting,
-  while still conveying the scientific concept through that setting.
-
-FAIL CONDITION: If IPS describes location A but VP describes unrelated concept B
-→ REJECT and rewrite VP to represent the scientific concept WITHIN the IPS setting.
-
-EXAMPLE (correct):
-  IPS: "Indian marketplace bustling with activity..."
-  VP SUBJECT: Indian marketplace scene representing homeostasis.
-  VP MECHANISM: Market stalls maintain steady activity levels — vendors
-  restock shelves as goods are sold, representing the body's continuous
-  correction back to equilibrium.
-
-
 ═══════════════════════════════════════════════════════════
 VISUAL MODE SELECTION
 ═══════════════════════════════════════════════════════════
