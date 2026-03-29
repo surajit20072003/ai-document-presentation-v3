@@ -3,78 +3,275 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Player V2.5 Sanity Checker</title>
+    <title>Media Manager — AI Doc V3</title>
     <style>
+        :root {
+            --bg: #1e1e2e;
+            --surface: #313244;
+            --surface2: #252635;
+            --border: #45475a;
+            --text: #cdd6f4;
+            --muted: #6c7086;
+            --pass: #a6e3a1;
+            --fail: #f38ba8;
+            --warn: #f9e2af;
+            --info: #89b4fa;
+            --manim: #89dceb;
+            --wan: #cba6f7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: monospace;
-            background: #1e1e2e;
-            color: #cdd6f4;
+            font-family: 'Inter', 'Segoe UI', monospace;
+            background: var(--bg);
+            color: var(--text);
             padding: 20px;
         }
 
-        .pass {
-            color: #a6e3a1;
-            font-weight: bold;
+        /* ── Top Bar ── */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
         }
 
-        .fail {
-            color: #f38ba8;
-            font-weight: bold;
+        .top-bar h1 {
+            font-size: 1.3rem;
+            flex: 1;
         }
 
-        .warn {
-            color: #f9e2af;
-            font-weight: bold;
+        #job-input {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            width: 260px;
         }
 
-        .manim {
-            color: #89dceb;
+        /* ── Summary Bar ── */
+        #summary-bar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: var(--surface);
+            border-radius: 8px;
+            font-size: 13px;
         }
 
-        .wan {
-            color: #cba6f7;
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        table {
-            border-collapse: collapse;
+        .stat-label {
+            color: var(--muted);
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            border: none;
+            padding: 8px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: opacity 0.15s;
+        }
+
+        .btn:hover {
+            opacity: 0.85;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--info);
+            color: #1e1e2e;
+        }
+
+        .btn-success {
+            background: var(--pass);
+            color: #1e1e2e;
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-warn {
+            background: var(--warn);
+            color: #1e1e2e;
+        }
+
+        .btn-sm {
+            padding: 3px 9px;
+            font-size: 11px;
+            border-radius: 4px;
+        }
+
+        /* ── Section Cards ── */
+        .section-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .section-id {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .section-type {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .renderer-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            background: var(--border);
+        }
+
+        .renderer-badge.manim {
+            background: #1c3a3e;
+            color: var(--manim);
+        }
+
+        .renderer-badge.wan {
+            background: #2e1e4a;
+            color: var(--wan);
+        }
+
+        .renderer-badge.img {
+            background: #1e2e3e;
+            color: var(--info);
+        }
+
+        /* ── Media Table ── */
+        .media-table {
             width: 100%;
-            margin-top: 20px;
-            font-size: 14px;
+            border-collapse: collapse;
         }
 
-        th,
-        td {
-            border: 1px solid #45475a;
-            padding: 8px;
+        .media-table th {
+            background: #2a2b3d;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 7px 12px;
             text-align: left;
-            vertical-align: top;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
-        th {
-            background: #313244;
+        .media-table td {
+            padding: 9px 12px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            vertical-align: middle;
         }
 
-        h1 {
-            border-bottom: 2px solid #585b70;
-            padding-bottom: 10px;
+        .media-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
         }
 
-        .sub-item {
-            display: block;
-            margin-bottom: 4px;
-            border-bottom: 1px dashed #45475a;
-            padding-bottom: 2px;
+        .type-icon {
+            font-size: 16px;
         }
 
-        a {
-            color: #89b4fa;
+        .filename {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--info);
             text-decoration: none;
         }
 
-        a:hover {
+        .filename:hover {
             text-decoration: underline;
         }
 
+        /* ── Status Badges ── */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-ok {
+            background: #1a3a1a;
+            color: var(--pass);
+        }
+
+        .badge-missing {
+            background: #3a1a1a;
+            color: var(--fail);
+        }
+
+        .badge-orphan {
+            background: #3a2e00;
+            color: var(--warn);
+        }
+
+        .badge-loading {
+            background: var(--border);
+            color: var(--muted);
+        }
+
+        .badge-na {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+
+        /* ── Orphan Rows ── */
+        .orphan-row td {
+            background: rgba(249, 226, 175, 0.05);
+        }
+
+        /* ── Section Empty ── */
+        .no-media {
+            text-align: center;
+            padding: 20px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* ── Modal ── */
         .modal {
             display: none;
             position: fixed;
@@ -83,397 +280,809 @@
             top: 0;
             width: 100%;
             height: 100%;
+            background: rgba(0, 0, 0, 0.8);
             overflow: auto;
-            background-color: rgba(0, 0, 0, 0.8);
         }
 
         .modal-content {
-            background-color: #313244;
+            background: var(--surface);
             margin: 5% auto;
-            padding: 20px;
-            border: 1px solid #585b70;
-            width: 80%;
-            max-width: 900px;
-            border-radius: 8px;
-            color: #cdd6f4;
+            padding: 24px;
+            border: 1px solid var(--border);
+            width: 85%;
+            max-width: 920px;
+            border-radius: 10px;
         }
 
         .close {
-            color: #aaa;
             float: right;
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 26px;
             cursor: pointer;
+            color: var(--muted);
+            line-height: 1;
         }
 
-        .close:hover,
-        .close:focus {
-            color: #fff;
-            text-decoration: none;
-            cursor: pointer;
+        .close:hover {
+            color: var(--text);
         }
 
         .modal-section {
             margin-bottom: 20px;
-            border-bottom: 1px solid #45475a;
+            border-bottom: 1px solid var(--border);
             padding-bottom: 20px;
+        }
+
+        .modal-section:last-child {
+            border-bottom: none;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
         }
 
         textarea {
             width: 100%;
-            height: 80px;
-            background: #1e1e2e;
-            color: #cdd6f4;
-            border: 1px solid #45475a;
+            height: 90px;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
             padding: 10px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-family: monospace;
-            margin-top: 5px;
-        }
-
-        .btn {
-            border: none;
-            padding: 10px 20px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-            margin-right: 10px;
-        }
-
-        .btn-primary {
-            background: #89b4fa;
-            color: #1e1e2e;
-        }
-
-        .btn-success {
-            background: #a6e3a1;
-            color: #1e1e2e;
-        }
-
-        .btn-secondary {
-            background: #585b70;
-            color: #cdd6f4;
-        }
-
-        .btn-sm {
-            padding: 4px 8px;
             font-size: 12px;
-            margin: 2px;
+            resize: vertical;
         }
 
-        /* Provider toggle (WAN / Local GPU) */
         .provider-toggle {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }
 
         .provider-btn {
             flex: 1;
             padding: 10px;
-            border: 2px solid #45475a;
-            background: #252635;
-            color: #cdd6f4;
+            border: 2px solid var(--border);
+            background: var(--surface2);
+            color: var(--text);
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
-            font-weight: bold;
+            font-weight: 700;
             transition: all 0.15s;
         }
 
         .provider-btn.active-wan {
-            border-color: #cba6f7;
-            background: #3b3152;
-            color: #cba6f7;
+            border-color: var(--wan);
+            background: #2e1e4a;
+            color: var(--wan);
         }
 
         .provider-btn.active-gpu {
-            border-color: #a6e3a1;
+            border-color: var(--pass);
             background: #1e3127;
-            color: #a6e3a1;
+            color: var(--pass);
         }
 
         #preview-container {
-            margin-top: 20px;
-            background: #11111b;
-            padding: 10px;
-            text-align: center;
-            min-height: 200px;
+            min-height: 160px;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: #11111b;
+            border-radius: 6px;
+            text-align: center;
         }
 
         #preview-video {
             max-width: 100%;
-            max-height: 400px;
+            max-height: 380px;
         }
 
         .progress-bar {
             width: 100%;
-            background-color: #45475a;
+            background: var(--border);
             border-radius: 4px;
             margin-top: 10px;
-            height: 20px;
+            height: 18px;
             overflow: hidden;
             display: none;
         }
 
         .progress-fill {
             height: 100%;
-            background-color: #89b4fa;
+            background: var(--info);
             width: 0%;
             transition: width 0.3s;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            background: var(--surface2);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .mode-toggle label {
+            margin: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ── Status messages ── */
+        #status-msg {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        a {
+            color: var(--info);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 
 <body>
-    <h1>Player V2.5 Sanity Checker (Deep Check) + Preview Workflow</h1>
-    <div id="status">Loading...</div>
 
-    <!-- REPAIR PANEL -->
-    <div id="self-healing"
-        style="margin: 30px 0; padding: 20px; background: #313244; border-radius: 8px; display: none;">
-        <h2 style="margin-top:0">🛠️ Self-Healing: Missing Assets Detected</h2>
-        <p>The checker found media files on disk that are NOT linked in your <code>presentation.json</code>. You can
-            automatically stitch them back now.</p>
-        <button id="repair-btn" class="btn btn-success">Stitch Missing Assets</button>
-        <button id="repair-urls-btn" class="btn btn-primary">Fix Malformed URLs</button>
-        <div id="repair-status" style="margin-top: 10px; font-weight: bold;"></div>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <h1>🎬 Media Manager</h1>
+        <input id="job-input" type="text" placeholder="Job ID…" />
+        <button class="btn btn-primary" onclick="loadJob()">Load Job</button>
+        <button class="btn btn-warn" id="stitch-btn" onclick="stitchAll()" style="display:none">🛠 Stitch
+            Orphans</button>
+        <button class="btn btn-secondary" onclick="loadJob()" title="Refresh">↺ Refresh</button>
     </div>
 
-    <!-- PREVIEW/REFINE MODAL -->
+    <!-- Summary Bar -->
+    <div id="summary-bar" style="display:none">
+        <span class="stat"><span class="stat-label">Sections:</span> <strong id="stat-sections">–</strong></span>
+        <span class="stat"><span class="stat-label">Videos OK:</span> <strong id="stat-vok"
+                style="color:var(--pass)">–</strong></span>
+        <span class="stat"><span class="stat-label">Videos Missing:</span> <strong id="stat-vmiss"
+                style="color:var(--fail)">–</strong></span>
+        <span class="stat"><span class="stat-label">Images OK:</span> <strong id="stat-iok"
+                style="color:var(--pass)">–</strong></span>
+        <span class="stat"><span class="stat-label">Images Missing:</span> <strong id="stat-imiss"
+                style="color:var(--fail)">–</strong></span>
+        <span class="stat"><span class="stat-label">Orphans:</span> <strong id="stat-orphan"
+                style="color:var(--warn)">–</strong></span>
+    </div>
+
+    <!-- Status message -->
+    <div id="status-msg"></div>
+
+    <!-- Cards container -->
+    <div id="cards"></div>
+
+    <!-- ═══════════ REFINE MODAL ═══════════ -->
     <div id="refine-modal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2>Refine Video / Manim Code</h2>
+            <span class="close" onclick="closeModal()">×</span>
+            <h2 style="margin-bottom:16px">♻️ Regenerate Video</h2>
 
-            <div id="modal-info" style="margin-bottom: 15px; color: #89dceb;"></div>
+            <div id="modal-info" style="margin-bottom:14px; color:var(--manim); font-size:13px;"></div>
 
             <div class="modal-section">
-                <!-- Radio Buttons for Mode Selection -->
-                <div
-                    style="margin-bottom: 15px; padding: 10px; background: #252635; border-radius: 6px; border: 1px solid #45475a;">
-                    <label style="margin-right: 20px; cursor: pointer; color: #f38ba8;">
+                <!-- Mode -->
+                <div class="mode-toggle">
+                    <label style="color:var(--fail)">
                         <input type="radio" name="refine-mode" value="override" checked onchange="toggleRefineMode()">
-                        <strong>⚡ Full Override</strong>
+                        <strong>⚡ Full Override</strong> — replace prompt exactly
                     </label>
-                    <label style="cursor: pointer; color: #a6e3a1;">
+                    <label style="color:var(--pass)">
                         <input type="radio" name="refine-mode" value="refine" onchange="toggleRefineMode()">
-                        <strong>✨ AI Refinement</strong>
+                        <strong>✨ AI Refinement</strong> — describe changes
                     </label>
                 </div>
 
-                <!-- Input Blocks -->
                 <div id="block-override">
-                    <label style="color: #f38ba8;"><strong>Raw Prompt / Code (Edit to Replace):</strong></label>
-                    <textarea id="raw-prompt-input" style="border-color: #f38ba8;"></textarea>
-                    <small style="color: #999;">The AI will use EXACTLY this text/code.</small>
+                    <label style="color:var(--fail)">Raw Prompt / Code:</label>
+                    <textarea id="raw-prompt-input" style="border-color:var(--fail)"></textarea>
+                    <small style="color:var(--muted)">The AI will use EXACTLY this text.</small>
                 </div>
 
-                <div id="block-refine" style="display:none; opacity: 0.6;">
-                    <label style="color: #a6e3a1;"><strong>Instructions for AI (e.g., "Make it
-                            slower"):</strong></label>
-                    <textarea id="user-feedback-input" placeholder="Describe changes... (Context: Logic only, no code)"
-                        disabled style="border-color: #a6e3a1;"></textarea>
-                    <small style="color: #999;">The AI will READ the code above and APPLY these changes.</small>
+                <div id="block-refine" style="display:none; margin-top:10px;">
+                    <label style="color:var(--pass)">Instructions for AI (e.g. "Make it slower"):</label>
+                    <textarea id="user-feedback-input" style="border-color:var(--pass)"
+                        placeholder="Describe what to change…" disabled></textarea>
+                    <small style="color:var(--muted)">The AI will read the prompt above and apply these changes.</small>
                 </div>
             </div>
 
-            <!-- Provider Toggle: only shown for WAN/video sections -->
-            <div class="provider-toggle" id="provider-toggle" style="display:none;">
-                <button id="btn-use-wan" class="provider-btn active-wan" onclick="setProvider('wan')">
-                    🌐 WAN (Kie.ai)
-                </button>
-                <button id="btn-use-gpu" class="provider-btn" onclick="setProvider('gpu')">
-                    🖥️ Local GPU
-                </button>
+            <!-- Provider toggle (WAN video only) -->
+            <div class="provider-toggle" id="provider-toggle" style="display:none">
+                <button id="btn-use-wan" class="provider-btn active-wan" onclick="setProvider('wan')">🌐 WAN
+                    (Kie.ai)</button>
+                <button id="btn-use-gpu" class="provider-btn" onclick="setProvider('gpu')">🖥️ Local GPU</button>
             </div>
 
-            <div style="display: flex; align-items: center;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
                 <button class="btn btn-primary" onclick="generatePreview()">Generate Preview</button>
-                <span id="preview-status-text" style="font-weight: bold; margin-left: 10px;"></span>
+                <span id="preview-status-text" style="font-weight:600; font-size:13px;"></span>
             </div>
 
             <div class="progress-bar" id="progress-bar">
                 <div class="progress-fill" id="progress-fill"></div>
             </div>
 
-            <div id="preview-container">
-                <span style="color: #666">Preview will appear here...</span>
+            <div id="preview-container" style="margin-top:12px;">
+                <span style="color:var(--muted)">Preview will appear here…</span>
             </div>
 
-            <div style="margin-top: 20px; text-align: right; border-top: 1px solid #45475a; padding-top: 20px;">
+            <div style="margin-top:20px; text-align:right; border-top:1px solid var(--border); padding-top:16px;">
                 <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                <button class="btn btn-success" id="btn-approve"
-                    onclick="alert('Step 1: Clicked'); approvePreview()">Approve & Replace</button>
+                <button class="btn btn-success" id="btn-approve" disabled onclick="approvePreview()"
+                    style="margin-left:10px;">
+                    ✅ Approve &amp; Replace
+                </button>
             </div>
         </div>
     </div>
 
-    <table id="report">
-        <thead>
-            <tr>
-                <th>Sec ID</th>
-                <th>Type</th>
-                <th>Renderer</th>
-                <th>Avatar</th>
-                <th>Video</th>
-                <th>Prompts vs Disk</th>
-                <th>Images (Visual Beats)</th>
-                <th>URL Health</th>
-                <th>V2.5 Logic Check</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-
+    <!-- ═══════════ SCRIPT ═══════════ -->
     <script>
-
-
+        // ─── State ───────────────────────────────────────────
         const urlParams = new URLSearchParams(window.location.search);
-        const JOB_ID = urlParams.get('job') || urlParams.get('job_id') || '0f1eaff8';
-        // Fix: Remove /player/ prefix as the app serves the player dir as root
-        const BASE_PATH = `/jobs/${JOB_ID}/`;
-        const PRESENTATION_URL = `${BASE_PATH}presentation.json?t=${Date.now()}`;
-
-
-        // --- PREVIEW & APPROVE WORKFLOW LIBRARIES ---
+        let JOB_ID = urlParams.get('job') || urlParams.get('job_id') || '';
+        let BASE_PATH = '';
         let currentRefineData = {};
-        let orphanDetected = false;
-        let selectedProvider = 'wan'; // 'wan' or 'gpu'
+        let selectedProvider = 'wan';
+        let globalOrphanCount = 0;
+
+        if (JOB_ID) {
+            document.getElementById('job-input').value = JOB_ID;
+            document.addEventListener('DOMContentLoaded', loadJob);
+        }
+
+        // ─── Load / Refresh ──────────────────────────────────
+        async function loadJob() {
+            JOB_ID = document.getElementById('job-input').value.trim();
+            if (!JOB_ID) { showStatus('⚠️ Please enter a Job ID.', 'warn'); return; }
+
+            BASE_PATH = `/jobs/${JOB_ID}/`;
+            document.getElementById('cards').innerHTML = '';
+            document.getElementById('summary-bar').style.display = 'none';
+            document.getElementById('stitch-btn').style.display = 'none';
+            globalOrphanCount = 0;
+
+            showStatus(`Loading job <strong>${JOB_ID}</strong>…`, 'info');
+
+            try {
+                // Fetch both in parallel
+                const [presRes, reportRes] = await Promise.all([
+                    fetch(`${BASE_PATH}presentation.json?t=${Date.now()}`),
+                    fetch(`/api/sanity-report/${JOB_ID}`)
+                ]);
+
+                if (!presRes.ok) throw new Error(`presentation.json not found (${presRes.status})`);
+                const pres = await presRes.json();
+
+                // Disk report (optional — graceful degradation if API fails)
+                let diskReport = {};
+                if (reportRes.ok) {
+                    const rData = await reportRes.json();
+                    // Index by section_id for quick lookup
+                    (rData.sections || []).forEach(s => { diskReport[String(s.section_id)] = s; });
+                }
+
+                showStatus(`Found ${pres.sections.length} section(s). Checking media…`, 'info');
+                await renderAllSections(pres.sections, diskReport);
+                updateSummary(pres.sections.length);
+                hideStatus();
+
+            } catch (e) {
+                showStatus(`❌ CRITICAL ERROR: ${e.message}`, 'fail');
+            }
+        }
+
+        // ─── Render all section cards ─────────────────────────
+        async function renderAllSections(sections, diskReport) {
+            const container = document.getElementById('cards');
+            for (const section of sections) {
+                const card = await buildSectionCard(section, diskReport[String(section.section_id)] || {});
+                container.appendChild(card);
+            }
+        }
+
+        // ─── Build one section card ───────────────────────────
+        async function buildSectionCard(section, disk) {
+            const sid = String(section.section_id);
+            const renderer = (section.renderer || 'none').toLowerCase();
+
+            const card = document.createElement('div');
+            card.className = 'section-card';
+            card.id = `section-card-${sid}`;
+
+            // ── Header ──
+            let rendClass = '';
+            if (renderer === 'manim') rendClass = 'manim';
+            else if (['wan', 'video', 'video_generation', 'image_to_video'].includes(renderer)) rendClass = renderer === 'manim' ? 'manim' : 'img';
+
+            card.innerHTML = `
+        <div class="section-header">
+          <span class="section-id">§${sid}</span>
+          <span class="section-type">${section.section_type || ''}</span>
+          <span class="renderer-badge ${rendClass}">${renderer.toUpperCase()}</span>
+          <span style="margin-left:auto; color:var(--muted); font-size:12px;">${section.title || ''}</span>
+        </div>
+      `;
+
+            // ── Media Table ──
+            const table = document.createElement('table');
+            table.className = 'media-table';
+            table.innerHTML = `
+        <thead>
+          <tr>
+            <th style="width:30px"></th>
+            <th>Asset</th>
+            <th style="width:100px">Status</th>
+            <th style="width:220px">Actions</th>
+          </tr>
+        </thead>
+      `;
+            const tbody = document.createElement('tbody');
+
+            let hasRows = false;
+
+            // ── 1. AVATAR ──
+            const avatarPath = section.avatar_video || section.avatar_video_path;
+            if (avatarPath) {
+                const row = await makeMediaRow('🧑', avatarPath, 'avatar', {
+                    editBtn: false, // no regen for avatar here
+                    section,
+                    beatId: null,
+                    renderer,
+                });
+                tbody.appendChild(row);
+                hasRows = true;
+            }
+
+            // ── 2. VIDEOS ──
+            // Collect all unique video refs + their beat context
+            const videoRefs = collectVideoRefs(section);
+
+            for (const ref of videoRefs) {
+                const row = await makeMediaRow('🎥', ref.path, 'video', {
+                    editBtn: true,
+                    section,
+                    beatId: ref.beatId,
+                    prompt: ref.prompt,
+                    renderer: ref.renderer || renderer,
+                });
+                tbody.appendChild(row);
+                hasRows = true;
+            }
+
+            // ── 3. IMAGES ──
+            const imageRefs = collectImageRefs(section);
+            for (const ref of imageRefs) {
+                const row = await makeMediaRow('🖼️', ref.path, 'image', {
+                    editBtn: false,
+                    section,
+                    beatId: ref.beatId,
+                    renderer,
+                });
+                tbody.appendChild(row);
+                hasRows = true;
+            }
+
+            // ── 4. QUIZ AVATAR CLIPS (question / correct / wrong / explanation) ──
+            // Collect from understanding_quiz.avatar_clips and questions[].avatar_clips
+            const quizAvatarSets = [];
+            if (section.understanding_quiz?.avatar_clips) quizAvatarSets.push(section.understanding_quiz.avatar_clips);
+            (section.questions || []).forEach(q => { if (q.avatar_clips) quizAvatarSets.push(q.avatar_clips); });
+
+            for (const clips of quizAvatarSets) {
+                const clipTypes = [['question', '❓'], ['correct', '✅'], ['wrong', '❌'], ['explanation', '💡']];
+                for (const [key, icon] of clipTypes) {
+                    if (!clips[key]) continue;
+                    const row = await makeMediaRow(icon, clips[key], 'avatar', {
+                        editBtn: false,
+                        section,
+                        beatId: null,
+                        renderer,
+                    });
+                    // Label the row
+                    const firstTd = row.querySelector('td:nth-child(2)');
+                    if (firstTd) {
+                        const label = document.createElement('span');
+                        label.style.cssText = 'font-size:10px; color:var(--muted); margin-left:6px;';
+                        label.textContent = `quiz ${key}`;
+                        firstTd.appendChild(label);
+                    }
+                    tbody.appendChild(row);
+                    hasRows = true;
+                }
+            }
+
+            // ── 5. ORPHANS (on disk but not in JSON) ──
+            const orphans = disk.videos_orphaned || [];
+            for (const orf of orphans) {
+                const orphanPath = `videos/${orf}`;
+                const row = makeOrphanRow('🎥', orphanPath, sid);
+                tbody.appendChild(row);
+                hasRows = true;
+                globalOrphanCount++;
+            }
+
+            if (!hasRows) {
+                const empty = document.createElement('tr');
+                empty.innerHTML = `<td colspan="4" class="no-media">No media assets found for this section.</td>`;
+                tbody.appendChild(empty);
+            }
+
+            table.appendChild(tbody);
+            card.appendChild(table);
+            return card;
+        }
+
+        // ─── Collect all video file paths for a section ───────
+        function collectVideoRefs(section) {
+            const refs = [];
+            const seen = new Set();
+
+            function addRef(path, beatId, prompt, rend) {
+                if (!path) return;
+                const filename = path.split('/').pop();
+                if (seen.has(filename)) return;
+                seen.add(filename);
+                refs.push({ path, beatId: beatId || filename.replace('.mp4', ''), prompt: prompt || '', renderer: rend || section.renderer || 'wan' });
+            }
+
+            // PRIMARY: visual_beats[].video_path (current V3 format)
+            (section.visual_beats || []).forEach(b => {
+                if (b.video_path) {
+                    addRef(b.video_path, b.beat_id, b.display_text || b.description || '', section.renderer);
+                }
+            });
+
+            // Explicit beat_video_paths[] (flat list)
+            (section.beat_video_paths || []).forEach(vp => addRef(vp, null, '', section.renderer));
+
+            // understanding_quiz explanation visual beats
+            function addQuizExplanationBeats(quizObj) {
+                if (!quizObj) return;
+                const ev = quizObj.explanation_visual;
+
+                // ── 1. Top-level shortcut on the quiz object ──────────────────────────
+                if (quizObj.explanation_visual_video_path)
+                    addRef(quizObj.explanation_visual_video_path, 'eq_shortcut', ev?.display_text || 'Quiz explanation', 'wan');
+
+                if (!ev) return;
+
+                // ── 2. Rendered single video path ─────────────────────────────────────
+                if (ev.video_path)
+                    addRef(ev.video_path, 'eq_main', ev.display_text || 'Quiz explanation', 'wan');
+
+                // ── 3. Rendered beat_video_paths list ─────────────────────────────────
+                (ev.beat_video_paths || []).forEach((vp, i) =>
+                    addRef(vp, `eq_beat_${i}`, ev.display_text || '', 'wan'));
+
+                // ── 4. Per-beat video_path inside image_to_video_beats ────────────────
+                (ev.image_to_video_beats || []).forEach(b => {
+                    const derivedPath = b.video_path
+                        || ev.video_path
+                        || `videos/topic_${section.section_id}_${b.beat_id}.mp4`;
+                    addRef(derivedPath, b.beat_id, b.video_prompt || b.display_text || 'Quiz explanation beat', 'wan');
+                });
+            }
+            addQuizExplanationBeats(section.understanding_quiz);
+            (section.questions || []).forEach(q => addQuizExplanationBeats(q));
+
+            // ── Also catch top-level understanding_quiz.explanation_visual_video_path ──
+            if (section.understanding_quiz?.explanation_visual_video_path)
+                addRef(section.understanding_quiz.explanation_visual_video_path, 'eq_uq_top', '', 'wan');
+
+            // Quiz question beat videos (section.quiz_questions[] older format)
+            (section.quiz_questions || []).forEach(q => {
+                const bid = q.beat_id;
+                if (q.video_path) addRef(q.video_path, bid, q.question || '', 'wan');
+                else if (bid) addRef(`videos/topic_${section.section_id}_quiz_${bid}.mp4`, bid, q.question || '', 'wan');
+                if (q.explanation_video) addRef(q.explanation_video, bid + '_exp', 'Explanation', 'wan');
+            });
+
+            // narration.segments[].beat_videos (v2 fallback)
+            (section.narration?.segments || []).forEach(seg => {
+                (seg.beat_videos || []).forEach(vp => {
+                    const fname = vp.split('/').pop().replace('.mp4', '');
+                    addRef(vp, fname, seg.text || '', section.renderer);
+                });
+            });
+
+            // section.beat_videos[] (older flat format)
+            (section.beat_videos || []).forEach((vp, i) => {
+                addRef(vp, `beat_${i}`, '', section.renderer);
+            });
+
+            // section.video_path (single video)
+            if (section.video_path) {
+                addRef(section.video_path, 'main', '', section.renderer);
+            }
+
+            // recap_video_paths
+            (section.recap_video_paths || []).forEach((vp, i) => {
+                addRef(vp, `recap_${i}`, '', section.renderer);
+            });
+
+            // WAN video_prompts (older structure)
+            (section.video_prompts || section.render_spec?.video_prompts || []).forEach(p => {
+                if (p.beat_id) addRef(`videos/${p.beat_id}.mp4`, p.beat_id, p.prompt || '', 'wan');
+            });
+
+            return refs;
+        }
+
+        // ─── Collect all image paths for a section ────────────
+        function collectImageRefs(section) {
+            const refs = [];
+            const seen = new Set();
+
+            function addImg(path, beatId) {
+                if (!path) return;
+                const key = path.split('/').pop();
+                if (seen.has(key)) return;
+                seen.add(key);
+                refs.push({ path, beatId });
+            }
+
+            // PRIMARY: visual_beats[].image_source (V3 current format)
+            (section.visual_beats || []).forEach(b => {
+                addImg(b.image_source || b.image_id || b.image_path, b.beat_id);
+            });
+
+            // Quiz question images
+            (section.quiz_questions || []).forEach(q => {
+                addImg(q.image_id || q.image_path || q.image_source, q.beat_id);
+            });
+
+            // narration segments visual_content
+            (section.narration?.segments || []).forEach(seg => {
+                const vc = seg.visual_content;
+                if (vc) addImg(vc.image_id || vc.image_path || vc.image_source, seg.segment_id);
+            });
+
+            return refs;
+        }
+
+        // ─── Build a media row ────────────────────────────────
+        async function makeMediaRow(icon, assetPath, type, opts) {
+            const { editBtn, section, beatId, prompt, renderer } = opts;
+            const tr = document.createElement('tr');
+
+            const check = await checkUrl(assetPath, type);
+            const badge = check.valid
+                ? `<span class="badge badge-ok">200 OK</span>`
+                : `<span class="badge badge-missing">MISSING</span>`;
+
+            const linkHref = check.url || resolveUrl(assetPath, type);
+            const filenameText = assetPath.split('/').pop();
+
+            let actions = '';
+            if (editBtn && ['wan', 'video', 'video_generation', 'image_to_video', 'manim'].includes(renderer)) {
+                const b64 = safeBtoa(prompt || '');
+                const rendKey = renderer === 'image_to_video' ? 'wan' : renderer;
+                actions += `<button class="btn btn-sm btn-primary" onclick="openRefineModal('${section.section_id}','${beatId || 0}','${rendKey}','${b64}','${rendKey}')">✏️ Edit</button> `;
+            }
+
+            if (type === 'image' && check.valid) {
+                actions += `<a href="${linkHref}" target="_blank" class="btn btn-sm btn-secondary">👁 View</a>`;
+            }
+
+            tr.innerHTML = `
+        <td class="type-icon">${icon}</td>
+        <td><a class="filename" href="${linkHref}" target="_blank">${filenameText}</a></td>
+        <td>${badge}</td>
+        <td>${actions || '<span style="color:var(--muted)">—</span>'}</td>
+      `;
+            return tr;
+        }
+
+        // ─── Orphan row ───────────────────────────────────────
+        function makeOrphanRow(icon, assetPath, sid) {
+            const tr = document.createElement('tr');
+            tr.className = 'orphan-row';
+            const filename = assetPath.split('/').pop();
+            const linkHref = BASE_PATH + assetPath;
+            tr.innerHTML = `
+        <td class="type-icon">${icon}</td>
+        <td>
+          <a class="filename" href="${linkHref}" target="_blank">${filename}</a>
+          <span class="badge badge-orphan" style="margin-left:8px;">ORPHAN</span>
+          <span style="color:var(--muted); font-size:11px; margin-left:6px;">on disk but not in JSON</span>
+        </td>
+        <td><span class="badge badge-orphan">⚠️ ORPHAN</span></td>
+        <td>
+          <button class="btn btn-sm btn-warn" onclick="stitchAll()">🛠 Stitch</button>
+        </td>
+      `;
+            return tr;
+        }
+
+        // ─── Update summary bar ───────────────────────────────
+        async function updateSummary(sectionCount) {
+            document.getElementById('summary-bar').style.display = 'flex';
+            document.getElementById('stat-sections').textContent = sectionCount;
+
+            // Count badge elements in DOM
+            const allBadges = document.querySelectorAll('.badge');
+            let vok = 0, vmiss = 0, iok = 0, imiss = 0;
+            document.querySelectorAll('.media-table tbody tr:not(.orphan-row)').forEach(row => {
+                const icon = row.querySelector('.type-icon')?.textContent || '';
+                const badge = row.querySelector('.badge');
+                if (!badge) return;
+                const isOk = badge.classList.contains('badge-ok');
+                if (icon.includes('🎥')) { isOk ? vok++ : vmiss++; }
+                if (icon.includes('🖼')) { isOk ? iok++ : imiss++; }
+            });
+
+            document.getElementById('stat-vok').textContent = vok;
+            document.getElementById('stat-vmiss').textContent = vmiss;
+            document.getElementById('stat-iok').textContent = iok;
+            document.getElementById('stat-imiss').textContent = imiss;
+            document.getElementById('stat-orphan').textContent = globalOrphanCount;
+
+            if (globalOrphanCount > 0) {
+                document.getElementById('stitch-btn').style.display = 'inline-block';
+            }
+        }
+
+        // ─── URL resolution ───────────────────────────────────
+        function resolveUrl(path, type) {
+            if (!path) return '#';
+            let p = path.replace(/\\/g, '/');
+            if (p.includes(':') && !p.startsWith('http')) {
+                p = p.split('/').pop();
+            }
+            if (p.startsWith('http') || p.startsWith('/jobs/')) return p;
+            if (type === 'avatar' && !p.includes('/')) return BASE_PATH + 'avatars/' + p;
+            if (type === 'video' && !p.includes('/')) return BASE_PATH + 'videos/' + p;
+            if (type === 'image' && !p.includes('/')) return BASE_PATH + 'images/' + p;
+            if (!p.startsWith('./') && !p.startsWith('/')) return BASE_PATH + p;
+            return p;
+        }
+
+        async function checkUrl(url, type) {
+            if (!url) return { valid: false, status: 'N/A', url: '#' };
+            try {
+                let fetchUrl = resolveUrl(url, type);
+                if (type === 'video' || type === 'image') {
+                    fetchUrl += (fetchUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+                }
+                const res = await fetch(fetchUrl, { method: 'HEAD' });
+                // Try .png fallback for .jpg images
+                if (!res.ok && /\.jpe?g$/i.test(fetchUrl)) {
+                    const pngUrl = fetchUrl.replace(/\.jpe?g/i, '.png');
+                    const r2 = await fetch(pngUrl, { method: 'HEAD' });
+                    if (r2.ok) return { valid: true, status: r2.status, url: pngUrl };
+                }
+                return { valid: res.ok, status: res.status, url: fetchUrl };
+            } catch (e) {
+                return { valid: false, status: 'ERR', url: '#' };
+            }
+        }
+
+        // ─── Stitch orphans ───────────────────────────────────
+        async function stitchAll() {
+            showStatus('🛠 Stitching orphaned assets…', 'info');
+            try {
+                const res = await fetch(`/api/repair-metadata/${JOB_ID}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showStatus(`✅ Stitched ${data.updated_assets} asset(s). Reloading…`, 'pass');
+                    setTimeout(() => loadJob(), 1400);
+                } else {
+                    showStatus(`❌ Stitch failed: ${data.error}`, 'fail');
+                }
+            } catch (e) {
+                showStatus(`❌ Network error: ${e.message}`, 'fail');
+            }
+        }
+
+        // ─── Status helpers ───────────────────────────────────
+        function showStatus(msg, type = 'info') {
+            const el = document.getElementById('status-msg');
+            el.innerHTML = msg;
+            el.style.display = 'block';
+            el.style.borderColor = type === 'pass' ? 'var(--pass)' : type === 'fail' ? 'var(--fail)' : type === 'warn' ? 'var(--warn)' : 'var(--border)';
+        }
+        function hideStatus() {
+            document.getElementById('status-msg').style.display = 'none';
+        }
+
+        // ─── Base64 helpers ───────────────────────────────────
+        function safeBtoa(str) { return btoa(unescape(encodeURIComponent(str))); }
+        function safeAtob(str) { return decodeURIComponent(escape(atob(str))); }
+
+        // ════════════════════════════════════════════════════════
+        //  MODAL / PREVIEW / APPROVE (keep full logic identical)
+        // ════════════════════════════════════════════════════════
 
         function setProvider(p) {
             selectedProvider = p;
-            const btnWan = document.getElementById('btn-use-wan');
-            const btnGpu = document.getElementById('btn-use-gpu');
-            btnWan.className = 'provider-btn' + (p === 'wan' ? ' active-wan' : '');
-            btnGpu.className = 'provider-btn' + (p === 'gpu' ? ' active-gpu' : '');
-        }
-
-
-
-
-        function closeModal() {
-            document.getElementById('refine-modal').style.display = "none";
-            // stop video
-            const container = document.getElementById('preview-container');
-            container.innerHTML = '<span style="color: #666">Preview will appear here...</span>';
-            currentRefineData = {};
-        }
-
-        function safeBtoa(str) {
-            return btoa(unescape(encodeURIComponent(str)));
-        }
-
-        function safeAtob(str) {
-            return decodeURIComponent(escape(atob(str)));
+            document.getElementById('btn-use-wan').className = 'provider-btn' + (p === 'wan' ? ' active-wan' : '');
+            document.getElementById('btn-use-gpu').className = 'provider-btn' + (p === 'gpu' ? ' active-gpu' : '');
         }
 
         function toggleRefineMode() {
             const mode = document.querySelector('input[name="refine-mode"]:checked').value;
-            const blockOverride = document.getElementById('block-override');
-            const blockRefine = document.getElementById('block-refine');
-            const inputOverride = document.getElementById('raw-prompt-input');
-            const inputRefine = document.getElementById('user-feedback-input');
+            const override = document.getElementById('block-override');
+            const refine = document.getElementById('block-refine');
+            const inpO = document.getElementById('raw-prompt-input');
+            const inpR = document.getElementById('user-feedback-input');
 
             if (mode === 'override') {
-                // Show Override, Hide Refine
-                blockOverride.style.display = 'block';
-                blockOverride.style.opacity = '1';
-                inputOverride.disabled = false;
-
-                blockRefine.style.display = 'block'; // Keep visible but dim
-                blockRefine.style.opacity = '0.4';
-                inputRefine.disabled = true;
-                inputRefine.value = ""; // Clear refinement
+                override.style.opacity = '1'; inpO.disabled = false;
+                refine.style.display = 'block'; refine.style.opacity = '0.4'; inpR.disabled = true; inpR.value = '';
             } else {
-                // Show Refine, Dim Override
-                blockOverride.style.display = 'block';
-                blockOverride.style.opacity = '0.4';
-                inputOverride.disabled = true;
-
-                blockRefine.style.display = 'block';
-                blockRefine.style.opacity = '1';
-                inputRefine.disabled = false;
-
-                // Focus refinement
-                inputRefine.focus();
+                override.style.opacity = '0.4'; inpO.disabled = true;
+                refine.style.display = 'block'; refine.style.opacity = '1'; inpR.disabled = false; inpR.focus();
             }
         }
 
         function openRefineModal(secId, beatId, type, currentPromptBase64, renderer) {
-            // Decode prompt
-            let currentPrompt = "";
-            try {
-                currentPrompt = safeAtob(currentPromptBase64);
-            } catch (e) {
-                console.error("Base64 decode error", e);
-                currentPrompt = "Error decoding prompt";
-            }
+            let currentPrompt = '';
+            try { currentPrompt = safeAtob(currentPromptBase64); } catch (e) { currentPrompt = ''; }
 
-            currentRefineData = {
-                jobId: JOB_ID,
-                sectionId: secId,
-                beatId: beatId,
-                renderer: renderer,
-                type: type
-            };
+            currentRefineData = { jobId: JOB_ID, sectionId: secId, beatId, renderer, type };
 
-            document.getElementById('modal-info').innerHTML = `<strong>Section ${secId}</strong> | Beat: ${beatId || 'N/A'} | Renderer: ${renderer.toUpperCase()}`;
+            document.getElementById('modal-info').innerHTML =
+                `<strong>Section ${secId}</strong> | Beat: ${beatId || 'N/A'} | Renderer: ${renderer.toUpperCase()}`;
             document.getElementById('raw-prompt-input').value = currentPrompt;
-            document.getElementById('user-feedback-input').value = "";
+            document.getElementById('user-feedback-input').value = '';
             document.getElementById('btn-approve').disabled = true;
-            document.getElementById('preview-status-text').innerText = "";
+            document.getElementById('preview-status-text').innerText = '';
             document.getElementById('progress-bar').style.display = 'none';
-            document.getElementById('preview-container').innerHTML = '<span style="color: #666">Preview will appear here...</span>';
+            document.getElementById('preview-container').innerHTML =
+                '<span style="color:var(--muted)">Preview will appear here…</span>';
 
-            // Show provider toggle only for WAN/video sections
             const toggle = document.getElementById('provider-toggle');
-            if (renderer === 'wan' || renderer === 'video') {
-                toggle.style.display = 'flex';
-                setProvider('wan'); // reset to WAN default on each open
-            } else {
-                toggle.style.display = 'none';
-            }
+            toggle.style.display = (renderer === 'wan' || renderer === 'video' || renderer === 'image_to_video') ? 'flex' : 'none';
+            setProvider('wan');
 
-            // Reset to Override Mode by default
             const overrideRadio = document.querySelector('input[name="refine-mode"][value="override"]');
-            if (overrideRadio) {
-                overrideRadio.checked = true;
-                toggleRefineMode();
-            }
+            if (overrideRadio) { overrideRadio.checked = true; toggleRefineMode(); }
 
-            document.getElementById('refine-modal').style.display = "block";
+            document.getElementById('refine-modal').style.display = 'block';
         }
 
+        function closeModal() {
+            document.getElementById('refine-modal').style.display = 'none';
+            document.getElementById('preview-container').innerHTML =
+                '<span style="color:var(--muted)">Preview will appear here…</span>';
+            currentRefineData = {};
+        }
 
         async function generatePreview() {
             const btn = document.querySelector('.modal .btn-primary');
             const statusText = document.getElementById('preview-status-text');
-
-            // Get Mode
             const mode = document.querySelector('input[name="refine-mode"]:checked').value;
 
-            let feedback = "";
-            let rawOverride = "";
+            let feedback = '', rawOverride = '';
+            if (mode === 'override') rawOverride = document.getElementById('raw-prompt-input').value;
+            else feedback = document.getElementById('user-feedback-input').value;
 
-            if (mode === 'override') {
-                rawOverride = document.getElementById('raw-prompt-input').value;
-            } else {
-                feedback = document.getElementById('user-feedback-input').value;
-            }
-
-            if (!feedback && !rawOverride) {
-                alert("Please provide input for the selected mode.");
-                return;
-            }
+            if (!feedback && !rawOverride) { alert('Please provide input.'); return; }
 
             btn.disabled = true;
-            statusText.innerText = "Initiating...";
+            statusText.innerText = 'Initiating…';
 
             try {
                 const payload = {
@@ -482,24 +1091,18 @@
                     renderer: currentRefineData.renderer,
                     user_feedback: feedback,
                     raw_prompt_override: rawOverride,
-                    video_provider: selectedProvider  // 'wan' or 'gpu'
+                    video_provider: selectedProvider
                 };
-
                 const res = await fetch(`/job/${JOB_ID}/generate_preview`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 const data = await res.json();
-                if (data.status === 'accepted') {
-                    pollPreviewStatus(data.preview_key);
-                } else {
-                    statusText.innerText = "Error: " + (data.error || "Unknown");
-                    btn.disabled = false;
-                }
+                if (data.status === 'accepted') pollPreviewStatus(data.preview_key);
+                else { statusText.innerText = 'Error: ' + (data.error || 'Unknown'); btn.disabled = false; }
             } catch (e) {
-                statusText.innerText = "Network Error: " + e.message;
+                statusText.innerText = 'Network Error: ' + e.message;
                 btn.disabled = false;
             }
         }
@@ -512,100 +1115,59 @@
             const approveBtn = document.getElementById('btn-approve');
 
             progBar.style.display = 'block';
-            statusText.innerText = "Generating...";
+            statusText.innerText = 'Generating…';
 
             const interval = setInterval(async () => {
                 try {
                     const res = await fetch(`/job/${JOB_ID}/preview_status/${previewKey}`);
                     const data = await res.json();
-
                     if (data.status === 'processing') {
                         const pct = data.progress || 0;
-                        progFill.style.width = pct + "%";
-                        statusText.innerText = `Processing (${pct}%)... ${data.message || ''}`;
+                        progFill.style.width = pct + '%';
+                        statusText.innerText = `Processing ${pct}%… ${data.message || ''}`;
                     } else if (data.status === 'success') {
                         clearInterval(interval);
-                        progFill.style.width = "100%";
-                        statusText.innerText = "Done!";
+                        progFill.style.width = '100%';
+                        statusText.innerText = 'Done!';
                         document.querySelector('.modal .btn-primary').disabled = false;
 
-                        // Show Video
-                        // Fix Docker path if needed
                         let vidUrl = data.preview_url;
-                        if (vidUrl.includes('/app/player/')) {
-                            // Convert /app/player/jobs/.. to /player/jobs/.. if leaking
-                            vidUrl = vidUrl.replace('/app/player/', '/player/');
-                        }
+                        if (vidUrl && vidUrl.includes('/app/player/')) vidUrl = vidUrl.replace('/app/player/', '/player/');
 
                         container.innerHTML = `
-            <video id="preview-player" controls autoplay loop style="max-width:100%; max-height:400px; border: 1px solid #45475a;">
+              <video id="preview-player" controls autoplay loop style="max-width:100%;max-height:380px;border:1px solid var(--border);">
                 <source src="${vidUrl}" type="video/mp4">
-                    Your browser does not support video.
-            </video>
-            `;
+              </video>`;
 
-                        // Store preview path for approval
-                        currentRefineData.previewPath = data.preview_url; // or absolute path from server? Server expects absolute usually, or we fix in approve
-                        // The server endpoint returns 'preview_url' which is a web path usually.
-                        // But approve endpoint needs file path? Let's check api/app.py.
-                        // App.py approve_preview expects 'preview_path'. 
-                        // The status endpoint returns 'preview_url' (relative web path) AND we might need the absolute path.
-                        // Actually app.py: check_preview_status returns 'preview_url': relative_path.
-                        // And approve_preview expects 'preview_path': absolute_path OR relative to jobs dir?
-                        // app.py: approve_preview -> job_dir / preview_filename. 
-                        // It constructs abs_preview_path = Path(preview_path). 
-                        // If we pass /player/jobs/..., Path() treats it as absolute if starts with /, but that's a web route.
-                        // WE NEED TO BE CAREFUL. 
-                        // Let's pass the filename or relative path.
-                        // The preview_url is like `/player/jobs/JOBID/videos/preview_...`
-                        // We can extract just the filename.
                         const filename = vidUrl.split('/').pop();
                         currentRefineData.previewFilename = filename;
-
-                        console.log('[DEBUG] Enabling approve button, currentRefineData:', currentRefineData);
                         approveBtn.disabled = false;
-
                     } else if (data.status === 'failed') {
                         clearInterval(interval);
-                        progFill.style.width = "0%";
-                        statusText.innerText = "Failed: " + data.error;
+                        statusText.innerText = 'Failed: ' + data.error;
                         document.querySelector('.modal .btn-primary').disabled = false;
                     }
-                } catch (e) {
-                    console.error("Polling error", e);
-                }
+                } catch (e) { console.error('Polling error', e); }
             }, 2000);
         }
 
         async function approvePreview() {
-            alert('Step 2: Function Called');
-            console.log('[DEBUG] approvePreview CALLED! currentRefineData:', currentRefineData);
-
-            if (!currentRefineData || !currentRefineData.sectionId) {
-                alert("Error: No active refinement session. Please close and reopen.");
-                return;
-            }
-
-            if (!confirm("Are you sure? This will REPLACE the current video file.")) return;
+            if (!currentRefineData?.sectionId) { alert('No active session.'); return; }
+            if (!confirm('Replace the current video with the preview?')) return;
 
             const btn = document.getElementById('btn-approve');
-            btn.innerText = "Approving...";
-            btn.disabled = true;
+            btn.innerText = 'Approving…'; btn.disabled = true;
 
             try {
-                // simple prompt extraction
-                let finalPrompt = "";
-                const modeOverride = document.querySelector('input[name="refine-mode"][value="override"]');
-                if (modeOverride && modeOverride.checked) {
-                    finalPrompt = document.getElementById('raw-prompt-input').value;
-                } else {
-                    finalPrompt = document.getElementById('user-feedback-input').value;
-                }
+                const mode = document.querySelector('input[name="refine-mode"][value="override"]');
+                const finalPrompt = (mode && mode.checked)
+                    ? document.getElementById('raw-prompt-input').value
+                    : document.getElementById('user-feedback-input').value;
 
                 const payload = {
                     section_id: currentRefineData.sectionId,
-                    beat_id: currentRefineData.beatId,  // Just send the index number
-                    preview_path: "videos/" + currentRefineData.previewFilename,
+                    beat_id: currentRefineData.beatId,
+                    preview_path: 'videos/' + currentRefineData.previewFilename,
                     new_prompt: finalPrompt
                 };
 
@@ -614,598 +1176,22 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 const data = await res.json();
                 if (data.status === 'success') {
-                    alert("Approved! Page will reload.");
-                    location.reload();
+                    alert('Approved! Reloading…');
+                    closeModal();
+                    loadJob();
                 } else {
-                    alert("Error approving: " + data.error);
-                    btn.innerText = "Approve & Replace";
-                    btn.disabled = false;
+                    alert('Error: ' + data.error);
+                    btn.innerText = 'Approve & Replace'; btn.disabled = false;
                 }
             } catch (e) {
-                alert("Network Error: " + e.message);
-                btn.innerText = "Approve & Replace";
-                btn.disabled = false;
+                alert('Network Error: ' + e.message);
+                btn.innerText = 'Approve & Replace'; btn.disabled = false;
             }
         }
-
-        async function runCheck() {
-            const statusDiv = document.getElementById('status');
-            const tbody = document.querySelector('#report tbody');
-            statusDiv.innerHTML = `Checking Job: <strong>${JOB_ID}</strong><br>Fetching ${PRESENTATION_URL}...`;
-
-            try {
-                const res = await fetch(PRESENTATION_URL);
-                if (!res.ok) throw new Error(`Failed to load presentation.json: ${res.status}`);
-                const data = await res.json();
-                statusDiv.innerHTML += `<br>Found ${data.sections.length} sections. validating media integrity...`;
-
-                for (const section of data.sections) {
-                    const row = document.createElement('tr');
-
-                    // Deep Scan for Orphans
-                    await scanForOrphans(section);
-
-                    const renderer = section.renderer || 'default';
-                    let rendererClass = '';
-                    if (renderer === 'manim') rendererClass = 'manim';
-                    if (renderer === 'wan' || renderer === 'video_generation' || renderer === 'VIDEO' || renderer === 'video') rendererClass = 'wan';
-
-                    // AVATAR (Multi-Language Support)
-                    const avatarPath = section.avatar_video || section.avatar_video_path;
-                    const avatarLanguages = section.avatar_languages || [];
-                    let avatarHtml = '';
-
-                    // Check default/English avatar
-                    if (avatarPath) {
-                        const obj = await checkUrl(avatarPath, 'avatar');
-                        let statusText = obj.status;
-                        let statusClass = obj.valid ? 'pass' : 'fail';
-
-                        if (obj.valid) {
-                            const isGood = await checkVideoIntegrity(obj.url);
-                            if (!isGood) {
-                                statusText = 'CORRUPT';
-                                statusClass = 'fail';
-                            }
-                        }
-                        avatarHtml = `<span class="sub-item"><strong>Default:</strong> <a href="${obj.url}" target="_blank">${avatarPath}</a><br><span class="${statusClass}">[${statusText}]</span></span>`;
-                    }
-
-                    // Check multi-language avatars
-                    if (avatarLanguages.length > 0) {
-                        for (const langEntry of avatarLanguages) {
-                            const lang = langEntry.language || 'unknown';
-                            const langPath = langEntry.video_path;
-                            const speaker = langEntry.speaker || 'default';
-
-                            if (langPath) {
-                                const obj = await checkUrl(langPath, 'avatar');
-                                let statusText = obj.status;
-                                let statusClass = obj.valid ? 'pass' : 'fail';
-
-                                if (obj.valid) {
-                                    const isGood = await checkVideoIntegrity(obj.url);
-                                    if (!isGood) {
-                                        statusText = 'CORRUPT';
-                                        statusClass = 'fail';
-                                    }
-                                }
-
-                                avatarHtml += `<div class="sub-item"><strong>${lang.toUpperCase()} (${speaker}):</strong> <a href="${obj.url}" target="_blank">${langPath}</a><br><span class="${statusClass}">[${statusText}]</span></div>`;
-                            }
-                        }
-                    }
-
-                    if (!avatarHtml) {
-                        avatarHtml = 'None';
-                    }
-
-                    // VIDEO
-                    const videoPath = section.video_path || (section.beat_videos ? section.beat_videos[0] : null);
-                    let videoHtml = 'None';
-
-                    if (videoPath) {
-                        const obj = await checkUrl(videoPath, 'video');
-                        let statusText = obj.status;
-                        let statusClass = obj.valid ? 'pass' : 'fail';
-
-                        if (obj.valid) {
-                            const isGood = await checkVideoIntegrity(obj.url);
-                            if (!isGood) {
-                                statusText = 'CORRUPT';
-                                statusClass = 'fail';
-                            }
-                        }
-                        videoHtml = `<a href="${obj.url}" target="_blank">${videoPath}</a><br><span class="${statusClass}">[${statusText}]</span>`;
-                    } else {
-                        // Check for Orphans
-                        const sid = section.section_id;
-                        const checkDefault = await checkUrl(`topic_${sid}.mp4`, 'video');
-                        const checkBeat = await checkUrl(`topic_${sid}_beat_0.mp4`, 'video');
-
-                        if (checkDefault.valid) {
-                            videoHtml = `<span class="fail">FOUND ON DISK (UNSTITCHED): <a href="${checkDefault.url}" target="_blank">topic_${sid}.mp4</a></span>`;
-                        } else if (checkBeat.valid) {
-                            videoHtml = `<span class="fail">FOUND ON DISK (UNSTITCHED): <a href="${checkBeat.url}" target="_blank">topic_${sid}_beat_0.mp4</a></span>`;
-                        } else if (renderer === 'manim') {
-                            videoHtml = '<span class="fail">MISSING MANIM</span>';
-                        }
-                    }
-
-                    // PROMPTS VS DISK (New V2.5 Check)
-                    let promptHtml = '<span style="color:#666">N/A</span>';
-
-                    // --- ACTIONS COLUMN LOGIC ---
-                    let actionsHtml = '';
-
-                    if (renderer === 'video' || renderer === 'wan') {
-                        const prompts = section.video_prompts || (section.render_spec && section.render_spec.video_prompts) || [];
-                        const promptCount = prompts.length;
-                        let diskCount = 0;
-                        let missingList = [];
-                        let foundLinks = [];
-
-                        if (promptCount > 0) {
-                            for (let idx = 0; idx < prompts.length; idx++) {
-                                const p = prompts[idx];
-                                const bid = p.beat_id;
-                                // Use actual array index, not extracted beat number
-                                const beatIndex = idx;
-
-                                if (bid) {
-                                    const check = await checkUrl(`${bid}.mp4`, 'video');
-
-                                    // Base64 encode prompt to pass safely
-                                    const pText = p.prompt || "";
-                                    const pBase64 = safeBtoa(pText);
-
-                                    // Add Edit Button - pass full beat_id, not index
-                                    const editBtn = `<button class="btn btn-sm btn-primary" onclick="openRefineModal('${section.section_id}', '${bid}', 'wan', '${pBase64}', 'wan')">Edit</button>`;
-
-
-                                    if (check.valid) {
-                                        diskCount++;
-                                        foundLinks.push(`<div><a href="${check.url}" target="_blank" style="font-size:10px; color:#a6e3a1;">${bid}</a> ${editBtn}</div>`);
-                                    } else {
-                                        missingList.push(bid);
-                                        // Still allow editing missing beats
-                                        foundLinks.push(`<div><span class="fail">${bid}</span> ${editBtn}</div>`);
-                                    }
-                                }
-                            }
-
-                            const statusClass = diskCount === promptCount ? 'pass' : (diskCount > 0 ? 'warn' : 'fail');
-                            promptHtml = `<span class="${statusClass}">Files: ${diskCount}/${promptCount}</span>`;
-
-                            // Show found links (Request 3)
-                            if (foundLinks.length > 0) {
-                                promptHtml += `<div style="max-height:150px; overflow-y:auto; margin-top:5px; border-top:1px dashed #444; padding-top:2px;">
-                                    ${foundLinks.join('')}
-                                </div>`;
-                            }
-
-                            if (missingList.length > 0) {
-                                promptHtml += `<br><span class="fail" style="font-size:10px">Missing: ${missingList.length}</span>`;
-                            }
-                        } else {
-                            promptHtml = '<span class="fail">No Video Prompts Found</span>';
-                        }
-
-                        actionsHtml = `<span style="color:#888">See Prompt Column</span>`;
-
-                    } else if (renderer === 'manim') {
-                        // Manim: Show individual beat videos with Edit buttons (same as WAN)
-                        const segSpecs = (section.render_spec && section.render_spec.segment_specs) || [];
-                        const beatVideos = section.beat_videos || [];
-                        const beatCount = Math.max(segSpecs.length, beatVideos.length);
-                        let diskCount = 0;
-                        let missingList = [];
-                        let foundLinks = [];
-
-                        if (beatCount > 0) {
-                            for (let idx = 0; idx < beatCount; idx++) {
-                                // Get beat video path
-                                const bvPath = beatVideos[idx] || `videos/topic_${section.section_id}_beat_${idx}.mp4`;
-                                const bvFilename = bvPath.split('/').pop();
-
-                                // Get manim_scene_spec text for this beat
-                                let beatSpec = "";
-                                if (segSpecs[idx]) {
-                                    const ms = segSpecs[idx].manim_scene_spec;
-                                    if (typeof ms === 'string') beatSpec = ms;
-                                    else if (ms && ms.description) beatSpec = ms.description;
-                                }
-                                const pBase64 = safeBtoa(beatSpec);
-
-                                const check = await checkUrl(bvFilename, 'video');
-                                const editBtn = `<button class="btn btn-sm btn-primary" onclick="openRefineModal('${section.section_id}', '${idx}', 'manim', '${pBase64}', 'manim')">Edit</button>`;
-
-                                if (check.valid) {
-                                    diskCount++;
-                                    foundLinks.push(`<div><a href="${check.url}" target="_blank" style="font-size:10px; color:#89dceb;">${bvFilename}</a> ${editBtn}</div>`);
-                                } else {
-                                    missingList.push(bvFilename);
-                                    foundLinks.push(`<div><span class="fail">${bvFilename}</span> ${editBtn}</div>`);
-                                }
-                            }
-
-                            const statusClass = diskCount === beatCount ? 'pass' : (diskCount > 0 ? 'warn' : 'fail');
-                            promptHtml = `<span class="${statusClass}">Manim Beats: ${diskCount}/${beatCount}</span>`;
-
-                            if (foundLinks.length > 0) {
-                                promptHtml += `<div style="max-height:150px; overflow-y:auto; margin-top:5px; border-top:1px dashed #444; padding-top:2px;">
-                                    ${foundLinks.join('')}
-                                </div>`;
-                            }
-
-                            if (missingList.length > 0) {
-                                promptHtml += `<br><span class="fail" style="font-size:10px">Missing: ${missingList.length}</span>`;
-                            }
-                        } else {
-                            // Fallback: no segment_specs, show single Refine button
-                            let manimCode = "";
-                            let spec = section.render_spec && section.render_spec.manim_scene_spec;
-                            if (spec && spec.description) manimCode = spec.description;
-                            if (spec && typeof spec === 'string') manimCode = spec;
-                            const pBase64 = safeBtoa(manimCode);
-                            promptHtml = `<button class="btn btn-sm btn-primary" onclick="openRefineModal('${section.section_id}', '0', 'manim', '${pBase64}', 'manim')">Refine Code</button>`;
-                        }
-
-                        actionsHtml = `<span style="color:#888">See Prompt Column</span>`;
-
-                    } else {
-                        actionsHtml = '-';
-                    }
-
-                    // IMAGES
-                    let imageHtml = '';
-                    if (section.visual_beats) {
-                        for (const beat of section.visual_beats) {
-                            if (beat.visual_type === 'image' || beat.visual_type === 'diagram') {
-                                const imgPath = beat.image_id || beat.image_path;
-                                if (imgPath) {
-                                    const imgCheck = await checkUrl(imgPath, 'image');
-                                    imageHtml += `
-                        <div class="sub-item">
-                            Beat ${beat.beat_id}: <a href="${imgCheck.url}" target="_blank">${imgPath}</a>
-                            <span class="${imgCheck.valid ? 'pass' : 'fail'}">[${imgCheck.status}]</span>
-                        </div>`;
-                                }
-                            }
-                        }
-                    }
-                    if (!imageHtml) imageHtml = '<span style="color:#666">No images</span>';
-
-                    // V2.5 LOGIC CHECK (New Column)
-                    let logicHtml = '<span style="color:#666">N/A</span>';
-                    // ... (Keeping existing logic logic checks if possible, or simplifying for brevity in too call) ...
-                    // Since I'm replacing the whole script block, I need to include the logic checks.
-                    // Copying logic checks from original file...
-                    if (section.section_type === 'quiz') {
-                        const qCount = section.quiz_questions ? section.quiz_questions.length : 0;
-                        const segCount = section.narration.segments.length;
-                        const expected = qCount * 3;
-                        if (segCount >= expected) {
-                            logicHtml = `<span class="pass">PASS (3-Step Dance)</span><br>Segments: ${segCount} (Req: ${expected})`;
-                        } else {
-                            logicHtml = `<span class="fail">FAIL (Segment Mismatch)</span><br>Segments: ${segCount}, Expected: ${expected}`;
-                        }
-                    } else if (section.section_type === 'content') {
-                        const segCount = section.narration.segments.length;
-                        if (segCount > 1) {
-                            logicHtml = `<span class="pass">PASS (Sync Ready)</span><br>Segments: ${segCount}`;
-                        } else {
-                            logicHtml = `<span class="warn">WARN (Single Seg)</span><br>Segments: ${segCount}`;
-                        }
-                    } else if (section.section_type === 'example') {
-                        const segCount = section.narration.segments.length;
-                        if (segCount >= 2) {
-                            logicHtml = `<span class="pass">PASS (Teach-Show possible)</span><br>Segments: ${segCount}`;
-                        } else {
-                            logicHtml = `<span class="warn">WARN (Single Seg Example)</span><br>Segments: ${segCount}`;
-                        }
-                    } else if (section.section_type === 'memory') {
-                        const cardCount = section.flashcards ? section.flashcards.length : 0;
-                        const segCount = section.narration.segments.length;
-                        if (cardCount === 5 && segCount >= 6) {
-                            logicHtml = `<span class="pass">PASS (Bible Compliant)</span><br>5 Cards, ${segCount} Segments`;
-                        } else {
-                            logicHtml = `<span class="fail">FAIL (Bible Discrepancy)</span><br>Cards: ${cardCount} (Req: 5), Segs: ${segCount} (Req: 6)`;
-                        }
-                    } else if (section.section_type === 'recap') {
-                        const narrSegCount = section.narration && section.narration.segments ? section.narration.segments.length : 0;
-                        const isVideo = (renderer.toLowerCase() === 'video' || renderer.toLowerCase() === 'wan_video');
-                        if (narrSegCount === 5 && isVideo) {
-                            logicHtml = `<span class="pass">PASS (Cinematic 5)</span><br>Segments: ${narrSegCount}`;
-                        } else {
-                            logicHtml = `<span class="fail">FAIL (Invalid Recap)</span><br>Segments: ${narrSegCount} (Req: 5), Renderer: ${renderer}`;
-                        }
-                    } else if (section.section_type === 'summary') {
-                        const bCount = section.visual_beats ? section.visual_beats.length : 0;
-                        const sCount = section.narration.segments.length;
-                        if (sCount >= bCount && sCount > 1) {
-                            logicHtml = `<span class="pass">PASS (Deep Sync)</span><br>Bullets: ${bCount}, Segs: ${sCount}`;
-                        } else {
-                            logicHtml = `<span class="fail">FAIL (Lazy Summary)</span><br>Bullets: ${bCount}, Segs: ${sCount}`;
-                        }
-                    }
-
-                    // V2.6 MANIM BEAT VIDEO CHECK
-                    if (renderer === 'manim') {
-                        const segmentSpecs = (section.render_spec && section.render_spec.segment_specs) || [];
-                        const manimSpecs = segmentSpecs.filter(s => s.renderer === 'manim');
-
-                        if (manimSpecs.length > 0) {
-                            let linkedCount = 0;
-                            let diskCount = 0;
-                            let missingLinks = [];
-                            let missingDisk = [];
-
-                            for (let i = 0; i < manimSpecs.length; i++) {
-                                const spec = manimSpecs[i];
-                                const segId = spec.segment_id;
-                                const beatFileName = `topic_${section.section_id}_beat_${i}.mp4`;
-
-                                // Check disk
-                                const diskCheck = await checkUrl(beatFileName, 'video');
-                                if (diskCheck.valid) {
-                                    diskCount++;
-                                } else {
-                                    missingDisk.push(beatFileName);
-                                }
-
-                                // Check linking in segments
-                                const matchingSeg = section.narration.segments.find(s => s.segment_id === segId);
-                                if (matchingSeg && matchingSeg.beat_videos && matchingSeg.beat_videos.length > 0) {
-                                    linkedCount++;
-                                } else {
-                                    missingLinks.push(segId);
-                                }
-                            }
-
-                            const allGood = diskCount === manimSpecs.length && linkedCount === manimSpecs.length;
-                            logicHtml = `<span class="${allGood ? 'pass' : 'fail'}">${allGood ? 'PASS' : 'FAIL'} (Manim V2.6)</span>`;
-                            logicHtml += `<br>Specs: ${manimSpecs.length}, Disk: ${diskCount}, Linked: ${linkedCount}`;
-
-                            if (missingDisk.length > 0) {
-                                logicHtml += `<br><span class="fail" style="font-size:10px">Missing on Disk: ${missingDisk.slice(0, 2).join(', ')}${missingDisk.length > 2 ? '...' : ''}</span>`;
-                            }
-                            if (missingLinks.length > 0) {
-                                logicHtml += `<br><span class="fail" style="font-size:10px">Unlinked Segs: ${missingLinks.slice(0, 2).join(', ')}${missingLinks.length > 2 ? '...' : ''}</span>`;
-                            }
-                        } else {
-                            // Legacy Manim (monolithic)
-                            const vid = section.video_path;
-                            if (vid) {
-                                const check = await checkUrl(vid, 'video');
-                                logicHtml = `<span class="${check.valid ? 'pass' : 'fail'}">${check.valid ? 'PASS' : 'FAIL'} (Legacy Manim)</span>`;
-                            } else {
-                                logicHtml = `<span class="warn">WARN (No Video Path)</span>`;
-                            }
-                        }
-                    }
-
-                    // Global WAN 15s Check (V2.6 FIX: Skip TEACH segments per Teach→Show pattern)
-                    if (renderer === 'video' || renderer === 'wan') {
-                        const segments = section.narration.segments || [];
-                        for (let segIdx = 0; segIdx < segments.length; segIdx++) {
-                            const seg = segments[segIdx];
-                            const wordCount = (seg.text || "").split(' ').length;
-                            // V2.6 FIX: In Content sections, odd segments (0,2,4...) are TEACH = NO video by design
-                            // Only SHOW segments (1,3,5...) should have beat_videos
-                            const isTeachSegment = (section.section_type === 'content' || section.section_type === 'example') && (segIdx % 2 === 0);
-                            if (wordCount > 40 && !seg.beat_videos && !isTeachSegment) {
-                                logicHtml += `<br><span class="fail">FAIL: Seg ${seg.segment_id} too long (${wordCount} words) & no beats!</span>`;
-                            }
-                        }
-                    }
-
-                    // V2.6: Check URL health
-                    const urlHealthHtml = checkUrlHealth(section);
-
-                    row.innerHTML = `
-                            <td>${section.section_id}</td>
-                            <td>${section.section_type}</td>
-                            <td class="${rendererClass}">${renderer.toUpperCase()}</td>
-                            <td>${avatarHtml}</td>
-                            <td>${videoHtml}</td>
-                            <td>${promptHtml}</td>
-                            <td>${imageHtml}</td>
-                            <td>${urlHealthHtml}</td>
-                            <td>${logicHtml}</td>
-                            <td>${actionsHtml}</td>
-                            `;
-                    tbody.appendChild(row);
-                }
-
-                if (orphanDetected) {
-                    document.getElementById('self-healing').style.display = 'block';
-                }
-
-                statusDiv.innerHTML += "<br><span class='pass'>Check Complete!</span>";
-            } catch (e) {
-                statusDiv.innerHTML += `<br><span class="fail">CRITICAL ERROR: ${e.message}</span>`;
-            }
-        }
-        runCheck();
-
-
-        async function checkUrl(url, type = 'misc') {
-            if (!url) return { status: 'N/A', valid: true };
-            try {
-                let fetchUrl = url;
-                if (fetchUrl.includes('\\')) fetchUrl = fetchUrl.replace(/\\/g, '/');
-
-                // Handle colon in paths (sometimes from windows paths in json?)
-                if (fetchUrl.includes(':') && !fetchUrl.startsWith('http')) {
-                    const parts = fetchUrl.split('/');
-                    fetchUrl = parts[parts.length - 1];
-                }
-
-                if (fetchUrl.startsWith('http')) {
-                    // Start relative path logic
-                } else {
-                    if (type === 'avatar' && !fetchUrl.includes('/')) fetchUrl = BASE_PATH + 'avatars/' + fetchUrl;
-                    else if (type === 'video' && !fetchUrl.includes('/')) fetchUrl = BASE_PATH + 'videos/' + fetchUrl;
-                    else if (type === 'image' && !fetchUrl.includes('/')) fetchUrl = BASE_PATH + 'images/' + fetchUrl;
-                    else if (!fetchUrl.startsWith('./') && !fetchUrl.startsWith('../') && !fetchUrl.startsWith('/')) fetchUrl = BASE_PATH + fetchUrl;
-                }
-
-                if (type === 'video' || type === 'image') {
-                    fetchUrl += (fetchUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
-                }
-
-                let response = await fetch(fetchUrl, { method: 'HEAD' });
-
-                // ISS-IMG-FIX: If .jpg fails, try .png (Saved images use PNG)
-                if (!response.ok && (fetchUrl.toLowerCase().endsWith('.jpg') || fetchUrl.toLowerCase().endsWith('.jpeg'))) {
-                    const pngUrl = fetchUrl.replace(/\.jpe?g$/i, '.png');
-                    const pngResponse = await fetch(pngUrl, { method: 'HEAD' });
-                    if (pngResponse.ok) {
-                        response = pngResponse;
-                        fetchUrl = pngUrl;
-                    }
-                }
-
-                return {
-                    status: response.status,
-                    valid: response.ok,
-                    url: fetchUrl,
-                    original: url
-                };
-            } catch (e) {
-                return { status: 'ERR', valid: false, error: e.message, original: url };
-            }
-        }
-
-        async function checkVideoIntegrity(url) {
-            // Simple check: HEAD request ok (already done). 
-            // Maybe try to load first few bytes? For now, assume URL check is enough for basic presence.
-            // True integrity check would require loading video element.
-            return true;
-        }
-
-        async function scanForOrphans(section) {
-            // This function checks for files on disk that match the section ID but aren't in the JSON.
-            // For now, we'll implement a simplified version or just a placeholder if the server side logic handles it.
-            // The original code seemed to call this.
-            // Let's implement a basic check if we can list files. 
-            // We can't list files via client-side JS easily unless there's an API.
-            // The Sanity Report API endpoint returns "videos_orphaned".
-            // Let's try to use that if we can, or just skip if it was purely client side guessing.
-
-            // Wait, the new /api/sanity-report/<job_id> endpoint I saw in app.py returns this data!
-            // But runCheck is fetching presentation.json directly.
-            // The original scanForOrphans likely tried to fetch common patterns like topic_SECID.mp4
-
-            const sid = section.section_id;
-            let foundOrphan = false;
-
-            // Check Topic Video
-            const isWanStyle = section.renderer && (section.renderer === 'wan' || section.renderer === 'video_generation' || section.renderer === 'VIDEO' || section.renderer === 'video');
-            if (!section.video_path && isWanStyle) {
-                // Try to find either the combined video OR the first beat
-                const check = await checkUrl(`topic_${sid}.mp4`, 'video');
-                if (check.valid) {
-                    foundOrphan = true;
-                } else {
-                    // Also check for best 0
-                    const checkBeat = await checkUrl(`topic_${sid}_beat_0.mp4`, 'video');
-                    if (checkBeat.valid) foundOrphan = true;
-                }
-            }
-
-            // Check Avatar
-            if (!section.avatar_video) {
-                const check = await checkUrl(`section_${sid}_avatar.mp4`, 'avatar');
-                if (check.valid) foundOrphan = true;
-            }
-
-            if (foundOrphan) {
-                orphanDetected = true;
-            }
-        }
-
-        function checkUrlHealth(section) {
-            // Returns a summary of URL health for the section
-            let issues = [];
-
-            // We need to check the status objects we might have stored? 
-            // Or just do a quick logic check based on what we see.
-            // Since this function is synchronous in the loop, we can't await fetch here easily unless we refactor.
-            // BUT, looking at the code I injected, I used `await checkUrl` inside the loop.
-            // So `checkUrlHealth` might just be a formatting helper if I had the results.
-
-            // Wait, the error `checkUrlHealth is not defined` happened at line 805: `const urlHealthHtml = checkUrlHealth(section);`
-            // And this call seems to be synchronous.
-            // If I look at the loop, I am awaiting checkUrl for various things.
-            // The previous code probably had this function.
-            // Let's implement a basic version that checks if strings look like valid paths/URLs.
-
-            let html = "";
-            const paths = [
-                section.video_path,
-                section.avatar_video || section.avatar_video_path,
-            ];
-
-            if (section.beat_videos) paths.push(...section.beat_videos);
-            if (section.visual_beats) {
-                section.visual_beats.forEach(b => {
-                    if (b.image_path) paths.push(b.image_path);
-                });
-            }
-
-            let validCount = 0;
-            let totalCount = 0;
-
-            paths.forEach(p => {
-                if (p) {
-                    totalCount++;
-                    // Basic sanity check on string
-                    if (p.includes('.') && !p.includes('undefined') && !p.includes('null')) {
-                        validCount++;
-                    } else {
-                        issues.push(`Bad format: ${p}`);
-                    }
-                }
-            });
-
-            if (totalCount === 0) return '<span style="color:#666">-</span>';
-
-            if (validCount === totalCount) {
-                return '<span class="pass">OK</span>';
-            } else {
-                return `<span class="fail">${issues.length} Issues</span>`;
-            }
-        }
-
-        async function repairMetadata() {
-            const status = document.getElementById('repair-status');
-            status.innerHTML = "Stitching assets... please wait...";
-            try {
-                const res = await fetch(`/api/repair-metadata/${JOB_ID}`, { method: 'POST' });
-                const data = await res.json();
-                if (data.status === 'success') {
-                    status.innerHTML = `<span class="pass">Success! ${data.updated_assets} assets stitched. Reloading...</span>`;
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    status.innerHTML = `<span class="fail">Error: ${data.error}</span>`;
-                }
-            } catch (e) {
-                status.innerHTML = `<span class="fail">Failed to connect to API: ${e.message}</span>`;
-            }
-        }
-
-        // Hook up repair buttons
-        if (document.getElementById('repair-btn')) {
-            document.getElementById('repair-btn').onclick = repairMetadata;
-        }
-
-
     </script>
+
 </body>
 
 </html>

@@ -1058,8 +1058,19 @@ def run_v3_pipeline(
                     quiz_sources.append((f"question_{qi}", q))
 
                 for q_label, q_obj in quiz_sources:
-                    questions = q_obj.get("questions", [])
-                    for qi2, question in enumerate(questions):
+                    # understanding_quiz can be either:
+                    #   (a) a flat single-question object {question, options, explanation_visual, ...}
+                    #   (b) a container with questions[] array [{question_id, explanation_visual}, ...]
+                    nested = q_obj.get("questions", [])
+                    if nested:
+                        questions_to_check = nested
+                    elif q_obj.get("explanation_visual"):
+                        # Flat format — the quiz object itself IS the single question
+                        questions_to_check = [q_obj]
+                    else:
+                        questions_to_check = []
+
+                    for qi2, question in enumerate(questions_to_check):
                         q_id = question.get("question_id", f"q{qi2 + 1}")
                         exp_visual = question.get("explanation_visual", {})
                         if not exp_visual:
@@ -1072,6 +1083,10 @@ def run_v3_pipeline(
                             "wan_video",
                             f"  Sec {sec_id} / {q_label} / Q{q_id}: rendering explanation_visual ({exp_renderer})...",
                         )
+                        # Inject section_id so execute_renderer() produces correct filename
+                        # (e.g. topic_3_eq_beat_1.mp4 instead of topic_1_eq_beat_1.mp4)
+                        if not exp_visual.get("section_id"):
+                            exp_visual["section_id"] = sec_id
                         result = execute_renderer(
                             topic=exp_visual,
                             output_dir=str(output_path / "videos"),

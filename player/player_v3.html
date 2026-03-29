@@ -242,7 +242,9 @@
 
         /* Desktop: image layer shrinks to avoid avatar column on right */
         @media (min-width: 641px) {
-            #image-layer { right: 280px; }
+            #image-layer {
+                right: 280px;
+            }
         }
 
         /* ── MOBILE PORTRAIT — small screen fixes ── */
@@ -357,7 +359,9 @@
         ── */
         @media (orientation: landscape) and (max-height: 480px) {
 
-            #topbar, #gesture-hud, #interaction-hint {
+            #topbar,
+            #gesture-hud,
+            #interaction-hint {
                 display: none !important;
             }
 
@@ -378,7 +382,7 @@
                 padding: 0 12px !important;
                 gap: 10px !important;
                 background: rgba(8, 12, 18, 0.97) !important;
-                border-top: 1px solid rgba(255,255,255,0.07) !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
                 z-index: 100 !important;
             }
 
@@ -423,14 +427,16 @@
                 background: #0d1117 !important;
             }
 
-            #wan-layer, #manim-layer {
+            #wan-layer,
+            #manim-layer {
                 position: absolute !important;
                 inset: 0 !important;
                 width: 100% !important;
                 height: 100% !important;
             }
 
-            #wan-vid, #manim-vid {
+            #wan-vid,
+            #manim-vid {
                 width: 100% !important;
                 height: 100% !important;
                 object-fit: cover !important;
@@ -456,13 +462,21 @@
                 z-index: 65 !important;
             }
 
-            .sub-word, .subtitle-text {
+            .sub-word,
+            .subtitle-text {
                 font-size: 13px !important;
                 line-height: 1.4 !important;
             }
 
-            .nb { width: 36px !important; height: 36px !important; }
-            .pb { width: 40px !important; height: 40px !important; }
+            .nb {
+                width: 36px !important;
+                height: 36px !important;
+            }
+
+            .pb {
+                width: 40px !important;
+                height: 40px !important;
+            }
 
             #bot-label {
                 font-size: 10px !important;
@@ -472,9 +486,19 @@
                 text-overflow: ellipsis !important;
             }
 
-            #quiz-overlay { z-index: 10000 !important; padding: 8px 12px !important; overflow-y: auto !important; }
-            #quiz-options { grid-template-columns: 1fr 1fr !important; }
-            #tap-to-start { z-index: 10001 !important; }
+            #quiz-overlay {
+                z-index: 10000 !important;
+                padding: 8px 12px !important;
+                overflow-y: auto !important;
+            }
+
+            #quiz-options {
+                grid-template-columns: 1fr 1fr !important;
+            }
+
+            #tap-to-start {
+                z-index: 10001 !important;
+            }
         }
 
         /* ── SUBTITLE OVERLAY ─────────────────────────────────────────
@@ -487,7 +511,8 @@
             position: fixed;
             bottom: 70px;
             left: 12px;
-            right: 260px;      /* 260px clears avatar column on right */
+            right: 260px;
+            /* 260px clears avatar column on right */
             transform: none;
             width: auto;
             max-width: none;
@@ -1163,12 +1188,101 @@
             opacity: 1
         }
 
-        #cam-vid {
-            position: fixed;
-            bottom: -9999px;
-            left: -9999px;
-            width: 320px;
-            height: 240px
+        /* ── SPLIT STACK — Mobile portrait only ── */
+        @media (max-width: 640px) and (orientation: portrait) {
+
+            /* App becomes a vertical stack */
+            #app {
+                display: flex !important;
+                flex-direction: column !important;
+                height: 100dvh !important;
+                overflow: hidden !important;
+            }
+
+            #topbar {
+                flex-shrink: 0 !important;
+                display: flex !important;
+            }
+
+            /* Video zone: 16:9, no longer flex:1 */
+            #main {
+                flex-shrink: 0 !important;
+                flex: none !important;
+                width: 100% !important;
+                aspect-ratio: 16/9 !important;
+                height: auto !important;
+                position: relative !important;
+            }
+
+            /* av-dock: avatar left + subtitle right */
+            #av-dock {
+                flex-shrink: 0 !important;
+                display: flex !important;
+                align-items: stretch !important;
+                min-height: 90px !important;
+                background: var(--surf) !important;
+                border-top: 1px solid var(--border) !important;
+                border-bottom: 1px solid var(--border) !important;
+                overflow: hidden !important;
+                position: relative !important;
+            }
+
+            /* Avatar repositioned inside dock */
+            #av-dock #av-overlay {
+                position: relative !important;
+                display: block !important;
+                bottom: auto !important;
+                right: auto !important;
+                left: auto !important;
+                top: auto !important;
+                transform: none !important;
+                width: 72px !important;
+                height: 90px !important;
+                flex-shrink: 0 !important;
+                border-right: 1px solid var(--border) !important;
+                background: linear-gradient(180deg, #1a2540 0%, #0d1628 100%) !important;
+                overflow: hidden !important;
+            }
+
+            /* Subtitle repositioned inside dock */
+            #av-dock #subtitle-overlay {
+                position: relative !important;
+                display: flex !important;
+                align-items: center !important;
+                bottom: auto !important;
+                left: auto !important;
+                right: auto !important;
+                top: auto !important;
+                transform: none !important;
+                width: auto !important;
+                max-width: none !important;
+                flex: 1 !important;
+                padding: 10px 12px !important;
+                background: transparent !important;
+                border-radius: 0 !important;
+                text-align: left !important;
+                overflow: visible !important;
+            }
+
+            /* Botbar always at bottom */
+            #botbar {
+                flex-shrink: 0 !important;
+                display: flex !important;
+                margin-top: auto !important;
+            }
+
+            /* Quiz overlay: only covers below video, above botbar */
+            /* topbar=46px, video=56.25vw (16:9 of 100vw) */
+            #quiz-overlay {
+                top: calc(46px + 56.25vw) !important;
+                bottom: 60px !important;
+                left: 0 !important;
+                right: 0 !important;
+                border-radius: 0 !important;
+                overflow-y: auto !important;
+                padding: 14px !important;
+                justify-content: flex-start !important;
+            }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1200,10 +1314,23 @@
         </div>
     </div>
     <style>
-    @keyframes spin {
-        0%{transform:rotate(0deg)} 40%{transform:rotate(90deg)}
-        60%{transform:rotate(90deg)} 100%{transform:rotate(0deg)}
-    }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg)
+            }
+
+            40% {
+                transform: rotate(90deg)
+            }
+
+            60% {
+                transform: rotate(90deg)
+            }
+
+            100% {
+                transform: rotate(0deg)
+            }
+        }
     </style>
 
     <div id="app">
@@ -1276,7 +1403,8 @@
                 </select>
             </label>
             <hr style="border-color:rgba(255,255,255,0.08); margin:14px 0;">
-            <div style="font-size:11px; color:var(--gold); margin-bottom:8px; letter-spacing:.05em;">AVATAR POSITION</div>
+            <div style="font-size:11px; color:var(--gold); margin-bottom:8px; letter-spacing:.05em;">AVATAR POSITION
+            </div>
             <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
                 <span>Right &#8592;&#8594; (<span id="dev-av-right-val">0</span>px)</span>
                 <input type="range" id="dev-av-right" min="-50" max="1000" step="10" value="0" style="width:120px">
@@ -1289,7 +1417,9 @@
                 <span>Strip W (<span id="dev-av-sw-val">28</span>vw)</span>
                 <input type="range" id="dev-av-sw" min="10" max="50" step="1" value="28" style="width:120px">
             </label>
-            <button id="dev-av-copy" style="margin-top:4px;background:rgba(246,196,78,0.15);color:var(--gold);border:1px solid rgba(246,196,78,0.3);border-radius:4px;padding:4px 8px;cursor:pointer;width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;">Copy Avatar CSS</button>
+            <button id="dev-av-copy"
+                style="margin-top:4px;background:rgba(246,196,78,0.15);color:var(--gold);border:1px solid rgba(246,196,78,0.3);border-radius:4px;padding:4px 8px;cursor:pointer;width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;">Copy
+                Avatar CSS</button>
         </div>
 
         <div id="loading-screen">
@@ -1405,6 +1535,8 @@
             <div id="av-narr"></div>
         </div>
 
+        <div id="av-dock"></div>
+
         <div id="botbar">
             <button class="nb" onclick="prevSection()" id="btn-prev" title="Previous Section">&#8592;</button>
             <button class="pb" onclick="togglePlayPause()" id="play-pause-btn" title="Pause">&#10074;&#10074;</button>
@@ -1508,7 +1640,7 @@
                         vidEl._pausedAvForBuffer = false;
                         var avVid = document.getElementById('av-vid');
                         if (avVid && avVid.paused && G_PLAYBACK_INTENDED) {
-                            avVid.play().catch(function () {});
+                            avVid.play().catch(function () { });
                         }
                     }
                 });
@@ -1944,7 +2076,7 @@
                 vid.play().catch(function (e) { console.warn("Avatar video play failed", e); });
 
                 // Preload next section's avatar while current one is playing
-                timers.push(setTimeout(function() {
+                timers.push(setTimeout(function () {
                     if (curSec !== idx) return;
                     var nextSec = SECTIONS[idx + 1];
                     if (!nextSec) return;
@@ -1960,7 +2092,7 @@
                     }
                     preAv.src = getMediaSrc(nextUrl);
                     preAv.load();
-                    preAv.play().then(function(){ preAv.pause(); }).catch(function(){});
+                    preAv.play().then(function () { preAv.pause(); }).catch(function () { });
                 }, 3000));
 
                 var sectionAtLoad = curSec;
@@ -2144,12 +2276,12 @@
 
             // ── Split into sentences so only ONE sentence shows at a time ──
             var rawSentences = beatText.match(/[^.!?]+[.!?]*/g) || [beatText];
-            var sentences = rawSentences.map(function(s){ return s.trim(); }).filter(Boolean);
+            var sentences = rawSentences.map(function (s) { return s.trim(); }).filter(Boolean);
 
             // Flatten all words, tracking which sentence each word belongs to
             var allWords = [], wordSentIdx = [];
-            sentences.forEach(function(sent, si) {
-                sent.split(/\s+/).filter(Boolean).forEach(function(w) {
+            sentences.forEach(function (sent, si) {
+                sent.split(/\s+/).filter(Boolean).forEach(function (w) {
                     allWords.push(w); wordSentIdx.push(si);
                 });
             });
@@ -2157,7 +2289,7 @@
 
             // Build proportional timing (same weight logic as before)
             var totalWeight = 0;
-            var weights = allWords.map(function(w) {
+            var weights = allWords.map(function (w) {
                 var wt = w.length;
                 if (w.indexOf(',') !== -1) wt += 3;
                 if (w.match(/[.!?]/)) wt += 6;
@@ -2166,7 +2298,7 @@
                 return wt;
             });
             var tpu = beatDur / totalWeight, cursor = 0;
-            var wordTimes = weights.map(function(wt) {
+            var wordTimes = weights.map(function (wt) {
                 var s = cursor; cursor += wt * tpu; return { start: s, end: cursor };
             });
 
@@ -2176,13 +2308,13 @@
             function renderSentence(si, activeWordInAll) {
                 // Collect word indices that belong to this sentence
                 var sentWords = [];
-                allWords.forEach(function(w, i) { if (wordSentIdx[i] === si) sentWords.push({ w: w, gi: i }); });
-                var html = sentWords.map(function(obj) {
+                allWords.forEach(function (w, i) { if (wordSentIdx[i] === si) sentWords.push({ w: w, gi: i }); });
+                var html = sentWords.map(function (obj) {
                     return '<span class="sub-word future" id="kw-' + obj.gi + '">' + esc(obj.w) + '</span>';
                 }).join(' ');
                 textEl.innerHTML = html;
                 // Apply correct classes for already-spoken words in this sentence
-                sentWords.forEach(function(obj) {
+                sentWords.forEach(function (obj) {
                     var el = document.getElementById('kw-' + obj.gi);
                     if (!el) return;
                     if (obj.gi < activeWordInAll) el.className = 'sub-word spoken';
@@ -2191,7 +2323,7 @@
                 });
             }
 
-            _karaokeTimer = setInterval(function() {
+            _karaokeTimer = setInterval(function () {
                 if (curSec !== sectionAtLoad || _subtitleEpoch !== myKaraokeEpoch) {
                     clearInterval(_karaokeTimer); _karaokeTimer = null; return;
                 }
@@ -2355,7 +2487,7 @@
                 wanPre.src = src;
                 wanPre.load();
                 // Force browser to buffer aggressively — play then immediately pause
-                wanPre.play().then(function(){ wanPre.pause(); }).catch(function(){});
+                wanPre.play().then(function () { wanPre.pause(); }).catch(function () { });
             }
 
             function onTimeUpdate() {
@@ -2639,7 +2771,7 @@
             // seg0 = intro (no card), seg1+ = one card each
             var timeline = [];
             var accum = 0;
-            segments.forEach(function(seg, i) {
+            segments.forEach(function (seg, i) {
                 var dur = seg.duration_seconds || seg.duration || 8;
                 var start = accum;
                 accum += dur;
@@ -2648,7 +2780,7 @@
             });
 
             var flippedIdx = -1, shownIdx = -1;
-            var memInt = setInterval(function() {
+            var memInt = setInterval(function () {
                 if (curSec !== sectionAtLoad) { clearInterval(memInt); return; }
                 var t = avVid.currentTime;
                 for (var j = 0; j < timeline.length; j++) {
@@ -3385,12 +3517,12 @@
             document.documentElement.style.setProperty('--av-strip-w', e.target.value + 'vw');
         });
         document.getElementById('dev-av-copy').addEventListener('click', function () {
-            var r  = document.getElementById('dev-av-right').value;
-            var b  = document.getElementById('dev-av-bottom').value;
-            var h  = document.getElementById('dev-cont').value;
+            var r = document.getElementById('dev-av-right').value;
+            var b = document.getElementById('dev-av-bottom').value;
+            var h = document.getElementById('dev-cont').value;
             var sw = document.getElementById('dev-av-sw').value;
             var txt = 'right:' + r + 'px; bottom:' + b + 'px; height:' + h + 'vh; --av-strip-w:' + sw + 'vw;';
-            navigator.clipboard.writeText(txt).catch(function () {});
+            navigator.clipboard.writeText(txt).catch(function () { });
             var btn = this;
             btn.textContent = 'Copied!';
             setTimeout(function () { btn.textContent = 'Copy Avatar CSS'; }, 2000);
@@ -3431,9 +3563,22 @@
             overlay.style.display = (isMobile && isPortrait) ? 'flex' : 'none';
         }
         window.addEventListener('resize', checkTiltOverlay);
-        window.addEventListener('orientationchange', function(){ setTimeout(checkTiltOverlay, 200); });
-        checkTiltOverlay(); // run on load
+        // ── SPLIT STACK: move av-overlay + subtitle into dock on mobile portrait ──
+        function initSplitStack() {
+            var isMobilePortrait = window.innerWidth <= 640 && window.innerHeight > window.innerWidth;
+            if (!isMobilePortrait) return;
 
+            var dock = document.getElementById('av-dock');
+            var av = document.getElementById('av-overlay');
+            var sub = document.getElementById('subtitle-overlay');
+            if (!dock || !av || !sub) return;
+
+            // Move both into dock — order matters: avatar left, subtitle right
+            dock.appendChild(av);
+            dock.appendChild(sub);
+        }
+
+        initSplitStack();
 
     </script>
 </body>

@@ -54,48 +54,72 @@ def sanity_report(job_id):
                 "total_beat_videos": 0
             }
             
-            # Check section-level video_path
-            video_path = section.get("video_path", "")
-            if video_path:
-                filename = Path(video_path).name
-                json_videos.add(filename)
-                section_info["videos_in_json"].append(filename)
-            
-            # Check beat_videos array (section-level)
-            beat_videos = section.get("beat_videos", [])
-            for bv in beat_videos:
-                if bv:
-                    filename = Path(bv).name
-                    json_videos.add(filename)
-                    section_info["videos_in_json"].append(filename)
-            
-            # CRITICAL: Check narration.segments[].beat_videos (segment-level)
+            def _register_video(path):
+                """Register a video path into both the global and section sets."""
+                if not path:
+                    return
+                fname = Path(path).name
+                if fname and fname not in section_info["videos_in_json"]:
+                    json_videos.add(fname)
+                    section_info["videos_in_json"].append(fname)
+
+            # ── section-level video_path ──────────────────────────────────────────
+            _register_video(section.get("video_path"))
+
+            # ── beat_video_paths[] (flat list on section) ─────────────────────────
+            for vp in section.get("beat_video_paths", []):
+                _register_video(vp)
+
+            # ── beat_videos[] (older flat list) ───────────────────────────────────
+            for bv in section.get("beat_videos", []):
+                _register_video(bv)
+
+            # ── visual_beats[].video_path (V3 primary format) ────────────────────
+            for beat in section.get("visual_beats", []):
+                _register_video(beat.get("video_path"))
+
+            # ── narration.segments[].beat_videos + .video_path ───────────────────
             narration = section.get("narration", {})
             segments = narration.get("segments", [])
             for seg in segments:
-                seg_beat_videos = seg.get("beat_videos", [])
-                if seg_beat_videos:
-                    section_info["segments_with_beats"] += 1
-                    for sbv in seg_beat_videos:
-                        if sbv:
-                            filename = Path(sbv).name
-                            json_videos.add(filename)
-                            section_info["videos_in_json"].append(filename)
-                            section_info["total_beat_videos"] += 1
-            
-            # Check video_prompts for expected files
-            video_prompts = section.get("video_prompts", [])
+                _register_video(seg.get("video_path"))
+                for sbv in seg.get("beat_videos", []):
+                    _register_video(sbv)
+                    section_info["segments_with_beats"] = section_info.get("segments_with_beats", 0) + 1
+                    section_info["total_beat_videos"] = section_info.get("total_beat_videos", 0) + 1
+
+            # ── render_spec image_to_video_beats ─────────────────────────────────
             render_spec = section.get("render_spec", {})
-            if not video_prompts:
-                video_prompts = render_spec.get("video_prompts", [])
-            
-            # Check recap_video_paths
-            recap_paths = section.get("recap_video_paths", [])
-            for rp in recap_paths:
-                if rp:
-                    filename = Path(rp).name
-                    json_videos.add(filename)
-                    section_info["videos_in_json"].append(filename)
+            for b in render_spec.get("image_to_video_beats", []):
+                _register_video(b.get("video_path"))
+
+            # ── recap_video_paths[] ───────────────────────────────────────────────
+            for rp in section.get("recap_video_paths", []):
+                _register_video(rp)
+
+            # ── explanation_plan.visual_beats[].video_path ────────────────────────
+            for beat in section.get("explanation_plan", {}).get("visual_beats", []):
+                _register_video(beat.get("video_path"))
+
+            # ── understanding_quiz & questions[]: explanation_visual paths ────────
+            def _register_explanation_visual(quiz_obj):
+                if not quiz_obj:
+                    return
+                # top-level shortcut
+                _register_video(quiz_obj.get("explanation_visual_video_path"))
+                ev = quiz_obj.get("explanation_visual") or {}
+                _register_video(ev.get("video_path"))
+                for vp in ev.get("beat_video_paths", []):
+                    _register_video(vp)
+                for b in ev.get("image_to_video_beats", []):
+                    _register_video(b.get("video_path"))
+
+            _register_explanation_visual(section.get("understanding_quiz"))
+            for q in section.get("questions", []):
+                _register_explanation_visual(q)
+
+            # ── video_prompts (legacy) ────────────────────────────────────────────
+            video_prompts = section.get("video_prompts") or render_spec.get("video_prompts", [])
             
             # Check avatar
             avatar_path = section.get("avatar_video", "")
