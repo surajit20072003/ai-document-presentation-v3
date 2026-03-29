@@ -421,10 +421,7 @@ def run_v3_pipeline(
             manim_dir.mkdir(parents=True, exist_ok=True)
 
             sections = presentation.get("sections", [])
-            manim_sections = [
-                s for s in sections 
-                if s.get("renderer") == "manim" or s.get("render_spec", {}).get("renderer") == "manim"
-            ]
+            manim_sections = [s for s in sections if s.get("renderer") == "manim"]
             log("manim_gen", f"Found {len(manim_sections)} Manim section(s).")
 
             def process_section(section):
@@ -1033,78 +1030,6 @@ def run_v3_pipeline(
                 f"[V3] Per-question explanation_visual error (non-fatal): {e}"
             )
             log("wan_video", f"⚠️ Per-question error (non-fatal): {e}")
-
-    # V3: Handle explanation_visual GPU video for ALL section types (content, image_to_video, etc.)
-    # Mirrors Phase 3.7b logic but for image_to_video / text_to_video renderers —
-    # the per_question_sections block above only catches renderer=="per_question" sections,
-    # missing explanation_visuals nested inside content/image_to_video sections.
-    if not skip_wan:
-        log("wan_video", "Phase 6.5b: Scanning ALL sections for quiz explanation_visual GPU video...")
-        try:
-            from core.renderer_executor import execute_renderer
-
-            quiz_gpu_rendered = 0
-            for section in presentation.get("sections", []):
-                sec_id = section.get("section_id", "?")
-                # Skip per_question sections — already handled above
-                if section.get("renderer") == "per_question":
-                    continue
-
-                # Collect quiz sources: understanding_quiz and bare questions[]
-                quiz_sources = []
-                if section.get("understanding_quiz"):
-                    quiz_sources.append(("understanding_quiz", section["understanding_quiz"]))
-                for qi, q in enumerate(section.get("questions", [])):
-                    quiz_sources.append((f"question_{qi}", q))
-
-                for q_label, q_obj in quiz_sources:
-                    questions = q_obj.get("questions", [])
-                    for qi2, question in enumerate(questions):
-                        q_id = question.get("question_id", f"q{qi2 + 1}")
-                        exp_visual = question.get("explanation_visual", {})
-                        if not exp_visual:
-                            continue
-                        exp_renderer = exp_visual.get("renderer", "")
-                        if exp_renderer not in ("image_to_video", "text_to_video", "video"):
-                            continue
-
-                        log(
-                            "wan_video",
-                            f"  Sec {sec_id} / {q_label} / Q{q_id}: rendering explanation_visual ({exp_renderer})...",
-                        )
-                        result = execute_renderer(
-                            topic=exp_visual,
-                            output_dir=str(output_path / "videos"),
-                            dry_run=dry_run,
-                            skip_wan=skip_wan,
-                            video_provider=video_provider,
-                        )
-                        if result.get("status") == "success":
-                            video_path = result.get("video_path", "")
-                            question["explanation_visual_video_path"] = video_path
-                            exp_visual["video_path"] = video_path
-                            quiz_gpu_rendered += 1
-                            log("wan_video", f"    ✅ Q{q_id} → {video_path}")
-                        else:
-                            log(
-                                "wan_video",
-                                f"    ❌ Q{q_id} failed: {result.get('error', 'Unknown error')}",
-                            )
-
-            log("wan_video", f"✅ Phase 6.5b complete: {quiz_gpu_rendered} explanation_visual(s) rendered.")
-
-            # Save updated presentation.json
-            if quiz_gpu_rendered > 0:
-                try:
-                    with open(pres_path, "w", encoding="utf-8") as f:
-                        json.dump(presentation, f, indent=2, ensure_ascii=False)
-                    log("wan_video", "✅ presentation.json saved after Phase 6.5b.")
-                except Exception as e:
-                    logger.warning(f"[V3] Failed to save presentation.json after Phase 6.5b: {e}")
-
-        except Exception as e:
-            logger.warning(f"[V3] Phase 6.5b error (non-fatal): {e}")
-            log("wan_video", f"⚠️ Phase 6.5b error (non-fatal): {e}")
 
     # Legacy: Handle renderer: "video" sections via submit_wan_background_job()
     if wan_video_sections and not skip_wan:

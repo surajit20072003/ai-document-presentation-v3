@@ -796,22 +796,13 @@ def execute_renderer(
                 beat_id = beat.get("beat_id")
                 imgs = image_paths.get(beat_id, {})
                 if imgs.get("start"):  # must have at least the start frame
-                    # FIX: resolve relative paths to absolute.
-                    # generate_image_for_beat() returns relative like "images/job_beat_1_start.jpg"
-                    # but LocalGPUClient checks Path(image_path).exists() from CWD, not output_dir.
-                    start_path = imgs["start"]
-                    if not Path(start_path).is_absolute():
-                        start_path = str(Path(output_dir) / start_path)
-                    end_path = imgs.get("end")
-                    if end_path and not Path(end_path).is_absolute():
-                        end_path = str(Path(output_dir) / end_path)
                     video_beats.append(
                         {
                             "beat_id": beat_id,
                             "prompt": beat.get("prompt", ""),
                             "duration": beat.get("duration", 15),
-                            "image_path": start_path,       # start frame (absolute)
-                            "image_path_end": end_path,     # end frame (absolute, may be None)
+                            "image_path": imgs.get("start"),      # start frame
+                            "image_path_end": imgs.get("end"),    # end frame (may be None)
                         }
                     )
 
@@ -2367,68 +2358,20 @@ def submit_v3_segment_background_job(
                 spec["_section_id"] = section_id
                 segments_by_renderer[renderer].append(spec)
 
-        # 3. explanation_visual processing from quizzes
-        quiz_sources = []
         quiz = section.get("understanding_quiz", {})
-        if quiz:
-            quiz_sources.append(("explanation", quiz))
-            # Also check nested questions in quiz
-            for qi, q in enumerate(quiz.get("questions", [])):
-                quiz_sources.append((f"q{qi+1}_explanation", q))
-        
-        # Also check section level questions (sometimes Director puts them there)
-        for qi, q in enumerate(section.get("questions", [])):
-            quiz_sources.append((f"sec_q{qi+1}_explanation", q))
+        exp = quiz.get("explanation_visual", {})
+        if exp and exp.get("renderer") in segments_by_renderer:
+            exp["_section_id"] = section_id
+            exp["segment_id"] = f"quiz_{section_id}_explanation"
+            segments_by_renderer[exp["renderer"]].append(exp)
 
-        for suffix, source in quiz_sources:
-            exp = source.get("explanation_visual", {})
-            if not exp or not isinstance(exp, dict):
-                continue
-                
-            renderer = exp.get("renderer", "")
-            if renderer not in segments_by_renderer:
-                continue
-
-            # Handle multi-beat explanation visuals by flattening them for the queue
-            # (image_to_video_beats, video_prompts, etc.)
-            sub_beats = (
-                exp.get("image_to_video_beats") or 
-                exp.get("video_prompts") or 
-                exp.get("manim_beats") or 
-                []
-            )
-            
-            if sub_beats and isinstance(sub_beats, list):
-                for bi, beat in enumerate(sub_beats):
-                    # Create a flattened spec for the background job
-                    flat_spec = beat.copy()
-                    flat_spec["_section_id"] = section_id
-                    flat_spec["segment_id"] = f"quiz_{section_id}_{suffix}_b{bi+1}"
-                    flat_spec["renderer"] = renderer
-                    # Map duration keys
-                    if "duration" in flat_spec and "segment_duration_seconds" not in flat_spec:
-                        flat_spec["segment_duration_seconds"] = flat_spec["duration"]
-                    elif "duration_seconds" in flat_spec and "segment_duration_seconds" not in flat_spec:
-                        flat_spec["segment_duration_seconds"] = flat_spec["duration_seconds"]
-                    
-                    segments_by_renderer[renderer].append(flat_spec)
-                    
-                    # Ensure image_prompt is set for the background task if using dual prompts
-                    if "image_prompt_start" in flat_spec and "image_prompt" not in flat_spec:
-                        flat_spec["image_prompt"] = flat_spec["image_prompt_start"]
-            else:
-                # Single beat explanation visual
+        for q in section.get("questions", []):
+            exp = q.get("explanation_visual", {})
+            qid = q.get("question_id", "q1")
+            if exp and exp.get("renderer") in segments_by_renderer:
                 exp["_section_id"] = section_id
-                exp["segment_id"] = f"quiz_{section_id}_{suffix}"
-                # Map duration keys
-                if "duration_seconds" in exp and "segment_duration_seconds" not in exp:
-                    exp["segment_duration_seconds"] = exp["duration_seconds"]
-                
-                # Ensure image_prompt is set
-                if "image_prompt_start" in exp and "image_prompt" not in exp:
-                    exp["image_prompt"] = exp["image_prompt_start"]
-                
-                segments_by_renderer[renderer].append(exp)
+                exp["segment_id"] = f"quiz_{section_id}_{qid}_explanation"
+                segments_by_renderer[exp["renderer"]].append(exp)
 
     for renderer, specs in segments_by_renderer.items():
         if specs:

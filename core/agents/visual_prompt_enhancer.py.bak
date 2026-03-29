@@ -86,9 +86,8 @@ def extract_beats(section: dict) -> list:
         # FIX-1: position-based narration matching — IDs never match between
         # narration segments ("seg_1") and render beats ("recap_beat_1").
         segs = section.get("narration", {}).get("segments", [])
-        seg_map = {s.get("segment_id"): s.get("text", "") for s in segs}
         for i, b in enumerate(itv_beats):
-            narration_text = seg_map.get(b.get("segment_id"), "")
+            narration_text = segs[i].get("text", "") if i < len(segs) else ""
 
             # FIX-2: beat_goal derived from Director fields that actually exist
             beat_goal = (

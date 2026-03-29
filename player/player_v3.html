@@ -190,8 +190,7 @@
         #wan-vid {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            /* Un-cropped video fix */
+            object-fit: cover;
             background: #0d1117;
         }
 
@@ -210,7 +209,7 @@
         #manim-vid {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
             background: #0d1117
         }
 
@@ -241,15 +240,22 @@
             display: block;
         }
 
+        /* Desktop: image layer shrinks to avoid avatar column on right */
+        @media (min-width: 641px) {
+            #image-layer { right: 280px; }
+        }
+
+        /* ── MOBILE PORTRAIT — small screen fixes ── */
         @media (max-width: 640px) {
-            #av-overlay:not([data-sectype="intro"]) {
-                bottom: 62px !important;
-                right: 8px !important;
-                height: 38vh !important;
+            #av-overlay[data-sectype="intro"] {
+                height: 58vh !important;
+                bottom: 66px !important;
             }
 
-            #av-overlay[data-sectype="intro"] {
-                height: 65vh !important;
+            #av-overlay:not([data-sectype="intro"]) {
+                height: 40vh !important;
+                bottom: 68px !important;
+                right: 6px !important;
             }
 
             #quiz-question-card {
@@ -263,71 +269,267 @@
             #quiz-options {
                 grid-template-columns: 1fr !important;
             }
+
+            #botbar {
+                height: 64px !important;
+                padding: 0 10px !important;
+                gap: 8px !important;
+            }
+
+            .nb {
+                width: 44px !important;
+                height: 44px !important;
+                font-size: 16px !important;
+                flex-shrink: 0 !important;
+            }
+
+            .pb {
+                width: 48px !important;
+                height: 48px !important;
+                font-size: 18px !important;
+                flex-shrink: 0 !important;
+            }
+
+            #bot-badge {
+                display: none !important;
+            }
+
+            #bot-label {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px;
+                font-size: 10px;
+            }
+
+            #topbar {
+                padding: 0 10px !important;
+                gap: 8px !important;
+            }
+
+            .tb-title {
+                font-size: 13px !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px;
+            }
+
+            .tb-sec-name {
+                display: none !important;
+            }
+
+            .tb-dots {
+                flex-wrap: nowrap;
+                overflow: hidden;
+                max-width: 80px;
+            }
+
+            .tb-dot.past,
+            .tb-dot.future {
+                width: 10px !important;
+            }
+
+            .tb-dot.cur {
+                width: 18px !important;
+            }
         }
 
         @media (max-width: 400px) {
             #av-overlay:not([data-sectype="intro"]) {
-                height: 30vh !important;
-                right: 4px !important;
+                height: 32vh !important;
+                right: 0 !important;
             }
         }
 
-        /* ── MOBILE LANDSCAPE FULL SCREEN ── */
-        @media (max-width: 950px) and (orientation: landscape) {
+        /* ── LANDSCAPE FULLSCREEN — FIXED ──────────────────────────────
+           FIX 1: #app switched to display:block so #main can claim full height.
+           FIX 2: #main uses position:fixed + inset:0 + 100dvh (dvh collapses
+                  with iOS Safari browser chrome; vh does not).
+           FIX 3: Video layers and their <video> children get explicit
+                  inset:0 + width/height:100% so they fill the repositioned
+                  #main correctly — without this the videos stay portrait-sized.
+           Avatar overlay is intentionally hidden — video fills the whole screen.
+        ── */
+        /* ── PHONE LANDSCAPE — max-height:480px targets phones only ──────────────
+           Phones in landscape: height 390–430px. Tablets/desktops: always taller.
+           Avatar: side strip on right (non-intro). Video fills remaining left area.
+        ── */
+        @media (orientation: landscape) and (max-height: 480px) {
 
-            #topbar,
-            #botbar,
-            #av-overlay,
-            #gesture-hud,
-            #subtitle-overlay {
+            #topbar, #gesture-hud, #interaction-hint {
                 display: none !important;
             }
 
-            #main {
-                height: 100vh !important;
-                width: 100vw !important;
-                position: fixed;
-                inset: 0;
-                z-index: 9999;
+            #app {
+                display: block !important;
+                height: 100dvh !important;
+                overflow: hidden !important;
             }
+
+            /* Botbar: fixed strip at bottom */
+            #botbar {
+                display: flex !important;
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                height: 52px !important;
+                padding: 0 12px !important;
+                gap: 10px !important;
+                background: rgba(8, 12, 18, 0.97) !important;
+                border-top: 1px solid rgba(255,255,255,0.07) !important;
+                z-index: 100 !important;
+            }
+
+            /* Intro: avatar centred, video fills full width */
+            #av-overlay[data-sectype="intro"] {
+                display: block !important;
+                position: fixed !important;
+                bottom: 52px !important;
+                left: 50% !important;
+                right: auto !important;
+                top: auto !important;
+                transform: translateX(-50%) !important;
+                height: 90dvh !important;
+                width: auto !important;
+                z-index: 50 !important;
+            }
+
+            /* Non-intro: avatar as right side strip */
+            #av-overlay:not([data-sectype="intro"]) {
+                display: block !important;
+                position: fixed !important;
+                top: 0 !important;
+                bottom: 52px !important;
+                right: 0 !important;
+                left: auto !important;
+                width: var(--av-strip-w, 28vw) !important;
+                height: auto !important;
+                transform: none !important;
+                z-index: 50 !important;
+            }
+
+            /* Main: fills left area, avatar strip on right */
+            #main {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: var(--av-strip-w, 28vw) !important;
+                bottom: 52px !important;
+                width: auto !important;
+                height: auto !important;
+                z-index: 10 !important;
+                background: #0d1117 !important;
+            }
+
+            #wan-layer, #manim-layer {
+                position: absolute !important;
+                inset: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+
+            #wan-vid, #manim-vid {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: cover !important;
+            }
+
+            #image-layer {
+                position: absolute !important;
+                inset: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+
+            /* Subtitles: within video area, clears avatar strip */
+            #subtitle-overlay {
+                display: block !important;
+                position: fixed !important;
+                bottom: 58px !important;
+                left: 10px !important;
+                right: calc(var(--av-strip-w, 28vw) + 8px) !important;
+                transform: none !important;
+                width: auto !important;
+                text-align: left !important;
+                z-index: 65 !important;
+            }
+
+            .sub-word, .subtitle-text {
+                font-size: 13px !important;
+                line-height: 1.4 !important;
+            }
+
+            .nb { width: 36px !important; height: 36px !important; }
+            .pb { width: 40px !important; height: 40px !important; }
+
+            #bot-label {
+                font-size: 10px !important;
+                max-width: 80px !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
+
+            #quiz-overlay { z-index: 10000 !important; padding: 8px 12px !important; overflow-y: auto !important; }
+            #quiz-options { grid-template-columns: 1fr 1fr !important; }
+            #tap-to-start { z-index: 10001 !important; }
         }
 
+        /* ── SUBTITLE OVERLAY ─────────────────────────────────────────
+           FIX: Base style has overflow:visible + no max-height so text
+           is NEVER clipped. The box grows upward naturally.
+           The old @media (max-width:600px) block that had
+           max-height:3.6em + overflow:hidden is completely removed.
+        ── */
         #subtitle-overlay {
             position: fixed;
             bottom: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 75%;
-            max-width: 860px;
+            left: 12px;
+            right: 260px;      /* 260px clears avatar column on right */
+            transform: none;
+            width: auto;
+            max-width: none;
             text-align: center;
             pointer-events: none;
             z-index: 65;
             display: none;
-            padding: 4px 8px;
-            background: rgba(0, 0, 0, 0.45);
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.55);
             border-radius: 8px;
+            /* CRITICAL — never clip subtitle text */
+            overflow: visible;
+            max-height: none;
         }
 
-        @media (max-width: 600px) {
+        /* Mobile portrait — wider box, clears the 64px bottom bar */
+        @media (max-width: 640px) {
             #subtitle-overlay {
-                width: 92%;
-                bottom: 68px;
-                max-height: 3.6em;
-                overflow: hidden;
+                left: 8px !important;
+                right: 8px !important;
+                bottom: 74px;
+                padding: 5px 10px;
+                overflow: visible !important;
+                max-height: none !important;
             }
 
             .sub-word,
             .subtitle-text {
-                font-size: 15px !important;
-                line-height: 1.5 !important;
+                font-size: 14px !important;
+                line-height: 1.55 !important;
             }
         }
 
         @media (max-width: 400px) {
+            #subtitle-overlay {
+                width: 98%;
+                bottom: 72px;
+            }
 
             .sub-word,
             .subtitle-text {
-                font-size: 13px !important;
+                font-size: 12px !important;
             }
         }
 
@@ -777,16 +979,16 @@
             left: 50%;
             right: auto;
             transform: translateX(-50%);
-            height: 80vh;
+            height: 86vh;
             width: auto;
         }
 
         #av-overlay:not([data-sectype="intro"]) {
-            bottom: 68px;
-            right: 60px;
+            bottom: 60px;
+            right: 0;
             left: auto;
             transform: none;
-            height: 60vh;
+            height: 78vh;
             width: auto;
         }
 
@@ -986,6 +1188,24 @@
 </head>
 
 <body>
+    <div id="tilt-overlay" style="
+        display:none; position:fixed; inset:0; z-index:9999;
+        background:#0d1117; flex-direction:column;
+        align-items:center; justify-content:center; gap:20px;
+        font-family:'Sora',sans-serif; color:#e6edf3; text-align:center; padding:32px;">
+        <div style="font-size:52px; animation:spin 2s linear infinite;">📱</div>
+        <div style="font-size:20px; font-weight:600;">Rotate your device</div>
+        <div style="font-size:15px; color:rgba(230,237,243,0.55);">
+            This lesson is best experienced in landscape mode
+        </div>
+    </div>
+    <style>
+    @keyframes spin {
+        0%{transform:rotate(0deg)} 40%{transform:rotate(90deg)}
+        60%{transform:rotate(90deg)} 100%{transform:rotate(0deg)}
+    }
+    </style>
+
     <div id="app">
 
         <div id="tap-to-start" style="
@@ -1022,8 +1242,8 @@
                 <input type="range" id="dev-intro" min="30" max="100" step="1" value="80" style="width:120px">
             </label>
             <label style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                <span>Content Height vh (<span id="dev-cont-val">60</span>)</span>
-                <input type="range" id="dev-cont" min="20" max="100" step="1" value="60" style="width:120px">
+                <span>Content Height vh (<span id="dev-cont-val">78</span>)</span>
+                <input type="range" id="dev-cont" min="20" max="100" step="1" value="78" style="width:120px">
             </label>
             <label style="display:flex; justify-content:space-between; margin-bottom:15px;">
                 <span>Manim Scale (<span id="dev-three-val">1.0</span>)</span>
@@ -1055,6 +1275,21 @@
                     <option value="off">Off</option>
                 </select>
             </label>
+            <hr style="border-color:rgba(255,255,255,0.08); margin:14px 0;">
+            <div style="font-size:11px; color:var(--gold); margin-bottom:8px; letter-spacing:.05em;">AVATAR POSITION</div>
+            <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>Right &#8592;&#8594; (<span id="dev-av-right-val">0</span>px)</span>
+                <input type="range" id="dev-av-right" min="-50" max="1000" step="10" value="0" style="width:120px">
+            </label>
+            <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>Bottom (<span id="dev-av-bottom-val">60</span>px)</span>
+                <input type="range" id="dev-av-bottom" min="0" max="300" step="5" value="60" style="width:120px">
+            </label>
+            <label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>Strip W (<span id="dev-av-sw-val">28</span>vw)</span>
+                <input type="range" id="dev-av-sw" min="10" max="50" step="1" value="28" style="width:120px">
+            </label>
+            <button id="dev-av-copy" style="margin-top:4px;background:rgba(246,196,78,0.15);color:var(--gold);border:1px solid rgba(246,196,78,0.3);border-radius:4px;padding:4px 8px;cursor:pointer;width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;">Copy Avatar CSS</button>
         </div>
 
         <div id="loading-screen">
@@ -1081,8 +1316,8 @@
 
         <div id="main">
             <div id="wan-layer">
-                <video id="wan-vid" muted playsinline style="display:block;"></video>
-                <video id="wan-vid-pre" muted playsinline
+                <video id="wan-vid" muted playsinline preload="auto" style="display:block;"></video>
+                <video id="wan-vid-pre" muted playsinline preload="auto"
                     style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"></video>
             </div>
             <div id="threejs-layer"></div>
@@ -1120,7 +1355,7 @@
         <div id="quiz-overlay" style="
             display:none; position:fixed; inset:0; z-index:52;
             flex-direction:column; align-items:center; justify-content:center;
-            background:rgba(13,17,23,0.96); padding:28px;
+            background:rgba(13,17,23,0.96); padding:28px 320px 28px 28px;
         ">
             <div id="quiz-question-card" style="
                 max-width:640px; width:100%;
@@ -1161,7 +1396,7 @@
         </div>
 
         <div id="av-overlay">
-            <video id="av-vid" autoplay playsinline
+            <video id="av-vid" autoplay playsinline preload="auto"
                 style="position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;"
                 crossOrigin="anonymous"></video>
             <canvas id="av-canvas"
@@ -1251,17 +1486,36 @@
 
             videoIds.forEach(function (id) {
                 var vidEl = document.getElementById(id);
-                if (vidEl) {
-                    vidEl.addEventListener('waiting', function () {
-                        spinner.style.display = 'block';
-                    });
-                    vidEl.addEventListener('playing', function () {
-                        spinner.style.display = 'none';
-                    });
-                    vidEl.addEventListener('canplay', function () {
-                        spinner.style.display = 'none';
-                    });
-                }
+                if (!vidEl) return;
+
+                vidEl.addEventListener('waiting', function () {
+                    spinner.style.display = 'block';
+                    // When a CONTENT video buffers, pause av-vid so narration
+                    // and subtitles freeze in sync with the stalled visual.
+                    if (id !== 'av-vid' && G_PLAYBACK_INTENDED) {
+                        var avVid = document.getElementById('av-vid');
+                        if (avVid && !avVid.paused) {
+                            avVid.pause();
+                            vidEl._pausedAvForBuffer = true;
+                        }
+                    }
+                });
+
+                vidEl.addEventListener('playing', function () {
+                    spinner.style.display = 'none';
+                    // Resume av-vid if WE paused it for buffering
+                    if (id !== 'av-vid' && vidEl._pausedAvForBuffer) {
+                        vidEl._pausedAvForBuffer = false;
+                        var avVid = document.getElementById('av-vid');
+                        if (avVid && avVid.paused && G_PLAYBACK_INTENDED) {
+                            avVid.play().catch(function () {});
+                        }
+                    }
+                });
+
+                vidEl.addEventListener('canplay', function () {
+                    spinner.style.display = 'none';
+                });
             });
         }
 
@@ -1689,6 +1943,26 @@
                 vid.src = getMediaSrc(avatarUrl); vid.load();
                 vid.play().catch(function (e) { console.warn("Avatar video play failed", e); });
 
+                // Preload next section's avatar while current one is playing
+                timers.push(setTimeout(function() {
+                    if (curSec !== idx) return;
+                    var nextSec = SECTIONS[idx + 1];
+                    if (!nextSec) return;
+                    var nextUrl = nextSec.avatar_video || nextSec.avatar_url || nextSec.avatar || nextSec.b2_url || '';
+                    if (!nextUrl) return;
+                    var preAv = document.getElementById('av-pre');
+                    if (!preAv) {
+                        preAv = document.createElement('video');
+                        preAv.id = 'av-pre';
+                        preAv.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+                        preAv.muted = true; preAv.preload = 'auto';
+                        document.body.appendChild(preAv);
+                    }
+                    preAv.src = getMediaSrc(nextUrl);
+                    preAv.load();
+                    preAv.play().then(function(){ preAv.pause(); }).catch(function(){});
+                }, 3000));
+
                 var sectionAtLoad = curSec;
                 var _stallCheck = setInterval(function () {
                     if (curSec !== sectionAtLoad) { clearInterval(_stallCheck); return; }
@@ -1856,10 +2130,7 @@
         }
 
         function renderSubtitleKaraoke(overlay, textEl, beatText, beatDur, sectionAtLoad, beatStart) {
-            if (window.SUB_CONFIG.mode === 'off') {
-                overlay.style.display = 'none';
-                return;
-            }
+            if (window.SUB_CONFIG.mode === 'off') { overlay.style.display = 'none'; return; }
             if (window.SUB_CONFIG.mode === 'full') {
                 textEl.className = 'subtitle-text';
                 textEl.innerHTML = esc(beatText);
@@ -1869,86 +2140,86 @@
 
             textEl.className = '';
             overlay.style.display = 'block';
-
             if (_karaokeTimer) { clearInterval(_karaokeTimer); _karaokeTimer = null; }
 
-            var words = beatText.split(/\s+/).filter(function (w) { return w.length > 0; });
-            if (words.length === 0) return;
+            // ── Split into sentences so only ONE sentence shows at a time ──
+            var rawSentences = beatText.match(/[^.!?]+[.!?]*/g) || [beatText];
+            var sentences = rawSentences.map(function(s){ return s.trim(); }).filter(Boolean);
 
-            var html = words.map(function (w, i) {
-                var cls = i === 0 ? 'sub-word active' : 'sub-word future';
-                return '<span class="' + cls + '" id="kw-' + i + '">' + esc(w) + '</span>';
-            }).join(' ');
-            textEl.innerHTML = html;
-
-            // --- THE FIX: Smart Weighting for Natural Speech Pacing ---
-            var wordWeights = [];
-            var totalWeight = 0;
-
-            for (var i = 0; i < words.length; i++) {
-                var w = words[i];
-                var weight = w.length; // Base weight = number of characters
-
-                // Mimic human pauses by adding extra time to punctuation
-                if (w.indexOf(',') !== -1) weight += 3; // Short pause for comma
-                if (w.match(/[.!?]/)) weight += 6;      // Longer pause for end of sentence
-
-                // Give tiny words (like "a", "I", "to") a minimum baseline so they don't flash instantly
-                if (weight < 3) weight = 3;
-
-                wordWeights.push(weight);
-                totalWeight += weight;
-            }
-
-            var timePerWeightUnit = beatDur / totalWeight;
-            var wordTimes = [];
-            var currentStartTime = 0;
-
-            for (var j = 0; j < words.length; j++) {
-                var duration = wordWeights[j] * timePerWeightUnit;
-                wordTimes.push({
-                    start: currentStartTime,
-                    end: currentStartTime + duration
+            // Flatten all words, tracking which sentence each word belongs to
+            var allWords = [], wordSentIdx = [];
+            sentences.forEach(function(sent, si) {
+                sent.split(/\s+/).filter(Boolean).forEach(function(w) {
+                    allWords.push(w); wordSentIdx.push(si);
                 });
-                currentStartTime += duration;
-            }
+            });
+            if (allWords.length === 0) return;
 
-            var lastIdx = -1;
+            // Build proportional timing (same weight logic as before)
+            var totalWeight = 0;
+            var weights = allWords.map(function(w) {
+                var wt = w.length;
+                if (w.indexOf(',') !== -1) wt += 3;
+                if (w.match(/[.!?]/)) wt += 6;
+                if (wt < 3) wt = 3;
+                totalWeight += wt;
+                return wt;
+            });
+            var tpu = beatDur / totalWeight, cursor = 0;
+            var wordTimes = weights.map(function(wt) {
+                var s = cursor; cursor += wt * tpu; return { start: s, end: cursor };
+            });
+
+            var lastWordIdx = -1, lastSentIdx = -1;
             var myKaraokeEpoch = _subtitleEpoch;
 
-            _karaokeTimer = setInterval(function () {
+            function renderSentence(si, activeWordInAll) {
+                // Collect word indices that belong to this sentence
+                var sentWords = [];
+                allWords.forEach(function(w, i) { if (wordSentIdx[i] === si) sentWords.push({ w: w, gi: i }); });
+                var html = sentWords.map(function(obj) {
+                    return '<span class="sub-word future" id="kw-' + obj.gi + '">' + esc(obj.w) + '</span>';
+                }).join(' ');
+                textEl.innerHTML = html;
+                // Apply correct classes for already-spoken words in this sentence
+                sentWords.forEach(function(obj) {
+                    var el = document.getElementById('kw-' + obj.gi);
+                    if (!el) return;
+                    if (obj.gi < activeWordInAll) el.className = 'sub-word spoken';
+                    else if (obj.gi === activeWordInAll) el.className = 'sub-word active';
+                    else el.className = 'sub-word future';
+                });
+            }
+
+            _karaokeTimer = setInterval(function() {
                 if (curSec !== sectionAtLoad || _subtitleEpoch !== myKaraokeEpoch) {
                     clearInterval(_karaokeTimer); _karaokeTimer = null; return;
                 }
                 var avVid2 = document.getElementById('av-vid');
                 if (!avVid2) return;
-
-                // Add a tiny 150ms artificial delay to the start because audio usually has a fraction of a second of silence before the voice actually kicks in
                 var elapsed = avVid2.currentTime - beatStart - 0.15;
 
-                var wordIdx = words.length - 1;
-                if (elapsed < 0) {
-                    wordIdx = 0;
-                } else {
+                var wordIdx = allWords.length - 1;
+                if (elapsed < 0) { wordIdx = 0; } else {
                     for (var k = 0; k < wordTimes.length; k++) {
-                        if (elapsed >= wordTimes[k].start && elapsed < wordTimes[k].end) {
-                            wordIdx = k;
-                            break;
-                        }
+                        if (elapsed >= wordTimes[k].start && elapsed < wordTimes[k].end) { wordIdx = k; break; }
                     }
                 }
 
-                if (wordIdx !== lastIdx) {
-                    for (var m = 0; m <= wordIdx; m++) {
-                        var el = document.getElementById('kw-' + m);
-                        if (el) el.className = (m === wordIdx) ? 'sub-word active' : 'sub-word spoken';
-                    }
-                    for (var n = wordIdx + 1; n < words.length; n++) {
-                        var el2 = document.getElementById('kw-' + n);
-                        if (el2) el2.className = 'sub-word future';
-                    }
-                    lastIdx = wordIdx;
+                var sentIdx = wordSentIdx[wordIdx];
+                // Sentence changed → re-render the whole sentence block
+                if (sentIdx !== lastSentIdx) {
+                    lastSentIdx = sentIdx;
+                    lastWordIdx = -1;
+                    renderSentence(sentIdx, wordIdx);
+                } else if (wordIdx !== lastWordIdx) {
+                    // Same sentence, just update active word
+                    var prev = document.getElementById('kw-' + lastWordIdx);
+                    if (prev) prev.className = 'sub-word spoken';
+                    var cur = document.getElementById('kw-' + wordIdx);
+                    if (cur) cur.className = 'sub-word active';
                 }
+                lastWordIdx = wordIdx;
             }, 30);
         }
 
@@ -1988,7 +2259,7 @@
                         var imgSrc = vb.image_source || info.image_source || '';
                         schedule.push({ start: start, end: end, type: 'image', src: imgSrc });
                     } else {
-                        var path = bvp[vidIdx] || '';
+                        var path = vb.video_path || bvp[vidIdx] || '';
                         vidIdx++;
                         schedule.push({ start: start, end: end, type: 'video', src: path });
                     }
@@ -2060,9 +2331,11 @@
                     if (!beat.src) return;
                     var fullSrc = getMediaSrc(beat.src);
 
-                    if (wanPre.src === fullSrc && wanPre.readyState >= 2) {
-                        wanVid.src = fullSrc;
-                        wanVid.currentTime = wanPre.currentTime;
+                    if (wanPre.src.endsWith(fullSrc.split('/').pop()) && wanPre.readyState >= 3) {
+                        // Preloaded and ready — swap instantly without re-loading
+                        wanVid.src = wanPre.src;
+                        wanPre.src = '';   // free preload slot
+                        preloadedSrc = '';
                         wanVid.play().catch(function () { });
                     } else {
                         wanVid.src = fullSrc;
@@ -2081,6 +2354,8 @@
                 preloadedSrc = src;
                 wanPre.src = src;
                 wanPre.load();
+                // Force browser to buffer aggressively — play then immediately pause
+                wanPre.play().then(function(){ wanPre.pause(); }).catch(function(){});
             }
 
             function onTimeUpdate() {
@@ -2104,8 +2379,9 @@
                 }
 
                 var curBeat = schedule[activeIdx];
-                if (curBeat && curBeat.end && (curBeat.end - t) < 3.0) {
+                if (curBeat && curBeat.end && (curBeat.end - t) < 5.0) {
                     preloadNext(activeIdx + 1);
+                    if ((curBeat.end - t) < 2.0) preloadNext(activeIdx + 2); // 2 ahead near end
                 }
 
                 if (currentIdx >= 0 && schedule[currentIdx].type === 'video') {
@@ -2359,25 +2635,41 @@
             var sectionAtLoad = curSec;
             var segments = sec.narration.segments;
 
-            var thresholds = [];
+            // Build timeline: each segment gets a [cardStart, flipAt, nextCardAt]
+            // seg0 = intro (no card), seg1+ = one card each
+            var timeline = [];
             var accum = 0;
-            for (var i = 0; i < segments.length; i++) {
-                accum += (segments[i].duration_seconds || segments[i].duration || 8);
-                thresholds.push(accum);
-            }
+            segments.forEach(function(seg, i) {
+                var dur = seg.duration_seconds || seg.duration || 8;
+                var start = accum;
+                accum += dur;
+                timeline.push({ cardStart: start, flipAt: start + dur * 0.45, end: accum, cardIdx: i - 1 });
+                // cardIdx -1 = intro seg (skip), 0+ = card index
+            });
 
-            var lastAdvanced = -1;
-            var memInt = setInterval(function () {
+            var flippedIdx = -1, shownIdx = -1;
+            var memInt = setInterval(function() {
                 if (curSec !== sectionAtLoad) { clearInterval(memInt); return; }
                 var t = avVid.currentTime;
-                for (var j = 0; j < thresholds.length - 1; j++) {
-                    if (t >= thresholds[j] && lastAdvanced < j) {
-                        lastAdvanced = j;
-                        nextCard();
-                        break;
+                for (var j = 0; j < timeline.length; j++) {
+                    var entry = timeline[j];
+                    if (entry.cardIdx < 0) continue; // skip intro
+                    // Show card (unflipped) at segment start
+                    if (t >= entry.cardStart && shownIdx < entry.cardIdx) {
+                        shownIdx = entry.cardIdx;
+                        goCard(entry.cardIdx);   // showCard() inside resets flip to false
+                    }
+                    // Flip to answer partway through segment
+                    if (t >= entry.flipAt && flippedIdx < entry.cardIdx) {
+                        flippedIdx = entry.cardIdx;
+                        var c3d = document.getElementById('card-3d');
+                        if (c3d && !c3d.classList.contains('flipped')) {
+                            c3d.classList.add('flipped');
+                            cardFlipped = true;
+                        }
                     }
                 }
-            }, 500);
+            }, 200);
             timers.push(memInt);
         }
 
@@ -2613,13 +2905,14 @@
                 if (!ev) return; // Abort if no visual block exists
 
                 // 1. Find out if we actually have a video or image path in the JSON
-                var vpath = ev.video_path;
+                var vpath = ev.video_path || ev.wan_video_path || null;
                 if (!vpath && ev.image_to_video_beats && ev.image_to_video_beats.length > 0) {
-                    vpath = ev.image_to_video_beats[0].video_path || null;
+                    var eb = ev.image_to_video_beats[0];
+                    vpath = eb.video_path || eb.wan_video_path || null;
                 }
                 var imageSrc = ev.image_source || null;
 
-                // 2. CRITICAL FIX: If we have NEITHER a video NOR an image, 
+                // 2. CRITICAL FIX: If we have NEITHER a video NOR an image,
                 // do NOT hide the quiz UI. Leave it visible so the user can read the text!
                 if (!vpath && !imageSrc) {
                     return;
@@ -3075,6 +3368,72 @@
                 document.getElementById('subtitle-overlay').style.display = 'none';
             }
         });
+
+        // Avatar position controls (Shift+D panel)
+        document.getElementById('dev-av-right').addEventListener('input', function (e) {
+            document.getElementById('dev-av-right-val').textContent = e.target.value;
+            var av = document.getElementById('av-overlay');
+            if (av) { av.style.right = e.target.value + 'px'; }
+        });
+        document.getElementById('dev-av-bottom').addEventListener('input', function (e) {
+            document.getElementById('dev-av-bottom-val').textContent = e.target.value;
+            var av = document.getElementById('av-overlay');
+            if (av) { av.style.bottom = e.target.value + 'px'; }
+        });
+        document.getElementById('dev-av-sw').addEventListener('input', function (e) {
+            document.getElementById('dev-av-sw-val').textContent = e.target.value;
+            document.documentElement.style.setProperty('--av-strip-w', e.target.value + 'vw');
+        });
+        document.getElementById('dev-av-copy').addEventListener('click', function () {
+            var r  = document.getElementById('dev-av-right').value;
+            var b  = document.getElementById('dev-av-bottom').value;
+            var h  = document.getElementById('dev-cont').value;
+            var sw = document.getElementById('dev-av-sw').value;
+            var txt = 'right:' + r + 'px; bottom:' + b + 'px; height:' + h + 'vh; --av-strip-w:' + sw + 'vw;';
+            navigator.clipboard.writeText(txt).catch(function () {});
+            var btn = this;
+            btn.textContent = 'Copied!';
+            setTimeout(function () { btn.textContent = 'Copy Avatar CSS'; }, 2000);
+        });
+
+        // ══════════════════════════════════════════════════════════
+        // ORIENTATION CHANGE — fix canvas + video dimensions
+        // ══════════════════════════════════════════════════════════
+        function handleOrientation() {
+            setTimeout(function () {
+                // Recalculate WebGL canvas dimensions
+                window.dispatchEvent(new Event('resize'));
+                // Force video decoders to re-evaluate frame size for new layout
+                ['wan-vid', 'manim-vid'].forEach(function (id) {
+                    var v = document.getElementById(id);
+                    if (!v || !v.src || v.paused) return;
+                    var t = v.currentTime;
+                    v.pause();
+                    setTimeout(function () {
+                        v.currentTime = t;
+                        v.play().catch(function () { });
+                    }, 80);
+                });
+            }, 150);
+        }
+        // Use both APIs — screen.orientation for modern browsers, orientationchange for older iOS
+        if (screen.orientation) {
+            screen.orientation.addEventListener('change', handleOrientation);
+        }
+        window.addEventListener('orientationchange', handleOrientation);
+
+        // ── Portrait lock overlay (mobile only) ──
+        function checkTiltOverlay() {
+            var overlay = document.getElementById('tilt-overlay');
+            if (!overlay) return;
+            var isMobile = window.innerWidth <= 768 || window.innerHeight <= 768;
+            var isPortrait = window.innerHeight > window.innerWidth;
+            overlay.style.display = (isMobile && isPortrait) ? 'flex' : 'none';
+        }
+        window.addEventListener('resize', checkTiltOverlay);
+        window.addEventListener('orientationchange', function(){ setTimeout(checkTiltOverlay, 200); });
+        checkTiltOverlay(); // run on load
+
 
     </script>
 </body>
