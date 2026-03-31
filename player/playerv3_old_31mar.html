@@ -64,11 +64,8 @@
         }
 
         #main {
-            position: absolute;
-            top: 48px;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            flex: 1;
+            position: relative;
             overflow: hidden
         }
 
@@ -81,7 +78,7 @@
 
         #botbar {
             height: 60px;
-            background: rgba(8, 12, 18, .85);
+            background: rgba(8, 12, 18, .98);
             border-top: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -89,10 +86,6 @@
             gap: 12px;
             flex-shrink: 0;
             z-index: 20;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
             display: none
         }
 
@@ -198,8 +191,8 @@
             display: none;
             background: #000;
             overflow: hidden;
-            border: none;
-            border-radius: 0;
+            border: 3px solid var(--gold);
+            border-radius: 12px;
         }
 
         #wan-layer.on {
@@ -213,8 +206,8 @@
             display: none;
             background: #000;
             overflow: hidden;
-            border: none;
-            border-radius: 0;
+            border: 3px solid var(--gold);
+            border-radius: 12px;
         }
 
         #manim-layer.on {
@@ -231,8 +224,8 @@
             overflow: hidden;
             opacity: 0;
             transition: opacity 0.4s ease;
-            border: none;
-            border-radius: 0;
+            border: 3px solid var(--gold);
+            border-radius: 12px;
         }
 
         #image-layer.on {

@@ -620,6 +620,8 @@ def _run_preview_generation(
     renderer: str,
     user_feedback: str,
     raw_prompt_override: str,
+    image_prompt_start: str,
+    image_prompt_end: str,
     preview_filename: str,
     video_provider: str = "wan",
 ):
@@ -631,6 +633,8 @@ def _run_preview_generation(
 
     preview_key = f"{section_id}_{beat_id}"
     job_dir = JOBS_DIR / job_id
+    images_dir = job_dir / "images"
+    os.makedirs(images_dir, exist_ok=True)
     output_path = job_dir / "videos" / preview_filename
 
     try:
@@ -660,7 +664,69 @@ def _run_preview_generation(
 
         final_prompt_used = ""
 
-        if renderer == "wan":
+        if renderer == "image_to_video":
+            # 1. Generate Image(s)
+            from render.image.image_generator import generate_image_for_beat
+            try:
+                from render.wan.local_gpu_client import LocalGPUClient
+            except ImportError:
+                LocalGPUClient = None
+            
+            _update_preview_status(job_id, preview_key, {"status": "processing", "progress": 15, "message": "Generating reference images..."})
+            
+            image_path_start_real = None
+            import time
+            timestamp = int(time.time())
+            
+            if image_prompt_start:
+                print(f"[Preview] Generating START image for preview: {image_prompt_start[:50]}...")
+                beat_data = {"beat_id": f"preview_start_{timestamp}", "image_prompt": image_prompt_start}
+                image_path_start_real = generate_image_for_beat(beat_data, job_id, section_id, output_dir=str(job_dir))
+                print(f"[Preview] START image generated: {image_path_start_real}")
+            
+            image_path_end_real = None
+            if image_prompt_end:
+                print(f"[Preview] Generating END image for preview: {image_prompt_end[:50]}...")
+                beat_data_end = {"beat_id": f"preview_end_{timestamp}", "image_prompt": image_prompt_end}
+                image_path_end_real = generate_image_for_beat(beat_data_end, job_id, section_id, output_dir=str(job_dir))
+                print(f"[Preview] END image generated: {image_path_end_real}")
+            
+            if not image_path_start_real:
+                raise Exception("Failed to generate start image for image_to_video")
+            
+            # Make sure it's absolute for LocalGPUClient
+            if not Path(image_path_start_real).is_absolute():
+                image_path_start_real = str(job_dir / image_path_start_real)
+            if image_path_end_real and not Path(image_path_end_real).is_absolute():
+                image_path_end_real = str(job_dir / image_path_end_real)
+                
+            _update_preview_status(job_id, preview_key, {"status": "processing", "progress": 40, "message": "Rendering video on Local GPU..."})
+            
+            if not LocalGPUClient:
+                raise Exception("LocalGPUClient not found")
+            client = LocalGPUClient()
+            if not client.is_available():
+                raise Exception("Local GPU is not available to render image_to_video")
+                
+            prompt = raw_prompt_override or user_feedback
+            final_prompt_used = prompt
+            result_path = client.generate_video(prompt, duration=15, output_path=str(output_path), image_path=image_path_start_real, image_path_end=image_path_end_real)
+            if not result_path:
+                raise Exception("Local GPU generation returned None")
+
+        elif renderer == "text_to_video":
+            from render.wan.local_gpu_client import LocalGPUClient
+            _update_preview_status(job_id, preview_key, {"status": "processing", "progress": 20, "message": "Rendering text_to_video on Local GPU..."})
+            client = LocalGPUClient()
+            if not client.is_available():
+                raise Exception("Local GPU is not available")
+            prompt = raw_prompt_override or user_feedback
+            final_prompt_used = prompt
+            result_path = client.generate_video(prompt, duration=15, output_path=str(output_path))
+            if not result_path:
+                raise Exception("Local GPU generation returned None")
+
+        elif renderer == "wan":
             # 1. Determine Prompt
             prompt = ""
             if raw_prompt_override:
@@ -741,67 +807,146 @@ def _run_preview_generation(
             render_spec = section.get("render_spec", {})
             segment_specs = render_spec.get("segment_specs", [])
 
-            # Select only the relevant segment for this beat
-            # beat_id maps to index in segment_specs, NOT directly into narration segments
-            segments = all_segments  # fallback
-            beat_manim_spec = ""
-            try:
-                beat_idx = int(beat_id)
-                if 0 <= beat_idx < len(segment_specs):
-                    # Get the segment_id from segment_specs (e.g., "seg_2")
-                    spec_entry = segment_specs[beat_idx]
-                    spec_seg_id = spec_entry.get("segment_id", "")
-                    beat_manim_spec = spec_entry.get("manim_scene_spec", "")
-                    if isinstance(beat_manim_spec, dict):
-                        beat_manim_spec = beat_manim_spec.get("description", "")
+            # ── Fix C: V3-aware Manim spec resolution ──────────────────────────────
+            # Two distinct paths depending on whether this is a quiz explanation beat
+            # (beat_id starts with "eq_") or a main section beat (numeric / "beat_N").
+            beat_is_quiz_eq = beat_id.startswith("eq_") or beat_id == "eq_main"
 
-                    # Extract segment number from "seg_N" format
-                    seg_num = None
-                    if spec_seg_id.startswith("seg_"):
-                        try:
-                            seg_num = int(spec_seg_id.replace("seg_", ""))
-                        except ValueError:
-                            pass
+            segments = all_segments  # default narration context
+            manim_spec = ""
 
-                    # Find the matching narration segment (seg_2 → index 1, since segment_ids are 1-based)
-                    if seg_num is not None and 0 <= seg_num - 1 < len(all_segments):
-                        segments = [all_segments[seg_num - 1]]
-                        print(
-                            f"[Preview] Using segment {spec_seg_id} (index {seg_num - 1}) of {len(all_segments)} for beat {beat_idx}"
-                        )
-                    elif 0 <= beat_idx < len(all_segments):
-                        segments = [all_segments[beat_idx]]
-                        print(
-                            f"[Preview] Fallback: using segment index {beat_idx} of {len(all_segments)}"
-                        )
+            if beat_is_quiz_eq:
+                # Quiz explanation_visual — the spec lives directly on the ev object
+                for q_src in [section.get("understanding_quiz")] + section.get("questions", []):
+                    if not q_src:
+                        continue
+                    ev = q_src.get("explanation_visual") or {}
+                    if ev.get("renderer") == "manim":
+                        manim_spec = ev.get("manim_scene_spec", "") or ev.get("display_text", "")
+                        if isinstance(manim_spec, dict):
+                            manim_spec = manim_spec.get("description", "")
+                        # Use a single narration segment if possible
+                        if all_segments:
+                            segments = all_segments[:1]
+                        print(f"[Preview] Fix C: quiz eq beat — manim_spec from explanation_visual (len={len(str(manim_spec))})")
+                        break
+            else:
+                # Main section beat — try to find per-beat spec then fall back to section-level
+                beat_manim_spec = ""
+                try:
+                    # Support both pure numeric ("0","1") and named ("beat_1","beat_2") beat IDs.
+                    # visual_beats uses "beat_1" → trailing num 1 → 0-based index 0.
+                    if beat_id.isdigit():
+                        beat_idx = int(beat_id)
                     else:
-                        print(
-                            f"[Preview] Could not map beat {beat_idx} to segment, using all {len(all_segments)} segments"
-                        )
-                elif 0 <= beat_idx < len(all_segments):
-                    segments = [all_segments[beat_idx]]
-                    print(
-                        f"[Preview] No segment_specs, using segment index {beat_idx} of {len(all_segments)}"
-                    )
-                else:
-                    print(
-                        f"[Preview] beat_id {beat_id} out of range, using all {len(all_segments)} segments"
-                    )
-            except (ValueError, TypeError):
-                print(
-                    f"[Preview] Could not parse beat_id '{beat_id}', using all {len(all_segments)} segments"
-                )
+                        import re as _re
+                        m_num = _re.search(r'(\d+)$', beat_id)
+                        if m_num:
+                            beat_num = int(m_num.group(1))
+                            # Determine if 1-based naming (beat_1 → index 0) or 0-based
+                            vb_ids = [b.get("beat_id","") for b in section.get("visual_beats",[])]
+                            # If "beat_0" exists → 0-based; otherwise "beat_1" is 0-based index = num-1
+                            if "beat_0" in vb_ids:
+                                beat_idx = beat_num          # beat_0 → 0, beat_1 → 1
+                            else:
+                                beat_idx = beat_num - 1      # beat_1 → 0, beat_2 → 1
+                        else:
+                            beat_idx = None
 
-            # Use beat-specific manim_spec if available, otherwise section-level
-            section_manim_spec = render_spec.get("manim_scene_spec", {})
-            if isinstance(section_manim_spec, dict):
-                section_manim_spec = section_manim_spec.get("description", "")
-            manim_spec = beat_manim_spec or section_manim_spec
+                    # V3 primary: select the matching visual_beat's display_text and narration segment
+                    if beat_idx is not None:
+                        vb = section.get("visual_beats", [])
+                        if 0 <= beat_idx < len(vb):
+                            beat_manim_spec = vb[beat_idx].get("display_text", "")
+                            segments = [all_segments[beat_idx]] if beat_idx < len(all_segments) else all_segments
+                            print(f"[Preview] Fix C: beat_id={beat_id!r} → beat_idx={beat_idx} → 1 narration seg, display_text={beat_manim_spec[:60]!r}")
+
+                    # Legacy: render_spec.segment_specs[N].manim_scene_spec
+                    if not beat_manim_spec and beat_idx is not None and beat_idx < len(segment_specs):
+                        spec_entry = segment_specs[beat_idx]
+                        raw_spec = spec_entry.get("manim_scene_spec", "")
+                        beat_manim_spec = raw_spec.get("description", "") if isinstance(raw_spec, dict) else raw_spec
+                        spec_seg_id = spec_entry.get("segment_id", "")
+                        if spec_seg_id.startswith("seg_"):
+                            try:
+                                seg_num = int(spec_seg_id.replace("seg_", ""))
+                                if 0 <= seg_num - 1 < len(all_segments):
+                                    segments = [all_segments[seg_num - 1]]
+                            except ValueError:
+                                pass
+                except (ValueError, TypeError):
+                    pass
+
+                # Fall back to section-level spec
+                section_spec = render_spec.get("manim_scene_spec", {})
+                if isinstance(section_spec, dict):
+                    section_spec = section_spec.get("description", "")
+                manim_spec = beat_manim_spec or section_spec
+                print(f"[Preview] Fix C: main beat '{beat_id}' — manim_spec len={len(str(manim_spec))}")
+
+            # ── Fix Duration: Resolve exact beat duration ──────────────────────────
+            beat_duration = None
+            if beat_is_quiz_eq:
+                for q_src in [section.get("understanding_quiz")] + section.get("questions", []):
+                    if not q_src: continue
+                    ev = q_src.get("explanation_visual") or {}
+                    if ev.get("renderer") == "manim":
+                        beat_duration = ev.get("duration_seconds")
+                        break
+            else:
+                # Check render_spec.manim_beats direct duration field first
+                for mb in render_spec.get("manim_beats", []):
+                    if str(mb.get("beat_id", "")) == beat_id:
+                        beat_duration = mb.get("duration")
+                        break
+                # Fallback to visual_beats duration math
+                if beat_duration is None:
+                    for b in section.get("visual_beats", []):
+                        if str(b.get("beat_id", "")) == beat_id:
+                            s = b.get("beat_start_seconds")
+                            e = b.get("beat_end_seconds")
+                            if s is not None and e is not None:
+                                beat_duration = round(e - s, 1)
+                            break
+                # Last resort: section average
+                if beat_duration is None:
+                    beat_duration = section.get("segment_duration_seconds")
+
+            # Clamp between 5s and 30s to prevent excessively long generations
+            if beat_duration:
+                beat_duration = max(5, min(30, float(beat_duration)))
+            else:
+                beat_duration = 15.0
+
+            print(f"[Preview] Manim duration resolved: {beat_duration}s for beat '{beat_id}'")
+
+            # ── Build section_data matching build_v3_segment_data() pattern ──────
+            # Full pipeline uses build_v3_segment_data() which creates ONE segment
+            # with the correct duration_seconds. Raw narration segments from JSON
+            # have duration_seconds=None, causing the LLM to default to 5s×N=wrong.
+            # We replicate that pattern here for correct preview length.
+            merged_narration_text = " ".join(
+                s.get("text", "") for s in segments if s.get("text")
+            ).strip() or "Visualizing the concept."
 
             section_data = {
                 "section_title": section.get("title", "Preview"),
-                "narration_segments": segments,
                 "manim_spec": raw_prompt_override or manim_spec,
+                "visual_description": raw_prompt_override or manim_spec,
+                "narration_segments": [
+                    {
+                        "text": merged_narration_text,
+                        "duration_seconds": beat_duration,   # ← key: tells LLM the target length
+                        "duration": beat_duration,
+                    }
+                ],
+                "key_terms": section.get("key_terms", []),
+                "formulas": section.get("formulas", []),
+                "special_requirements": (
+                    f"Duration exactly {beat_duration:.1f}s. "
+                    "Single beat animation. Screen starts blank. "
+                    "End with FadeOut(*self.mobjects)."
+                ),
                 "user_feedback": user_feedback if not raw_prompt_override else "",
             }
 
@@ -927,12 +1072,14 @@ def generate_preview(job_id):
 
         user_feedback = data.get("user_feedback", "")
         raw_prompt_override = data.get("raw_prompt_override", "")
+        image_prompt_start = data.get("image_prompt_start", "")
+        image_prompt_end = data.get("image_prompt_end", "")
         video_provider = data.get("video_provider", "wan")  # 'wan' or 'gpu'
 
         if not section_id:
             return jsonify({"error": "section_id is required"}), 400
 
-        if not user_feedback and not raw_prompt_override:
+        if not user_feedback and not raw_prompt_override and renderer not in ["image_to_video", "text_to_video"]:
             return jsonify(
                 {"error": "Either user_feedback or raw_prompt_override is required"}
             ), 400
@@ -951,6 +1098,8 @@ def generate_preview(job_id):
                 renderer,
                 user_feedback,
                 raw_prompt_override,
+                image_prompt_start,
+                image_prompt_end,
                 preview_filename,
                 video_provider,
             ),
@@ -988,194 +1137,504 @@ def check_preview_status(job_id, preview_key):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route("/job/<job_id>/approve_preview", methods=["POST"])
 def approve_preview(job_id):
     """
     Promote a preview video to be the official asset.
-    Updates files and presentation.json.
+    Updates the file on disk and all relevant paths inside presentation.json.
     """
+    import re
     try:
         data = request.json
         print(f"[DEBUG] approve_preview called for {job_id} with data: {data}")
 
-        section_id = data.get("section_id")
-        beat_id = data.get("beat_id")
-        preview_path = data.get("preview_path")  # Expected: "videos/preview_..."
-        new_prompt = data.get("new_prompt")  # The prompt that actually generated this
+        section_id         = data.get("section_id")
+        beat_id            = data.get("beat_id")
+        preview_path       = data.get("preview_path")   # e.g. "videos/preview_3_beat_2_1234.mp4"
+        new_prompt         = data.get("new_prompt")
+        image_prompt_start = data.get("image_prompt_start")
+        image_prompt_end   = data.get("image_prompt_end")
+        renderer           = data.get("renderer", "wan").lower()
 
         if not all([section_id, preview_path]):
             return jsonify({"error": "Missing required fields"}), 400
 
-        job_dir = JOBS_DIR / job_id
+        job_dir     = JOBS_DIR / job_id
+        beat_id_str = str(beat_id) if beat_id else ""
 
-        # 1. Verify Preview Exists
-        # Remove leading slashed or /player/... prefixes to get relative path
-        clean_preview_path = preview_path.split("videos/")[-1]
-        abs_preview_path = job_dir / "videos" / clean_preview_path
+        # ── 1. Verify preview exists ──────────────────────────────────────────────
+        clean_preview = preview_path.split("videos/")[-1]
+        abs_preview   = job_dir / "videos" / clean_preview
+        if not abs_preview.exists():
+            return jsonify({"error": f"Preview file not found: {clean_preview}"}), 404
 
-        if not abs_preview_path.exists():
-            return jsonify(
-                {"error": f"Preview file not found: {clean_preview_path}"}
-            ), 404
-
-        # 2. Determine Target Filename & Prompt Index
-        target_filename = ""
-        target_key = "video_path"
-        prompt_index = None
-
-        # Load presentation to resolve beat_id to index if needed
+        # ── 2. Load presentation ──────────────────────────────────────────────────
         pres_path = job_dir / "presentation.json"
-
-        # We need to read presentation FIRST to resolve the index from the ID
-        with open(pres_path, "r") as f:
+        with open(pres_path, "r", encoding="utf-8") as f:
             presentation = json.load(f)
 
         section = next(
-            (
-                s
-                for s in presentation.get("sections", [])
-                if str(s["section_id"]) == str(section_id)
-            ),
+            (s for s in presentation.get("sections", [])
+             if str(s["section_id"]) == str(section_id)),
             None,
         )
         if not section:
-            return jsonify({"error": "Section not found"}), 404
+            return jsonify({"error": f"Section {section_id} not found"}), 404
 
-        v_prompts = section.get("video_prompts", [])
-        beat_videos = section.get("beat_videos", [])
-        renderer_type = section.get("renderer", "")
+        # ── 3. Resolve beat_id → target_filename ─────────────────────────────────
+        #
+        # Priority:
+        #   A. render_spec.image_to_video_beats   (V3 primary)
+        #   B. understanding_quiz.explanation_visual
+        #   C. questions[N].explanation_visual
+        #   D. visual_beats
+        #   E. video_prompts  (WAN older)
+        #   F. beat_videos numeric index  (Manim older)
+        #   G. trailing-int pattern fallback
+        #   H. safe string fallback
 
-        if beat_id and str(beat_id) != "None":
-            # Resolving beat_id to index
-            # Try 1: Exact string match in video_prompts (WAN sections)
-            for idx, p in enumerate(v_prompts):
-                if isinstance(p, dict) and str(p.get("beat_id")) == str(beat_id):
-                    prompt_index = idx
-                    # Use the exact beat_id for filename to preserve naming convention
-                    target_filename = f"{beat_id}.mp4"
-                    target_key = "beat_videos"
+        target_filename   = None
+        prompt_index      = None
+        beat_location     = None
+        quiz_question_idx = None
+
+        def _safe_existing(beat_obj, sec, idx):
+            """
+            Return the existing video filename ONLY if its stem contains this
+            beat's ID — guards against cross-contaminated paths left by bad
+            generation runs (e.g. beat_1 having video_path = beat_2's file).
+            """
+            bid = str(beat_obj.get("beat_id", ""))
+
+            vp = beat_obj.get("video_path")
+            if vp:
+                if bid and bid not in Path(vp).stem:
+                    print(f"[Approve] WARNING: beat '{bid}' has suspicious "
+                          f"video_path '{vp}' — ignoring, will derive canonical name")
+                else:
+                    return Path(vp).name
+
+            # Try beat_video_paths[] at same index, with same sanity check
+            bvp = sec.get("beat_video_paths") or []
+            if idx < len(bvp) and bvp[idx]:
+                if bid and bid not in Path(bvp[idx]).stem:
+                    print(f"[Approve] WARNING: beat_video_paths[{idx}]='{bvp[idx]}' "
+                          f"doesn't match beat '{bid}' — ignoring")
+                else:
+                    return Path(bvp[idx]).name
+
+            return None
+
+        # ── A. render_spec.image_to_video_beats ──────────────────────────────────
+        rs_beats = section.get("render_spec", {}).get("image_to_video_beats", [])
+        for idx, b in enumerate(rs_beats):
+            if str(b.get("beat_id", "")) == beat_id_str:
+                prompt_index    = idx
+                beat_location   = "render_spec_i2v"
+                existing        = _safe_existing(b, section, idx)
+                target_filename = existing or f"topic_{section_id}_{beat_id_str}.mp4"
+                print(f"[Approve] A: render_spec.i2v_beats[{idx}] → {target_filename}")
+                break
+
+        # ── B. understanding_quiz.explanation_visual ──────────────────────────────
+        if prompt_index is None:
+            uq = section.get("understanding_quiz") or {}
+            ev = uq.get("explanation_visual") or {}
+            for idx, b in enumerate(ev.get("image_to_video_beats", [])):
+                if str(b.get("beat_id", "")) == beat_id_str:
+                    prompt_index    = idx
+                    beat_location   = "quiz_ev"
+                    existing = b.get("video_path") or ev.get("video_path")
+                    if existing:
+                        target_filename = Path(existing).name
+                    else:
+                        bvp = ev.get("beat_video_paths") or []
+                        target_filename = Path(bvp[idx]).name \
+                            if idx < len(bvp) and bvp[idx] \
+                            else f"topic_{section_id}_{beat_id_str}.mp4"
+                    print(f"[Approve] B: quiz ev.i2v_beats[{idx}] → {target_filename}")
                     break
 
-            # Try 2: Numeric beat_id as index into video_prompts (WAN)
-            if prompt_index is None and str(beat_id).isdigit():
-                idx = int(beat_id)
-                if 0 <= idx < len(v_prompts):
-                    prompt_index = idx
-                    target_filename = f"topic_{section_id}_beat_{prompt_index}.mp4"
-                    target_key = "beat_videos"
+        # ── C. questions[N].explanation_visual ────────────────────────────────────
+        if prompt_index is None:
+            for q_idx, q in enumerate(section.get("questions", [])):
+                ev = q.get("explanation_visual") or {}
+                for idx, b in enumerate(ev.get("image_to_video_beats", [])):
+                    if str(b.get("beat_id", "")) == beat_id_str:
+                        prompt_index      = idx
+                        beat_location     = "question_ev"
+                        quiz_question_idx = q_idx
+                        existing = b.get("video_path") or ev.get("video_path")
+                        if existing:
+                            target_filename = Path(existing).name
+                        else:
+                            bvp = ev.get("beat_video_paths") or []
+                            target_filename = Path(bvp[idx]).name \
+                                if idx < len(bvp) and bvp[idx] \
+                                else f"topic_{section_id}_{beat_id_str}.mp4"
+                        print(f"[Approve] C: questions[{q_idx}].ev.i2v_beats[{idx}] → {target_filename}")
+                        break
+                if prompt_index is not None:
+                    break
 
-            # Try 3: Numeric beat_id as index into beat_videos (Manim sections)
-            if prompt_index is None and str(beat_id).isdigit():
-                idx = int(beat_id)
-                if 0 <= idx < len(beat_videos):
-                    prompt_index = idx
-                    # Use the actual filename from beat_videos array
-                    bv_path = beat_videos[idx]
-                    target_filename = (
-                        Path(bv_path).name
-                        if bv_path
-                        else f"topic_{section_id}_beat_{idx}.mp4"
-                    )
-                    target_key = "beat_videos"
-                    print(
-                        f"[Approve] Manim beat_videos resolution: beat {idx} -> {target_filename}"
-                    )
+        # ── D. visual_beats ───────────────────────────────────────────────────────
+        if prompt_index is None:
+            for idx, b in enumerate(section.get("visual_beats", [])):
+                if str(b.get("beat_id", "")) == beat_id_str:
+                    prompt_index    = idx
+                    beat_location   = "visual_beats"
+                    existing        = b.get("video_path")
+                    target_filename = Path(existing).name if existing \
+                        else f"topic_{section_id}_{beat_id_str}.mp4"
+                    print(f"[Approve] D: visual_beats[{idx}] → {target_filename}")
+                    break
 
-            # Try 4: If beat_id is "beat_X"
-            if prompt_index is None and str(beat_id).startswith("beat_"):
-                try:
-                    idx = int(str(beat_id).split("_")[1])
-                    if 0 <= idx < len(v_prompts):
-                        prompt_index = idx
-                        target_filename = f"topic_{section_id}_beat_{prompt_index}.mp4"
-                        target_key = "beat_videos"
-                except:
-                    pass
+        # ── E. video_prompts (WAN older) ──────────────────────────────────────────
+        if prompt_index is None:
+            for idx, p in enumerate(section.get("video_prompts", [])):
+                if isinstance(p, dict) and str(p.get("beat_id", "")) == beat_id_str:
+                    prompt_index    = idx
+                    beat_location   = "video_prompts"
+                    target_filename = f"{beat_id_str}.mp4"
+                    print(f"[Approve] E: video_prompts[{idx}] → {target_filename}")
+                    break
 
-            if prompt_index is None:
-                # Fallback: Use whatever beat_id passed as filename suffix (Legacy/Safe)
-                # But sanitize it first
-                safe_beat_id = str(beat_id).replace("/", "_").replace("\\", "_")
-                target_filename = f"{safe_beat_id}.mp4"
-                target_key = "beat_videos"
+        # ── D2. Fix A: Manim main section — visual_beats by beat_id ───────────────
+        # Handles beat_id values like "beat_1", "beat_2" for renderer="manim" sections.
+        # These are not in image_to_video_beats, so they were missed by blocks A/B/C/D.
+        if prompt_index is None and section.get("renderer") == "manim":
+            for idx, b in enumerate(section.get("visual_beats", [])):
+                if str(b.get("beat_id", "")) == beat_id_str:
+                    prompt_index    = idx
+                    beat_location   = "manim_visual_beats"
+                    existing        = b.get("video_path")
+                    target_filename = Path(existing).name if existing \
+                        else f"topic_{section_id}_{beat_id_str}.mp4"
+                    print(f"[Approve] D2 (manim): visual_beats[{idx}] → {target_filename}")
+                    break
 
-        else:
-            target_filename = f"topic_{section_id}.mp4"
-            target_key = "video_path"
+        # ── D3. Fix A: Manim quiz — explanation_visual flat block ─────────────────
+        # Handles beat_id values like "eq_beat_0", "eq_main" for quiz explanation_visual
+        # blocks that use renderer="manim" with a flat manim_scene_spec string.
+        if prompt_index is None and beat_id_str.startswith("eq_"):
+            for q_src in [section.get("understanding_quiz")] + section.get("questions", []):
+                if not q_src:
+                    continue
+                ev = q_src.get("explanation_visual") or {}
+                if ev.get("renderer") == "manim":
+                    prompt_index    = 0
+                    beat_location   = "manim_eq_visual"
+                    existing        = ev.get("video_path")
+                    target_filename = Path(existing).name if existing \
+                        else f"topic_{section_id}_eq_beat_0.mp4"
+                    print(f"[Approve] D3 (manim quiz eq): explanation_visual → {target_filename}")
+                    break
 
-        abs_target_path = job_dir / "videos" / target_filename
+        # ── F. Numeric beat_id → beat_videos[] (Manim older) ─────────────────────
+        if prompt_index is None and beat_id_str.isdigit():
+            idx         = int(beat_id_str)
+            beat_videos = section.get("beat_videos") or []
+            if 0 <= idx < len(beat_videos):
+                prompt_index    = idx
+                beat_location   = "beat_videos"
+                bv_path         = beat_videos[idx]
+                target_filename = Path(bv_path).name if bv_path \
+                    else f"topic_{section_id}_beat_{idx}.mp4"
+                print(f"[Approve] F: beat_videos[{idx}] → {target_filename}")
 
-        # 3. Perform Swap
-        shutil.move(str(abs_preview_path), str(abs_target_path))
-        print(f"[Approve] Swapped {abs_preview_path} -> {abs_target_path}")
+        # ── G. Trailing-int pattern (recap_beat_N, eq_beat_N, beat_N …) ──────────
+        if prompt_index is None:
+            m = re.search(r"(\d+)$", beat_id_str)
+            if m:
+                prompt_index    = int(m.group(1))
+                beat_location   = "beat_videos"
+                target_filename = f"topic_{section_id}_{beat_id_str}.mp4"
+                print(f"[Approve] G: trailing-int pattern → {target_filename}")
 
-        # 4. Update JSON
+        # ── H. Safe string fallback ───────────────────────────────────────────────
+        if target_filename is None:
+            if beat_id_str and beat_id_str != "None":
+                safe            = beat_id_str.replace("/", "_").replace("\\", "_")
+                target_filename = f"topic_{section_id}_{safe}.mp4"
+                beat_location   = beat_location or "beat_videos"
+                print(f"[Approve] H: string fallback → {target_filename}")
+            else:
+                target_filename = f"topic_{section_id}.mp4"
+                beat_location   = "video_path"
+                print(f"[Approve] H: single-video fallback → {target_filename}")
+
+        abs_target = job_dir / "videos" / target_filename
+
+        # ── 4. Move preview → target ──────────────────────────────────────────────
+        shutil.move(str(abs_preview), str(abs_target))
+        print(f"[Approve] Moved {abs_preview.name} → {target_filename}")
+
+        # ── 5. Update presentation.json ───────────────────────────────────────────
         with presentation_lock:
-            # Re-read to be safe under lock
-            with open(pres_path, "r") as f:
+            with open(pres_path, "r", encoding="utf-8") as f:
                 presentation = json.load(f)
 
             updated = False
-            for section in presentation.get("sections", []):
-                if str(section.get("section_id")) == str(section_id):
-                    # Update prompt if provided
+            for sec in presentation.get("sections", []):
+                if str(sec.get("section_id")) != str(section_id):
+                    continue
+
+                rel_path = f"videos/{target_filename}"
+
+                # Helper: stamp prompt fields onto a beat dict
+                def _apply_prompts(beat_dict):
+                    beat_dict["video_path"] = rel_path
                     if new_prompt:
-                        v_prompts = section.get("video_prompts", [])
-                        if prompt_index is not None and prompt_index < len(v_prompts):
-                            if isinstance(v_prompts[prompt_index], dict):
-                                v_prompts[prompt_index]["prompt"] = new_prompt
-                        elif not beat_id:  # Main video prompt?
-                            # Logic for main video prompt update if needed
-                            pass
+                        if renderer in ["wan", "image_to_video", "text_to_video", "video"]:
+                            beat_dict["video_prompt"] = new_prompt
+                        elif renderer == "manim":
+                            # Persist the new instruction as manim_scene_spec
+                            # so re-editing a Manim beat uses the latest spec, not the old one
+                            beat_dict["manim_scene_spec"] = new_prompt
+                        else:
+                            beat_dict["video_prompt"] = new_prompt
+                            beat_dict["manim_scene_spec"] = new_prompt
+                    if image_prompt_start:
+                        beat_dict["image_prompt_start"] = image_prompt_start
+                    if image_prompt_end is not None:
+                        beat_dict["image_prompt_end"] = image_prompt_end
 
-                    # Ensure path is correct/linked
-                    if target_key == "video_path":
-                        section["video_path"] = f"videos/{target_filename}"
-                    elif target_key == "beat_videos" and prompt_index is not None:
-                        # Ensure beat_videos list exists and is large enough
-                        b_videos = section.get("beat_videos", [])
-                        if b_videos is None:
-                            b_videos = []
+                # ─────────────────────────────────────────────────────────────────
+                # THE CORE FIX: sync beat_video_paths[] by STEM MATCHING, not by
+                # positional index.
+                #
+                # The old code did: bvp[prompt_index] = rel_path
+                # That breaks whenever beat_video_paths[] is shorter than
+                # render_spec beats OR has a gap (e.g. section 6 skipped beat_4,
+                # so bvp[3] held beat_5's filename — overwriting it with beat_4
+                # would permanently lose beat_5 from the player's list).
+                #
+                # New approach:
+                #   1. Search bvp for an entry whose stem matches target_filename's stem.
+                #      If found → update that slot in-place.
+                #   2. If not found (beat was never in the list) → insert at the
+                #      correct ordered position by counting how many render_spec
+                #      beats that precede this one already have confirmed slots.
+                # ─────────────────────────────────────────────────────────────────
+                def _sync_bvp(bvp_list, rs_beat_list):
+                    target_stem = Path(target_filename).stem  # e.g. "topic_6_recap_beat_4"
 
-                        # Ensure size
-                        while len(b_videos) <= prompt_index:
-                            b_videos.append(None)
+                    # 1. Find and update existing slot
+                    for i, entry in enumerate(bvp_list):
+                        if entry and Path(entry).stem == target_stem:
+                            bvp_list[i] = rel_path
+                            print(f"[Approve] bvp: updated existing slot[{i}] → {rel_path}")
+                            return bvp_list
 
-                        b_videos[prompt_index] = f"videos/{target_filename}"
-                        section["beat_videos"] = b_videos
+                    # 2. Insert at correct ordered position
+                    insert_at = len(bvp_list)  # default: append
+                    for rs_idx, rb in enumerate(rs_beat_list):
+                        if str(rb.get("beat_id", "")) == beat_id_str:
+                            # Count render_spec beats before this one that are
+                            # already represented in bvp (matched by beat_id stem)
+                            confirmed_before = 0
+                            for prev_b in rs_beat_list[:rs_idx]:
+                                prev_bid = str(prev_b.get("beat_id", ""))
+                                if any(e and prev_bid in Path(e).stem for e in bvp_list):
+                                    confirmed_before += 1
+                            insert_at = confirmed_before
+                            break
 
-                    updated = True
-                    break
+                    bvp_list.insert(insert_at, rel_path)
+                    print(f"[Approve] bvp: inserted at [{insert_at}] → {rel_path} "
+                          f"(list now has {len(bvp_list)} entries)")
+                    return bvp_list
+
+                # ── A. render_spec.image_to_video_beats ──────────────────────────
+                if beat_location == "render_spec_i2v" and prompt_index is not None:
+                    rs     = sec.setdefault("render_spec", {})
+                    rs_i2v = rs.get("image_to_video_beats", [])
+                    if prompt_index < len(rs_i2v):
+                        _apply_prompts(rs_i2v[prompt_index])
+
+                    bvp = sec.get("beat_video_paths") or []
+                    bvp = _sync_bvp(bvp, rs_i2v)
+                    sec["beat_video_paths"] = bvp
+
+                # ── B. understanding_quiz explanation_visual ───────────────────────
+                elif beat_location == "quiz_ev" and prompt_index is not None:
+                    uq       = sec.get("understanding_quiz") or {}
+                    ev       = uq.get("explanation_visual") or {}
+                    ev_beats = ev.get("image_to_video_beats", [])
+                    if prompt_index < len(ev_beats):
+                        _apply_prompts(ev_beats[prompt_index])
+                    ev["video_path"] = rel_path
+                    ev_bvp = ev.get("beat_video_paths") or []
+                    ev_bvp = _sync_bvp(ev_bvp, ev_beats)
+                    ev["beat_video_paths"] = ev_bvp
+                    uq["explanation_visual_video_path"] = rel_path
+
+                # ── C. questions[N].explanation_visual ────────────────────────────
+                elif beat_location == "question_ev" and prompt_index is not None \
+                        and quiz_question_idx is not None:
+                    questions = sec.get("questions", [])
+                    if quiz_question_idx < len(questions):
+                        q        = questions[quiz_question_idx]
+                        ev       = q.get("explanation_visual") or {}
+                        ev_beats = ev.get("image_to_video_beats", [])
+                        if prompt_index < len(ev_beats):
+                            _apply_prompts(ev_beats[prompt_index])
+                        ev["video_path"] = rel_path
+                        ev_bvp = ev.get("beat_video_paths") or []
+                        ev_bvp = _sync_bvp(ev_bvp, ev_beats)
+                        ev["beat_video_paths"] = ev_bvp
+                        q["explanation_visual_video_path"] = rel_path
+
+                # ── D. visual_beats ───────────────────────────────────────────────
+                elif beat_location == "visual_beats" and prompt_index is not None:
+                    vb = sec.get("visual_beats", [])
+                    if prompt_index < len(vb):
+                        _apply_prompts(vb[prompt_index])
+
+                # ── E. video_prompts ──────────────────────────────────────────────
+                elif beat_location == "video_prompts" and prompt_index is not None:
+                    vp = sec.get("video_prompts", [])
+                    if prompt_index < len(vp) and isinstance(vp[prompt_index], dict):
+                        if new_prompt:
+                            vp[prompt_index]["prompt"] = new_prompt
+
+                # ── F/G. beat_videos[] ────────────────────────────────────────────
+                elif beat_location == "beat_videos" and prompt_index is not None:
+                    bv = sec.get("beat_videos") or []
+                    while len(bv) <= prompt_index:
+                        bv.append(None)
+                    bv[prompt_index] = rel_path
+                    sec["beat_videos"] = bv
+
+                # ── Fix A: D2. Manim main section — update visual_beats[] directly ─
+                elif beat_location == "manim_visual_beats" and prompt_index is not None:
+                    vb = sec.get("visual_beats", [])
+                    if prompt_index < len(vb):
+                        vb[prompt_index]["video_path"] = rel_path
+                        if new_prompt:
+                            # Persist the new instruction so next edit opens correct spec
+                            vb[prompt_index]["manim_scene_spec"] = new_prompt
+                    # Also sync beat_video_paths so the player can navigate to it
+                    bvp = sec.get("beat_video_paths") or []
+                    beat_stem = Path(target_filename).stem
+                    replaced = False
+                    for i, entry in enumerate(bvp):
+                        if entry and Path(entry).stem == beat_stem:
+                            bvp[i] = rel_path
+                            replaced = True
+                            break
+                    if not replaced:
+                        bvp.append(rel_path)
+                    sec["beat_video_paths"] = bvp
+                    print(f"[Approve] D2 writeback: visual_beats[{prompt_index}].video_path = {rel_path}")
+
+                # ── Fix A: D3. Manim quiz — update explanation_visual flat block ───
+                elif beat_location == "manim_eq_visual":
+                    for q_src in [sec.get("understanding_quiz")] + sec.get("questions", []):
+                        if not q_src:
+                            continue
+                        ev = q_src.get("explanation_visual") or {}
+                        if ev.get("renderer") == "manim":
+                            ev["video_path"] = rel_path
+                            if new_prompt:
+                                ev["manim_scene_spec"] = new_prompt
+                            # Also update the shortcut field the player uses
+                            q_src["explanation_visual_video_path"] = rel_path
+                            print(f"[Approve] D3 writeback: explanation_visual.video_path = {rel_path}")
+                            break
+
+                # ── H. Single video_path ──────────────────────────────────────────
+                elif beat_location == "video_path":
+                    sec["video_path"] = rel_path
+
+                # ── Always: sync section top-level video_path if stem matches ─────
+                if sec.get("video_path") and \
+                        Path(sec["video_path"]).stem == Path(target_filename).stem:
+                    sec["video_path"] = rel_path
+
+                # ── Always: sync top-level image_to_video_beats (older format) ────
+                for b in sec.get("image_to_video_beats", []):
+                    if str(b.get("beat_id", "")) == beat_id_str:
+                        _apply_prompts(b)
+                        break
+
+                # ── Always: sync narration segments ───────────────────────────────
+                # Three cases handled:
+                #   1. Segment already pointed to this file (stem match) → update path
+                #   2. Segment's beat_videos list contained this file → update list
+                #   3. Segment was wrongly pointing to a different beat's file
+                #      but beat_id_str appears in its stem → correct the wrong pointer
+                #      (this is what caused seg_4 → recap_beat_5 to persist forever)
+                target_stem = Path(target_filename).stem
+                for seg in sec.get("narration", {}).get("segments", []):
+                    seg_vp = seg.get("video_path", "")
+                    seg_bv = seg.get("beat_videos") or []
+
+                    # Case 1: direct path match
+                    if seg_vp and Path(seg_vp).stem == target_stem:
+                        seg["video_path"]  = rel_path
+                        seg["beat_videos"] = [rel_path]
+                        continue
+
+                    # Case 2: inside beat_videos list
+                    bv_changed = False
+                    for i, sv in enumerate(seg_bv):
+                        if sv and Path(sv).stem == target_stem:
+                            seg_bv[i] = rel_path
+                            bv_changed = True
+                    if bv_changed:
+                        seg["beat_videos"] = seg_bv
+                        if not seg_vp or seg_vp == seg_bv[0]:
+                            seg["video_path"] = rel_path
+                        continue
+
+                    # Case 3: segment wrongly points to a DIFFERENT file but
+                    # beat_id_str is in that file's stem — fix the wrong pointer
+                    if beat_id_str and seg_vp and beat_id_str in Path(seg_vp).stem \
+                            and Path(seg_vp).stem != target_stem:
+                        print(f"[Approve] Correcting seg '{seg.get('segment_id')}': "
+                              f"'{seg_vp}' → '{rel_path}'")
+                        seg["video_path"]  = rel_path
+                        seg["beat_videos"] = [rel_path]
+
+                updated = True
+                break
 
             if updated:
-                with open(pres_path, "w") as f:
+                with open(pres_path, "w", encoding="utf-8") as f:
                     json.dump(presentation, f, indent=4)
+                print(f"[Approve] presentation.json saved — {rel_path}")
+            else:
+                print(f"[Approve] WARNING: section {section_id} not found during JSON update")
 
-        # 5. Cleanup other previews for this beat
+        # ── 6. Cleanup stale previews for this beat ───────────────────────────────
         try:
-            # Cleanup previews for this beat
-            # Use glob to match pattern
             pattern = f"preview_{section_id}_"
-            if beat_id:
-                pattern += f"{beat_id}_"
-
-            for f in job_dir.glob(f"videos/{pattern}*.mp4"):
+            if beat_id_str and beat_id_str not in ("None", ""):
+                pattern += f"{beat_id_str}_"
+            for stale in job_dir.glob(f"videos/{pattern}*.mp4"):
                 try:
-                    if f.resolve() != abs_target_path.resolve():
-                        f.unlink()
-                        print(f"[Cleanup] Deleted unused preview: {f.name}")
+                    if stale.resolve() != abs_target.resolve():
+                        stale.unlink()
+                        print(f"[Cleanup] Deleted stale preview: {stale.name}")
                 except Exception as ex:
-                    print(f"[Cleanup] Failed to delete {f.name}: {ex}")
+                    print(f"[Cleanup] Could not delete {stale.name}: {ex}")
         except Exception as e:
-            print(f"[Cleanup] Error during cleanup: {e}")
+            print(f"[Cleanup] Error: {e}")
 
-        return jsonify({"status": "success"})
+        return jsonify({
+            "status": "success",
+            "saved_as": target_filename,
+            "beat_location": beat_location,
+            "prompt_index": prompt_index,
+        })
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-
+        
 @app.route("/submit_job", methods=["POST"])
 def submit_job():
     try:

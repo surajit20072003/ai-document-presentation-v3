@@ -64,24 +64,21 @@
         }
 
         #main {
-            position: absolute;
-            top: 48px;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            flex: 1;
+            position: relative;
             overflow: hidden
         }
 
-        /* Desktop: 70/30 split — content left, avatar strip on right */
+        /* Desktop: reserve 280px on the right for the avatar strip */
         @media (min-width: 641px) {
             #main {
-                margin-right: 30vw;
+                margin-right: 280px;
             }
         }
 
         #botbar {
             height: 60px;
-            background: rgba(8, 12, 18, .85);
+            background: rgba(8, 12, 18, .98);
             border-top: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -89,10 +86,6 @@
             gap: 12px;
             flex-shrink: 0;
             z-index: 20;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
             display: none
         }
 
@@ -190,20 +183,22 @@
             border: 1px solid rgba(255, 107, 138, .2)
         }
 
-        /* Base layers — no inset:0, use explicit positions with gap */
+        /* ── LAYER STACK ── */
         #wan-layer {
             position: absolute;
             inset: 0;
             z-index: 1;
             display: none;
-            background: #000;
-            overflow: hidden;
-            border: none;
-            border-radius: 0;
+            background: #0d1117;
+            padding: 20px;
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: flex-start;
+            /* Locks video to the left */
         }
 
         #wan-layer.on {
-            display: block;
+            display: flex;
         }
 
         #manim-layer {
@@ -211,14 +206,16 @@
             inset: 0;
             z-index: 2;
             display: none;
-            background: #000;
-            overflow: hidden;
-            border: none;
-            border-radius: 0;
+            background: #0d1117;
+            padding: 20px;
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: flex-start;
+            /* Locks video to the left */
         }
 
         #manim-layer.on {
-            display: block;
+            display: flex;
             z-index: 4;
         }
 
@@ -227,47 +224,37 @@
             inset: 0;
             z-index: 5;
             display: none;
+            align-items: center;
+            justify-content: flex-start;
+            /* Locks image to the left */
             background: #0d1117;
-            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
             opacity: 0;
             transition: opacity 0.4s ease;
-            border: none;
-            border-radius: 0;
         }
 
         #image-layer.on {
-            display: block;
+            display: flex;
         }
 
         #image-layer.vis {
             opacity: 1;
         }
 
+        /* Add yellow border to all background media */
         #wan-vid,
-        #manim-vid {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-            border: none;
-            border-radius: 0;
-            display: block;
-            background: #000;
-        }
-
+        #manim-vid,
         #image-display {
-            position: absolute;
-            inset: 0;
-            width: 100%;
+            width: auto;
+            max-width: 100%;
             height: 100%;
             object-fit: contain;
-            object-position: center;
-            border: none;
-            border-radius: 0;
+            background: #000;
+            border: 3px solid var(--gold);
+            border-radius: 12px;
             display: block;
-            background: #0d1117;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
 
         /* ── MOBILE — small screen general fixes (both orientations) ── */
@@ -360,15 +347,14 @@
             #av-overlay:not([data-sectype="intro"]) {
                 height: 40vh !important;
                 bottom: 68px !important;
-                right: -10vw !important;
-                /* keep person flush-right on mobile landscape */
+                right: 6px !important;
             }
         }
 
         @media (max-width: 400px) and (orientation: landscape) {
             #av-overlay:not([data-sectype="intro"]) {
                 height: 32vh !important;
-                right: -8vw !important;
+                right: 0 !important;
             }
         }
 
@@ -416,17 +402,15 @@
                 z-index: 50 !important;
             }
 
-            /* Non-intro: avatar as right side strip — widened so transparent half goes off-screen */
+            /* Non-intro: avatar as right side strip */
             #av-overlay:not([data-sectype="intro"]) {
                 display: block !important;
                 position: fixed !important;
                 top: 0 !important;
                 bottom: 52px !important;
-                right: -15vw !important;
-                /* push transparent right side off-screen */
+                right: 0 !important;
                 left: auto !important;
-                width: 50vw !important;
-                /* wider so person lands in visible strip */
+                width: var(--av-strip-w, 28vw) !important;
                 height: auto !important;
                 transform: none !important;
                 z-index: 50 !important;
@@ -445,10 +429,32 @@
                 background: #0d1117 !important;
             }
 
+            #wan-layer,
+            #manim-layer {
+                position: absolute !important;
+                inset: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+
             #wan-layer.on,
             #manim-layer.on,
             #image-layer.on {
-                display: block !important;
+                display: flex !important;
+            }
+
+            #wan-vid,
+            #manim-vid {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain !important;
+            }
+
+            #image-layer {
+                position: absolute !important;
+                inset: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
             }
 
             /* Subtitles: within video area, clears avatar strip */
@@ -508,8 +514,8 @@
             position: fixed;
             bottom: 70px;
             left: 12px;
-            right: calc(30vw + 10px);
-            /* clears 30vw avatar strip + 10px gap */
+            right: 290px;
+            /* 290px clears 280px avatar + 10px gap */
             transform: none;
             width: auto;
             max-width: none;
@@ -1007,20 +1013,17 @@
 
         #av-overlay:not([data-sectype="intro"]) {
             bottom: 60px;
-            right: -15vw;
-            /* shift right so empty transparent side goes off-screen */
+            right: 0;
             left: auto;
             transform: none;
             height: 78vh;
-            width: 50vw;
-            /* wider so full video renders; person lands in visible right strip */
+            width: 280px;
         }
 
         #av-overlay canvas {
             background: transparent !important;
         }
 
-        /* Avatar video/canvas: full height, auto width — overflow:hidden on overlay clips it */
         #av-overlay video,
         #av-overlay canvas {
             width: auto;
@@ -1029,11 +1032,6 @@
             position: absolute;
             top: 0;
             right: 0;
-        }
-
-        /* Clip overflow so avatar never bleeds into the 70% content area */
-        #av-overlay:not([data-sectype="intro"]) {
-            overflow: hidden;
         }
 
         #av-overlay .av-tag {
@@ -1485,7 +1483,7 @@
 
         <div id="main">
             <div id="wan-layer">
-                <video id="wan-vid" muted playsinline preload="auto"></video>
+                <video id="wan-vid" muted playsinline preload="auto" style="display:block;"></video>
                 <video id="wan-vid-pre" muted playsinline preload="auto"
                     style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"></video>
             </div>
@@ -1568,11 +1566,8 @@
             <video id="av-vid" autoplay playsinline preload="auto"
                 style="position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;"
                 crossOrigin="anonymous"></video>
-            <!-- av-canvas-prev: holds the last rendered frame during avatar transitions, fades out -->
-            <canvas id="av-canvas-prev"
-                style="width:100%;height:100%;display:block;position:absolute;top:0;left:0;opacity:0;transition:opacity 0.45s ease;pointer-events:none;z-index:2;"></canvas>
             <canvas id="av-canvas"
-                style="width:100%;height:100%;display:block;position:absolute;top:0;left:0;z-index:1;"></canvas>
+                style="width:100%;height:100%;display:block;position:absolute;top:0;left:0;"></canvas>
             <div class="av-tag" id="av-tag">Avatar</div>
             <div id="av-narr"></div>
         </div>
@@ -1609,7 +1604,6 @@
         var G_PLAYBACK_INTENDED = true;
         var timers = [];
         var activeScene = null;
-        var _beatBlobCache = {}; // url -> blob URL, persists across beats within a section
         var loadedScripts = {};
         var JOB_BASE_URL = '';
         var _karaokeTimer = null;
@@ -1716,13 +1710,11 @@
         }
 
         // ══════════════════════════════════════════════════════════
-        // FIX 1 — Aggressive preload: buffers avatar + up to 3 content beats
-        // ══════════════════════════════════════════════════════════
         function preloadNextSection(idx) {
             var next = SECTIONS[idx + 1];
             if (!next) return;
 
-            // ── Avatar preload ──
+            // Preload next avatar
             var nextAvUrl = next.avatar_video || next.avatar_url || next.avatar || next.b2_url || '';
             if (nextAvUrl) {
                 var preAv = document.getElementById('preload-av');
@@ -1732,72 +1724,34 @@
                     preAv.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
                     preAv.muted = true;
                     preAv.preload = 'auto';
-                    preAv.crossOrigin = 'anonymous';
                     document.body.appendChild(preAv);
                 }
-                if (preAv.src !== getMediaSrc(nextAvUrl)) {
-                    preAv.src = getMediaSrc(nextAvUrl);
-                    preAv.load();
-                    // Force browser to buffer beyond metadata
-                    preAv.play().then(function () { preAv.pause(); preAv.currentTime = 0; }).catch(function () { });
-                }
+                preAv.src = getMediaSrc(nextAvUrl);
+                preAv.load();
             }
 
-            // ── Content video preload (first 3 beats, not just first) ──
+            // Preload next content video (first beat only)
+            var nextVidUrl = '';
             var vbeats = next.visual_beats || [];
             var bvp = next.beat_video_paths || [];
-            var allPaths = [];
-            vbeats.forEach(function (vb) { if (vb.video_path) allPaths.push(vb.video_path); });
-            if (allPaths.length === 0) allPaths = bvp.slice(0, 3);
-
-            allPaths.slice(0, 3).forEach(function (p, i) {
-                if (!p) return;
-                var preId = 'preload-vid-' + i;
-                var preVid = document.getElementById(preId);
+            if (vbeats.length > 0) {
+                nextVidUrl = vbeats[0].video_path || bvp[0] || '';
+            } else {
+                nextVidUrl = bvp[0] || '';
+            }
+            if (nextVidUrl) {
+                var preVid = document.getElementById('preload-vid');
                 if (!preVid) {
                     preVid = document.createElement('video');
-                    preVid.id = preId;
+                    preVid.id = 'preload-vid';
                     preVid.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
                     preVid.muted = true;
                     preVid.preload = 'auto';
                     document.body.appendChild(preVid);
                 }
-                if (preVid.src !== getMediaSrc(p)) {
-                    preVid.src = getMediaSrc(p);
-                    preVid.load();
-                    preVid.play().then(function () { preVid.pause(); preVid.currentTime = 0; }).catch(function () { });
-                }
-            });
-        }
-
-        // ══════════════════════════════════════════════════════════
-        // FIX 2 — Aggressive preload: Blob URL fetch cache
-        // ══════════════════════════════════════════════════════════
-        // Fetch a video URL into memory as a Blob URL — eliminates network latency on playback
-        function preFetchBeat(url, onReady) {
-            if (!url) return;
-            var fullUrl = getMediaSrc(url);
-            if (_beatBlobCache[fullUrl]) { if (onReady) onReady(_beatBlobCache[fullUrl]); return; }
-
-            fetch(fullUrl)
-                .then(function (r) { return r.blob(); })
-                .then(function (blob) {
-                    var blobUrl = URL.createObjectURL(blob);
-                    _beatBlobCache[fullUrl] = blobUrl;
-                    if (onReady) onReady(blobUrl);
-                })
-                .catch(function () {
-                    // Fetch failed (CORS etc) — fall back to direct URL
-                    if (onReady) onReady(fullUrl);
-                });
-        }
-
-        // Revoke all blob URLs when done with a section to free memory
-        function clearBeatBlobCache() {
-            Object.keys(_beatBlobCache).forEach(function (k) {
-                try { URL.revokeObjectURL(_beatBlobCache[k]); } catch (e) { }
-            });
-            _beatBlobCache = {};
+                preVid.src = getMediaSrc(nextVidUrl);
+                preVid.load();
+            }
         }
 
         // ══════════════════════════════════════════════════════════
@@ -2147,43 +2101,8 @@
             document.removeEventListener('touchstart', unlockAudio);
         }, { once: true, passive: true });
 
-        // ── FIX 2: Crossfade avatar — stamps current frame, swaps src, fades old frame out ──
-        function crossfadeAvatar(newUrl) {
-            var canvasPrev = document.getElementById('av-canvas-prev');
-            var canvasCur = document.getElementById('av-canvas');
-
-            // Stamp current rendered frame into prev canvas instantly
-            if (canvasCur && canvasPrev && canvasCur.width > 0 && canvasCur.height > 0) {
-                canvasPrev.width = canvasCur.width;
-                canvasPrev.height = canvasCur.height;
-                try {
-                    var ctx = canvasPrev.getContext('2d');
-                    ctx.drawImage(canvasCur, 0, 0);
-                } catch (e) { }
-                canvasPrev.style.transition = 'opacity 0s'; // instant stamp, no animation yet
-                canvasPrev.style.opacity = '1';
-            }
-
-            // Swap the live video src
-            var vid = document.getElementById('av-vid');
-            vid.src = getMediaSrc(newUrl);
-            vid.load();
-            vid.play().catch(function () { });
-
-            // Two rAF ticks later: fade the frozen prev frame out
-            requestAnimationFrame(function () {
-                requestAnimationFrame(function () {
-                    if (canvasPrev) {
-                        canvasPrev.style.transition = 'opacity 0.45s ease';
-                        canvasPrev.style.opacity = '0';
-                    }
-                });
-            });
-        }
-
         function loadSection(idx) {
             clearTimers();
-            clearBeatBlobCache(); // free previous section's blob URLs
 
             if (activeScene) { try { activeScene.dispose(); } catch (e) { } activeScene = null; }
             var threejsLayer = document.getElementById('threejs-layer');
@@ -2205,51 +2124,15 @@
 
             var manimLayer = document.getElementById('manim-layer');
             var manimVid = document.getElementById('manim-vid');
-
-            // FIX 4a: Fade manim layer out before clearing src — avoids black flash
-            if (manimVid) {
-                manimVid.pause();
-                if (manimLayer && manimLayer.classList.contains('on')) {
-                    // Fade out, then wipe src after the transition
-                    manimLayer.style.transition = 'opacity 0.3s ease';
-                    manimLayer.style.opacity = '0';
-                    var _ml = manimLayer, _mv = manimVid;
-                    timers.push(setTimeout(function () {
-                        _mv.removeAttribute('src');
-                        _mv.src = '';
-                        _mv.load();
-                        _ml.classList.remove('on');
-                        _ml.style.display = 'none';
-                        _ml.style.opacity = '1';
-                        _ml.style.transition = '';
-                    }, 300));
-                } else {
-                    manimVid.removeAttribute('src');
-                    manimVid.src = '';
-                    manimVid.load();
-                }
-            }
-            if (manimLayer) {
-                // Only hide immediately if not currently visible (no fade needed)
-                if (!manimLayer.classList.contains('on')) {
-                    manimLayer.classList.remove('on');
-                    manimLayer.style.display = 'none';
-                }
-            }
+            if (manimLayer) manimLayer.classList.remove('on');
+            if (manimVid) { manimVid.pause(); manimVid.src = ''; }
 
             var wanLayer = document.getElementById('wan-layer');
             var wanVid = document.getElementById('wan-vid');
             var wanPre = document.getElementById('wan-vid-pre');
             wanLayer.classList.remove('on');
-
-            // FIX 4b: Pause wan video but keep last frame visible — src cleared by loadVideoScene
-            wanVid.pause();
-            // Do NOT wipe src — keeps last frame during transition; new section will overwrite it
-
-            if (wanPre) {
-                wanPre.pause();
-                // Same: hold last frame, let loadVideoScene clear and swap
-            }
+            wanVid.pause(); wanVid.src = '';
+            if (wanPre) { wanPre.pause(); wanPre.src = ''; }
 
             var prevEl = document.getElementById('scene-' + curSec);
             if (prevEl) prevEl.classList.remove('on');
@@ -2294,22 +2177,33 @@
             var avatarUrl = sec.avatar_video || sec.avatar_url || sec.avatar || sec.b2_url || '';
 
             if (avatarUrl) {
-                // FIX 2c: Crossfade to new avatar instead of hard-cutting
-                crossfadeAvatar(avatarUrl);
+                vid.src = getMediaSrc(avatarUrl); vid.load();
+                vid.play().catch(function (e) { console.warn("Avatar video play failed", e); });
 
-                // FIX 5: Start preloading next section after 2s (was 5s)
+                // Start preloading next section after 5s
                 timers.push(setTimeout(function () {
                     if (curSec === idx) preloadNextSection(idx);
-                }, 2000));
+                }, 5000));
 
-                // FIX 5b: Also trigger preload at 65% play progress (covers short sections)
-                vid.addEventListener('timeupdate', function preloadTrigger() {
-                    if (!vid.duration || !isFinite(vid.duration)) return;
-                    if (vid.currentTime / vid.duration > 0.65) {
-                        vid.removeEventListener('timeupdate', preloadTrigger);
-                        if (curSec === idx) preloadNextSection(idx);
+                // Preload next section's avatar while current one is playing
+                timers.push(setTimeout(function () {
+                    if (curSec !== idx) return;
+                    var nextSec = SECTIONS[idx + 1];
+                    if (!nextSec) return;
+                    var nextUrl = nextSec.avatar_video || nextSec.avatar_url || nextSec.avatar || nextSec.b2_url || '';
+                    if (!nextUrl) return;
+                    var preAv = document.getElementById('av-pre');
+                    if (!preAv) {
+                        preAv = document.createElement('video');
+                        preAv.id = 'av-pre';
+                        preAv.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+                        preAv.muted = true; preAv.preload = 'auto';
+                        document.body.appendChild(preAv);
                     }
-                });
+                    preAv.src = getMediaSrc(nextUrl);
+                    preAv.load();
+                    preAv.play().then(function () { preAv.pause(); }).catch(function () { });
+                }, 3000));
 
                 var sectionAtLoad = curSec;
                 var _stallCheck = setInterval(function () {
@@ -2343,7 +2237,6 @@
                 vid.onplay = (function (box) { return function () { box.started = true; }; })(_avBox);
                 var _ttsRealDur = sec.segment_duration_seconds || null;
                 var _manimLoaded = false;
-                var _videoLoaded = false; // FIX: guard against durationchange double-firing loadVideoScene
 
                 vid.onloadedmetadata = (function (box) {
                     return function () {
@@ -2357,7 +2250,6 @@
                         } else if (renderer === 'video' || renderer === 'wan_video' ||
                             renderer === 'text_to_video' || renderer === 'image_to_video' ||
                             sec.section_type === 'recap') {
-                            _videoLoaded = true; // FIX: mark so durationchange skips
                             loadVideoScene(sec, actualDur, box);
                         }
                         startSubtitleDriver(sec, sectionAtLoad);
@@ -2371,8 +2263,6 @@
                         if (renderer === 'video' || renderer === 'wan_video' ||
                             renderer === 'text_to_video' || renderer === 'image_to_video' ||
                             capturedSec.section_type === 'recap') {
-                            if (_videoLoaded) return; // FIX: skip if already loaded via onloadedmetadata
-                            _videoLoaded = true;
                             loadVideoScene(capturedSec, vid.duration, box);
                             return;
                         }
@@ -2388,43 +2278,34 @@
                     };
                 })(_avBox, sec), { once: true });
 
-                // FIX 3: Gate transition on readyState, not fixed timeout
                 vid.onended = function () {
                     if (sec.understanding_quiz || (sec.questions && sec.questions.length > 0)) {
                         initQuizSection(sec);
-                        return;
-                    }
-                    if (curSec >= SECTIONS.length - 1) return;
+                    } else if (curSec < SECTIONS.length - 1) {
+                        // Gate: wait for next avatar to be ready
+                        var nextVid = document.getElementById('av-vid');
+                        var nextSec = SECTIONS[curSec + 1];
+                        var nextUrl = nextSec
+                            ? (nextSec.avatar_video || nextSec.avatar_url || nextSec.avatar || '')
+                            : '';
 
-                    var nextIdx = curSec + 1;
-                    var nextSec = SECTIONS[nextIdx];
-                    if (!nextSec) return;
+                        var preAv = document.getElementById('preload-av');
+                        var isReady = preAv && preAv.src &&
+                            preAv.src.indexOf(nextUrl.split('/').pop()) !== -1 &&
+                            preAv.readyState >= 3;
 
-                    var nextUrl = nextSec.avatar_video || nextSec.avatar_url || nextSec.avatar || nextSec.b2_url || '';
-                    var preAv = document.getElementById('preload-av');
-                    var filename = nextUrl ? nextUrl.split('/').pop() : '';
-
-                    var isReady = preAv && preAv.src && filename && preAv.readyState >= 3 &&
-                        preAv.src.indexOf(filename) !== -1;
-
-                    if (isReady) {
-                        // Already buffered — transition immediately, no spinner
-                        loadSection(nextIdx);
-                    } else {
-                        // Not ready — poll every 100ms up to 2.5s, then give up and load anyway
-                        var spinner = document.getElementById('video-buffering');
-                        if (spinner) spinner.style.display = 'block';
-                        var waited = 0;
-                        var poll = setInterval(function () {
-                            waited += 100;
-                            var nowReady = preAv && preAv.readyState >= 3;
-                            if (nowReady || waited >= 2500) {
-                                clearInterval(poll);
+                        if (isReady) {
+                            // Ready — load immediately
+                            timers.push(setTimeout(function () { loadSection(curSec + 1); }, 400));
+                        } else {
+                            // Not ready — show spinner, wait, then load
+                            var spinner = document.getElementById('video-buffering');
+                            if (spinner) spinner.style.display = 'block';
+                            timers.push(setTimeout(function () {
                                 if (spinner) spinner.style.display = 'none';
-                                loadSection(nextIdx);
-                            }
-                        }, 100);
-                        timers.push(poll);
+                                loadSection(curSec + 1);
+                            }, 700));
+                        }
                     }
                 };
             } else {
@@ -2633,12 +2514,12 @@
             if (!_avBox) _avBox = { started: true };
             var wanLayer = document.getElementById('wan-layer');
             var wanVid = document.getElementById('wan-vid');
+            var wanPre = document.getElementById('wan-vid-pre');
             var imgLayer = document.getElementById('image-layer');
             var imgEl = document.getElementById('image-display');
             var avEl = document.getElementById('av-vid');
             var sectionAtLoad = curSec;
 
-            // ── Build schedule (same logic as before) ──
             var schedule = [];
             var vbeats = sec.visual_beats || [];
             var bvp = sec.beat_video_paths || [];
@@ -2656,6 +2537,7 @@
                     var start = vb.beat_start_seconds;
                     var end = vb.beat_end_seconds;
                     var vtype = vb.visual_type;
+
                     if (vtype === 'image' || vtype === 'infographic') {
                         var info = infoByStart[String(start)] || {};
                         var imgSrc = vb.image_source || info.image_source || '';
@@ -2676,6 +2558,7 @@
                     flatFiles.push(bv);
                 });
                 if (flatFiles.every(function (f) { return !f; })) flatFiles = bvp;
+
                 var accum = 0;
                 segs.forEach(function (seg, i) {
                     var dur = seg.duration_seconds || seg.duration || 15;
@@ -2693,30 +2576,25 @@
                     var ibEnd = ib.end_seconds || 9999;
                     var replaced = false;
                     for (var si = 0; si < schedule.length; si++) {
-                        if (schedule[si].type === 'video' && Math.abs(schedule[si].start - ibStart) < 1.0) {
+                        if (schedule[si].type === 'video' &&
+                            Math.abs(schedule[si].start - ibStart) < 1.0) {
                             schedule[si] = { start: ibStart, end: ibEnd, type: 'image', src: ib.image_source };
                             replaced = true; break;
                         }
                     }
-                    if (!replaced) schedule.push({ start: ibStart, end: ibEnd, type: 'image', src: ib.image_source });
+                    if (!replaced) {
+                        schedule.push({ start: ibStart, end: ibEnd, type: 'image', src: ib.image_source });
+                    }
                 });
                 schedule.sort(function (a, b) { return a.start - b.start; });
             }
 
             if (schedule.length === 0) return;
 
-            // ── PRE-FETCH ALL VIDEO BEATS into Blob URLs immediately ──
-            // This runs in background — by the time each beat starts, it's in memory
-            schedule.forEach(function (beat) {
-                if (beat.type === 'video' && beat.src) {
-                    preFetchBeat(beat.src, function (blobUrl) {
-                        beat._blobUrl = blobUrl; // store resolved URL on the beat object
-                    });
-                }
-            });
-
             wanLayer.classList.add('on');
+
             var currentIdx = -1;
+            var preloadedSrc = '';
 
             function showBeat(idx) {
                 if (idx < 0 || idx >= schedule.length) return;
@@ -2733,23 +2611,35 @@
                 } else {
                     imgLayer.classList.remove('vis');
                     setTimeout(function () { imgLayer.classList.remove('on'); }, 440);
+
                     if (!beat.src) return;
+                    var fullSrc = getMediaSrc(beat.src);
 
-                    // Use blob URL if fetch completed, otherwise fall back to direct URL
-                    var playUrl = beat._blobUrl || getMediaSrc(beat.src);
-
-                    if (wanVid.src !== playUrl) {
-                        wanVid.src = playUrl;
+                    if (wanPre.src.endsWith(fullSrc.split('/').pop()) && wanPre.readyState >= 3) {
+                        // Preloaded and ready — swap instantly without re-loading
+                        wanVid.src = wanPre.src;
+                        wanPre.src = '';   // free preload slot
+                        preloadedSrc = '';
+                        wanVid.play().catch(function () { });
+                    } else {
+                        wanVid.src = fullSrc;
                         wanVid.load();
+                        wanVid.play().catch(function () { });
                     }
-                    wanVid.play().catch(function () { });
                 }
+            }
 
-                // Pre-fetch the NEXT beat while this one is starting
-                var next = schedule[idx + 1];
-                if (next && next.type === 'video' && next.src && !next._blobUrl) {
-                    preFetchBeat(next.src, function (blobUrl) { next._blobUrl = blobUrl; });
-                }
+            function preloadNext(idx) {
+                if (idx < 0 || idx >= schedule.length) return;
+                var b = schedule[idx];
+                if (b.type !== 'video' || !b.src) return;
+                var src = getMediaSrc(b.src);
+                if (preloadedSrc === src) return;
+                preloadedSrc = src;
+                wanPre.src = src;
+                wanPre.load();
+                // Force browser to buffer aggressively — play then immediately pause
+                wanPre.play().then(function () { wanPre.pause(); }).catch(function () { });
             }
 
             function onTimeUpdate() {
@@ -2758,6 +2648,7 @@
                     return;
                 }
                 var t = avEl.currentTime;
+
                 var activeIdx = -1;
                 for (var i = 0; i < schedule.length; i++) {
                     var isLast = (i === schedule.length - 1);
@@ -2771,13 +2662,20 @@
                     showBeat(activeIdx);
                 }
 
-                // Keep wan video in sync with avatar — restart if it stalled
+                var curBeat = schedule[activeIdx];
+                if (curBeat && curBeat.end && (curBeat.end - t) < 5.0) {
+                    preloadNext(activeIdx + 1);
+                    if ((curBeat.end - t) < 2.0) preloadNext(activeIdx + 2); // 2 ahead near end
+                }
+
                 if (currentIdx >= 0 && schedule[currentIdx].type === 'video') {
                     if (wanVid.paused && !wanVid.ended && wanVid.readyState >= 3 && !avEl.paused) {
                         wanVid.play().catch(function () { });
                     }
                 }
             }
+
+            if (schedule.length > 1) preloadNext(1);
 
             if (_avBox.started) {
                 avEl.addEventListener('timeupdate', onTimeUpdate);
@@ -2806,10 +2704,6 @@
             var imgDisplay = document.getElementById('image-display');
             var avVid = document.getElementById('av-vid');
             var sectionAtLoad = curSec;
-
-            // FIX Bug 3: restore display so .on class can make the layer visible again
-            // (loadSection sets display:none as a race-condition guard)
-            if (manimLayer) manimLayer.style.display = '';
 
             var manimPaths = sec.manim_video_paths || (sec.video_path ? [sec.video_path] : []);
             var visualBeats = (sec.visual_beats || []).slice().sort(function (a, b) {
@@ -3192,9 +3086,7 @@
             var manimVid = document.getElementById('manim-vid');
             var btn = document.getElementById('play-pause-btn');
             if (!avVid) return;
-            // Use G_PLAYBACK_INTENDED as source of truth so button works
-            // even during explanation clips where avVid may have ended.
-            if (!G_PLAYBACK_INTENDED) {
+            if (avVid.paused) {
                 avVid.play().catch(function () { });
                 if (wanVid && wanVid.src && wanVid.paused) wanVid.play().catch(function () { });
                 if (manimVid && manimVid.src && manimVid.paused) manimVid.play().catch(function () { });
@@ -3353,7 +3245,6 @@
                             manimVid.oncanplay = null;
                             manimVid.play().catch(function () { });
                         };
-                        manimLayer.style.display = ''; // FIX: clear display:none guard before activating
                         manimLayer.classList.add('on');
                     } else {
                         wanVid.src = getMediaSrc(vpath);
@@ -3395,8 +3286,7 @@
                 if (navEl) navEl.style.display = 'flex';
 
                 // Stop explanation video layers
-                var mL = document.getElementById('manim-layer');
-                if (mL) { mL.style.display = ''; mL.classList.remove('on'); } // FIX: clear inline style guard
+                document.getElementById('manim-layer').classList.remove('on');
                 document.getElementById('wan-layer').classList.remove('on');
             }
 

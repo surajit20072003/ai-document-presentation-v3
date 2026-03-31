@@ -480,12 +480,24 @@
 
             <div id="modal-info" style="margin-bottom:14px; color:var(--manim); font-size:13px;"></div>
 
+            <div class="renderer-toggle" id="renderer-toggle"
+                style="margin-bottom:12px; background:#f4f4f4; padding:10px; border-radius:4px; display:flex; align-items:center; gap:10px;">
+                <label style="font-weight:bold; font-size:13px; color:#333;">Renderer:</label>
+                <select id="renderer-select" onchange="toggleRendererMode()"
+                    style="padding:6px; border-radius:4px; border:1px solid var(--border); flex:1; font-size:13px;">
+                    <option value="wan">Text-to-Video (WAN API)</option>
+                    <option value="text_to_video">Text-to-Video (Local GPU)</option>
+                    <option value="image_to_video">Image-to-Video (Local GPU)</option>
+                    <option value="manim">Manim Code (Code-to-Video)</option>
+                </select>
+            </div>
+
             <div class="modal-section">
                 <!-- Mode -->
                 <div class="mode-toggle">
                     <label style="color:var(--fail)">
                         <input type="radio" name="refine-mode" value="override" checked onchange="toggleRefineMode()">
-                        <strong>⚡ Full Override</strong> — replace prompt exactly
+                        <strong>⚡ Full Override</strong> — replace text exactly
                     </label>
                     <label style="color:var(--pass)">
                         <input type="radio" name="refine-mode" value="refine" onchange="toggleRefineMode()">
@@ -493,8 +505,21 @@
                     </label>
                 </div>
 
+                <div id="block-image-prompts" style="display:none; margin-top:12px;">
+                    <label style="color:var(--info); font-weight:600; font-size:13px;">Image Prompt 1 (Start
+                        Frame):</label>
+                    <textarea id="image-prompt-start"
+                        style="border-color:var(--info); min-height:60px; margin-bottom:10px; font-size:13px;"></textarea>
+
+                    <label style="color:var(--info); font-weight:600; font-size:13px;">Image Prompt 2 (End Frame -
+                        Optional):</label>
+                    <textarea id="image-prompt-end"
+                        style="border-color:var(--info); min-height:60px; font-size:13px;"></textarea>
+                </div>
+
                 <div id="block-override">
-                    <label style="color:var(--fail)">Raw Prompt / Code:</label>
+                    <label style="color:var(--fail); margin-top:8px;" id="video-prompt-label">Video Prompt /
+                        Code:</label>
                     <textarea id="raw-prompt-input" style="border-color:var(--fail)"></textarea>
                     <small style="color:var(--muted)">The AI will use EXACTLY this text.</small>
                 </div>
@@ -503,19 +528,13 @@
                     <label style="color:var(--pass)">Instructions for AI (e.g. "Make it slower"):</label>
                     <textarea id="user-feedback-input" style="border-color:var(--pass)"
                         placeholder="Describe what to change…" disabled></textarea>
-                    <small style="color:var(--muted)">The AI will read the prompt above and apply these changes.</small>
+                    <small style="color:var(--muted)">The AI will tweak the prompts above and apply these
+                        changes.</small>
                 </div>
             </div>
 
-            <!-- Provider toggle (WAN video only) -->
-            <div class="provider-toggle" id="provider-toggle" style="display:none">
-                <button id="btn-use-wan" class="provider-btn active-wan" onclick="setProvider('wan')">🌐 WAN
-                    (Kie.ai)</button>
-                <button id="btn-use-gpu" class="provider-btn" onclick="setProvider('gpu')">🖥️ Local GPU</button>
-            </div>
-
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
-                <button class="btn btn-primary" onclick="generatePreview()">Generate Preview</button>
+            <div style="display:flex; align-items:center; gap:12px; margin-top:16px; margin-bottom:10px;">
+                <button class="btn btn-primary" onclick="generatePreview()">🚀 Generate Preview</button>
                 <span id="preview-status-text" style="font-weight:600; font-size:13px;"></span>
             </div>
 
@@ -566,7 +585,6 @@
             showStatus(`Loading job <strong>${JOB_ID}</strong>…`, 'info');
 
             try {
-                // Fetch both in parallel
                 const [presRes, reportRes] = await Promise.all([
                     fetch(`${BASE_PATH}presentation.json?t=${Date.now()}`),
                     fetch(`/api/sanity-report/${JOB_ID}`)
@@ -575,11 +593,9 @@
                 if (!presRes.ok) throw new Error(`presentation.json not found (${presRes.status})`);
                 const pres = await presRes.json();
 
-                // Disk report (optional — graceful degradation if API fails)
                 let diskReport = {};
                 if (reportRes.ok) {
                     const rData = await reportRes.json();
-                    // Index by section_id for quick lookup
                     (rData.sections || []).forEach(s => { diskReport[String(s.section_id)] = s; });
                 }
 
@@ -611,10 +627,9 @@
             card.className = 'section-card';
             card.id = `section-card-${sid}`;
 
-            // ── Header ──
             let rendClass = '';
             if (renderer === 'manim') rendClass = 'manim';
-            else if (['wan', 'video', 'video_generation', 'image_to_video'].includes(renderer)) rendClass = renderer === 'manim' ? 'manim' : 'img';
+            else if (['wan', 'video', 'video_generation', 'image_to_video'].includes(renderer)) rendClass = 'img';
 
             card.innerHTML = `
         <div class="section-header">
@@ -625,7 +640,6 @@
         </div>
       `;
 
-            // ── Media Table ──
             const table = document.createElement('table');
             table.className = 'media-table';
             table.innerHTML = `
@@ -646,7 +660,7 @@
             const avatarPath = section.avatar_video || section.avatar_video_path;
             if (avatarPath) {
                 const row = await makeMediaRow('🧑', avatarPath, 'avatar', {
-                    editBtn: false, // no regen for avatar here
+                    editBtn: false,
                     section,
                     beatId: null,
                     renderer,
@@ -656,9 +670,7 @@
             }
 
             // ── 2. VIDEOS ──
-            // Collect all unique video refs + their beat context
             const videoRefs = collectVideoRefs(section);
-
             for (const ref of videoRefs) {
                 const row = await makeMediaRow('🎥', ref.path, 'video', {
                     editBtn: true,
@@ -666,6 +678,8 @@
                     beatId: ref.beatId,
                     prompt: ref.prompt,
                     renderer: ref.renderer || renderer,
+                    imgStart: ref.imgStart,
+                    imgEnd: ref.imgEnd
                 });
                 tbody.appendChild(row);
                 hasRows = true;
@@ -684,8 +698,7 @@
                 hasRows = true;
             }
 
-            // ── 4. QUIZ AVATAR CLIPS (question / correct / wrong / explanation) ──
-            // Collect from understanding_quiz.avatar_clips and questions[].avatar_clips
+            // ── 4. QUIZ AVATAR CLIPS ──
             const quizAvatarSets = [];
             if (section.understanding_quiz?.avatar_clips) quizAvatarSets.push(section.understanding_quiz.avatar_clips);
             (section.questions || []).forEach(q => { if (q.avatar_clips) quizAvatarSets.push(q.avatar_clips); });
@@ -700,7 +713,6 @@
                         beatId: null,
                         renderer,
                     });
-                    // Label the row
                     const firstTd = row.querySelector('td:nth-child(2)');
                     if (firstTd) {
                         const label = document.createElement('span');
@@ -713,7 +725,7 @@
                 }
             }
 
-            // ── 5. ORPHANS (on disk but not in JSON) ──
+            // ── 5. ORPHANS ──
             const orphans = disk.videos_orphaned || [];
             for (const orf of orphans) {
                 const orphanPath = `videos/${orf}`;
@@ -734,64 +746,119 @@
             return card;
         }
 
-        // ─── Collect all video file paths for a section ───────
+        // ═══════════════════════════════════════════════════════════════════════
+        //  FIX: collectVideoRefs — now also traverses render_spec.image_to_video_beats
+        //  (where V3 JSON actually stores its beat metadata) and handles recap beats.
+        // ═══════════════════════════════════════════════════════════════════════
         function collectVideoRefs(section) {
             const refs = [];
             const seen = new Set();
 
-            function addRef(path, beatId, prompt, rend) {
+            function addRef(path, beatId, prompt, rend, imgStart, imgEnd) {
                 if (!path) return;
                 const filename = path.split('/').pop();
                 if (seen.has(filename)) return;
                 seen.add(filename);
-                refs.push({ path, beatId: beatId || filename.replace('.mp4', ''), prompt: prompt || '', renderer: rend || section.renderer || 'wan' });
+                refs.push({
+                    path,
+                    beatId: beatId || filename.replace('.mp4', ''),
+                    prompt: prompt || '',
+                    renderer: rend || section.renderer || 'wan',
+                    imgStart: imgStart || '',
+                    imgEnd: imgEnd || ''
+                });
             }
 
-            // PRIMARY: visual_beats[].video_path (current V3 format)
+            // ── PRIORITY 1: section.image_to_video_beats[] (top-level, older format) ──
+            (section.image_to_video_beats || []).forEach((b, i) => {
+                const derivedPath = b.video_path
+                    || `videos/topic_${section.section_id}_${b.beat_id || i}.mp4`;
+                addRef(derivedPath, b.beat_id || i, b.video_prompt || '', 'image_to_video',
+                    b.image_prompt_start, b.image_prompt_end);
+            });
+
+            // ── PRIORITY 2: render_spec.image_to_video_beats[] ──────────────────────
+            // FIX: V3 JSON stores beat metadata here, not at the top-level.
+            // This is the primary source for image_to_video and text_to_video sections.
+            (section.render_spec?.image_to_video_beats || []).forEach((b, i) => {
+                const derivedPath = b.video_path
+                    || `videos/topic_${section.section_id}_${b.beat_id || i}.mp4`;
+                addRef(derivedPath, b.beat_id || i, b.video_prompt || '', 'image_to_video',
+                    b.image_prompt_start || '', b.image_prompt_end || '');
+            });
+
+            // ── PRIORITY 3: visual_beats[].video_path (V3 current format) ──────────
             (section.visual_beats || []).forEach(b => {
                 if (b.video_path) {
-                    addRef(b.video_path, b.beat_id, b.display_text || b.description || '', section.renderer);
+                    addRef(b.video_path, b.beat_id, b.video_prompt || b.display_text || b.description || '',
+                        section.renderer, b.image_prompt_start, b.image_prompt_end);
                 }
             });
 
-            // Explicit beat_video_paths[] (flat list)
-            (section.beat_video_paths || []).forEach(vp => addRef(vp, null, '', section.renderer));
+            // ── PRIORITY 4: WAN video_prompts (older structure) ─────────────────────
+            (section.video_prompts || section.render_spec?.video_prompts || []).forEach(p => {
+                if (p.beat_id) addRef(`videos/${p.beat_id}.mp4`, p.beat_id, p.prompt || '', 'wan');
+            });
 
-            // understanding_quiz explanation visual beats
+            // ── PRIORITY 5: Quiz explanation visual beats ────────────────────────────
             function addQuizExplanationBeats(quizObj) {
                 if (!quizObj) return;
                 const ev = quizObj.explanation_visual;
-
-                // ── 1. Top-level shortcut on the quiz object ──────────────────────────
-                if (quizObj.explanation_visual_video_path)
-                    addRef(quizObj.explanation_visual_video_path, 'eq_shortcut', ev?.display_text || 'Quiz explanation', 'wan');
-
                 if (!ev) return;
 
-                // ── 2. Rendered single video path ─────────────────────────────────────
-                if (ev.video_path)
-                    addRef(ev.video_path, 'eq_main', ev.display_text || 'Quiz explanation', 'wan');
-
-                // ── 3. Rendered beat_video_paths list ─────────────────────────────────
-                (ev.beat_video_paths || []).forEach((vp, i) =>
-                    addRef(vp, `eq_beat_${i}`, ev.display_text || '', 'wan'));
-
-                // ── 4. Per-beat video_path inside image_to_video_beats ────────────────
-                (ev.image_to_video_beats || []).forEach(b => {
+                // A. Per-beat inside explanation_visual.image_to_video_beats (richest)
+                (ev.image_to_video_beats || []).forEach((b, i) => {
                     const derivedPath = b.video_path
                         || ev.video_path
-                        || `videos/topic_${section.section_id}_${b.beat_id}.mp4`;
-                    addRef(derivedPath, b.beat_id, b.video_prompt || b.display_text || 'Quiz explanation beat', 'wan');
+                        || `videos/topic_${section.section_id}_${b.beat_id || i}.mp4`;
+                    const rnd = (b.image_prompt_start || ev.renderer === 'image_to_video')
+                        ? 'image_to_video' : 'wan';
+                    addRef(derivedPath, b.beat_id || i,
+                        b.video_prompt || b.display_text || ev.display_text || 'Quiz explanation beat',
+                        rnd, b.image_prompt_start, b.image_prompt_end);
                 });
+
+                // B. Rendered single video path on the explanation_visual object
+                if (ev.video_path)
+                    addRef(ev.video_path, 'eq_main', ev.display_text || 'Quiz explanation', ev.renderer || 'wan');
+
+                // C. beat_video_paths list on explanation_visual
+                (ev.beat_video_paths || []).forEach((vp, i) =>
+                    addRef(vp, `eq_beat_${i}`, ev.display_text || '', ev.renderer || 'wan'));
+
+                // D. Top-level shortcut on the quiz object (oldest format)
+                if (quizObj.explanation_visual_video_path)
+                    addRef(quizObj.explanation_visual_video_path, 'eq_shortcut',
+                        ev?.display_text || 'Quiz explanation', ev?.renderer || 'wan');
             }
+
             addQuizExplanationBeats(section.understanding_quiz);
             (section.questions || []).forEach(q => addQuizExplanationBeats(q));
 
-            // ── Also catch top-level understanding_quiz.explanation_visual_video_path ──
+            // ── PRIORITY 6: Flat fallbacks ───────────────────────────────────────────
+
+            // beat_video_paths[] at top level
+            // For Manim sections: cross-reference visual_beats[] by beat_id (derived from filename stem)
+            // to expose the display_text as the prompt in the Edit modal.
+            (section.beat_video_paths || []).forEach((vp) => {
+                if (!vp) return;
+                const stem = vp.split('/').pop().replace('.mp4', ''); // e.g. "topic_3_beat_1"
+                // Extract beat_id from stem: "topic_3_beat_1" → "beat_1"
+                const beatMatch = stem.match(/topic_\d+_(.+)$/);
+                const beatId = beatMatch ? beatMatch[1] : null;
+                // Try to find matching visual_beat to get its display_text
+                const vb = (section.visual_beats || []).find(
+                    b => b.beat_id && (b.beat_id === beatId || stem.includes(b.beat_id))
+                );
+                const prompt = (vb && (vb.manim_scene_spec || vb.display_text)) || '';
+                addRef(vp, beatId, prompt, section.renderer);
+            });
+
+            // understanding_quiz.explanation_visual_video_path at section top level
             if (section.understanding_quiz?.explanation_visual_video_path)
                 addRef(section.understanding_quiz.explanation_visual_video_path, 'eq_uq_top', '', 'wan');
 
-            // Quiz question beat videos (section.quiz_questions[] older format)
+            // quiz_questions[] (older format)
             (section.quiz_questions || []).forEach(q => {
                 const bid = q.beat_id;
                 if (q.video_path) addRef(q.video_path, bid, q.question || '', 'wan');
@@ -822,29 +889,29 @@
                 addRef(vp, `recap_${i}`, '', section.renderer);
             });
 
-            // WAN video_prompts (older structure)
-            (section.video_prompts || section.render_spec?.video_prompts || []).forEach(p => {
-                if (p.beat_id) addRef(`videos/${p.beat_id}.mp4`, p.beat_id, p.prompt || '', 'wan');
-            });
-
             return refs;
         }
 
         // ─── Collect all image paths for a section ────────────
         function collectImageRefs(section) {
-            const refs = [];
-            const seen = new Set();
+            const imageRefsList = [];
+            const imageSeenSet = new Set();
 
             function addImg(path, beatId) {
                 if (!path) return;
                 const key = path.split('/').pop();
-                if (seen.has(key)) return;
-                seen.add(key);
-                refs.push({ path, beatId });
+                if (imageSeenSet.has(key)) return;
+                imageSeenSet.add(key);
+                imageRefsList.push({ path, beatId });
             }
 
             // PRIMARY: visual_beats[].image_source (V3 current format)
             (section.visual_beats || []).forEach(b => {
+                addImg(b.image_source || b.image_id || b.image_path, b.beat_id);
+            });
+
+            // render_spec.infographic_beats[].image_source
+            (section.render_spec?.infographic_beats || []).forEach(b => {
                 addImg(b.image_source || b.image_id || b.image_path, b.beat_id);
             });
 
@@ -859,12 +926,12 @@
                 if (vc) addImg(vc.image_id || vc.image_path || vc.image_source, seg.segment_id);
             });
 
-            return refs;
+            return imageRefsList;
         }
 
         // ─── Build a media row ────────────────────────────────
         async function makeMediaRow(icon, assetPath, type, opts) {
-            const { editBtn, section, beatId, prompt, renderer } = opts;
+            const { editBtn, section, beatId, prompt, renderer, imgStart, imgEnd } = opts;
             const tr = document.createElement('tr');
 
             const check = await checkUrl(assetPath, type);
@@ -876,10 +943,12 @@
             const filenameText = assetPath.split('/').pop();
 
             let actions = '';
-            if (editBtn && ['wan', 'video', 'video_generation', 'image_to_video', 'manim'].includes(renderer)) {
+            if (editBtn && ['wan', 'video', 'video_generation', 'image_to_video', 'text_to_video', 'manim'].includes(renderer)) {
                 const b64 = safeBtoa(prompt || '');
-                const rendKey = renderer === 'image_to_video' ? 'wan' : renderer;
-                actions += `<button class="btn btn-sm btn-primary" onclick="openRefineModal('${section.section_id}','${beatId || 0}','${rendKey}','${b64}','${rendKey}')">✏️ Edit</button> `;
+                const isB64 = safeBtoa(opts.imgStart || '');
+                const ieB64 = safeBtoa(opts.imgEnd || '');
+                const rendKey = renderer === 'video_generation' || renderer === 'video' ? 'wan' : renderer;
+                actions += `<button class="btn btn-sm btn-primary" onclick="openRefineModal('${section.section_id}','${beatId || 0}','${rendKey}','${b64}','${isB64}','${ieB64}')">✏️ Edit</button> `;
             }
 
             if (type === 'image' && check.valid) {
@@ -921,8 +990,6 @@
             document.getElementById('summary-bar').style.display = 'flex';
             document.getElementById('stat-sections').textContent = sectionCount;
 
-            // Count badge elements in DOM
-            const allBadges = document.querySelectorAll('.badge');
             let vok = 0, vmiss = 0, iok = 0, imiss = 0;
             document.querySelectorAll('.media-table tbody tr:not(.orphan-row)').forEach(row => {
                 const icon = row.querySelector('.type-icon')?.textContent || '';
@@ -967,7 +1034,6 @@
                     fetchUrl += (fetchUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
                 }
                 const res = await fetch(fetchUrl, { method: 'HEAD' });
-                // Try .png fallback for .jpg images
                 if (!res.ok && /\.jpe?g$/i.test(fetchUrl)) {
                     const pngUrl = fetchUrl.replace(/\.jpe?g/i, '.png');
                     const r2 = await fetch(pngUrl, { method: 'HEAD' });
@@ -1012,7 +1078,7 @@
         function safeAtob(str) { return decodeURIComponent(escape(atob(str))); }
 
         // ════════════════════════════════════════════════════════
-        //  MODAL / PREVIEW / APPROVE (keep full logic identical)
+        //  MODAL / PREVIEW / APPROVE
         // ════════════════════════════════════════════════════════
 
         function setProvider(p) {
@@ -1021,41 +1087,73 @@
             document.getElementById('btn-use-gpu').className = 'provider-btn' + (p === 'gpu' ? ' active-gpu' : '');
         }
 
+        function toggleRendererMode() {
+            const rend = document.getElementById('renderer-select').value;
+            const imgBlock = document.getElementById('block-image-prompts');
+            const vidLabel = document.getElementById('video-prompt-label');
+
+            if (rend === 'image_to_video') {
+                imgBlock.style.display = 'block';
+                vidLabel.innerText = 'Video Prompt (Motion/Camera):';
+            } else {
+                imgBlock.style.display = 'none';
+                vidLabel.innerText = 'Video Prompt / Code:';
+            }
+        }
+
         function toggleRefineMode() {
             const mode = document.querySelector('input[name="refine-mode"]:checked').value;
             const override = document.getElementById('block-override');
+            const imgBlock = document.getElementById('block-image-prompts');
             const refine = document.getElementById('block-refine');
             const inpO = document.getElementById('raw-prompt-input');
+            const inpRS = document.getElementById('image-prompt-start');
+            const inpRE = document.getElementById('image-prompt-end');
             const inpR = document.getElementById('user-feedback-input');
 
             if (mode === 'override') {
                 override.style.opacity = '1'; inpO.disabled = false;
+                imgBlock.style.opacity = '1'; inpRS.disabled = false; inpRE.disabled = false;
                 refine.style.display = 'block'; refine.style.opacity = '0.4'; inpR.disabled = true; inpR.value = '';
             } else {
                 override.style.opacity = '0.4'; inpO.disabled = true;
+                imgBlock.style.opacity = '0.4'; inpRS.disabled = true; inpRE.disabled = true;
                 refine.style.display = 'block'; refine.style.opacity = '1'; inpR.disabled = false; inpR.focus();
             }
         }
 
-        function openRefineModal(secId, beatId, type, currentPromptBase64, renderer) {
+        function openRefineModal(secId, beatId, renderer, currentPromptBase64, imgStartB64, imgEndB64) {
             let currentPrompt = '';
+            let imgStart = '';
+            let imgEnd = '';
             try { currentPrompt = safeAtob(currentPromptBase64); } catch (e) { currentPrompt = ''; }
+            try { imgStart = safeAtob(imgStartB64); } catch (e) { imgStart = ''; }
+            try { imgEnd = safeAtob(imgEndB64); } catch (e) { imgEnd = ''; }
 
-            currentRefineData = { jobId: JOB_ID, sectionId: secId, beatId, renderer, type };
+            currentRefineData = { jobId: JOB_ID, sectionId: secId, beatId, renderer };
 
             document.getElementById('modal-info').innerHTML =
-                `<strong>Section ${secId}</strong> | Beat: ${beatId || 'N/A'} | Renderer: ${renderer.toUpperCase()}`;
+                `<strong>Section ${secId}</strong> | Beat: ${beatId || 'N/A'}`;
+
             document.getElementById('raw-prompt-input').value = currentPrompt;
+            document.getElementById('image-prompt-start').value = imgStart;
+            document.getElementById('image-prompt-end').value = imgEnd;
             document.getElementById('user-feedback-input').value = '';
+
+            const rs = document.getElementById('renderer-select');
+            const options = Array.from(rs.options).map(o => o.value);
+            if (options.includes(renderer)) {
+                rs.value = renderer;
+            } else {
+                rs.value = 'wan';
+            }
+            toggleRendererMode();
+
             document.getElementById('btn-approve').disabled = true;
             document.getElementById('preview-status-text').innerText = '';
             document.getElementById('progress-bar').style.display = 'none';
             document.getElementById('preview-container').innerHTML =
                 '<span style="color:var(--muted)">Preview will appear here…</span>';
-
-            const toggle = document.getElementById('provider-toggle');
-            toggle.style.display = (renderer === 'wan' || renderer === 'video' || renderer === 'image_to_video') ? 'flex' : 'none';
-            setProvider('wan');
 
             const overrideRadio = document.querySelector('input[name="refine-mode"][value="override"]');
             if (overrideRadio) { overrideRadio.checked = true; toggleRefineMode(); }
@@ -1074,24 +1172,40 @@
             const btn = document.querySelector('.modal .btn-primary');
             const statusText = document.getElementById('preview-status-text');
             const mode = document.querySelector('input[name="refine-mode"]:checked').value;
+            const targetRenderer = document.getElementById('renderer-select').value;
 
-            let feedback = '', rawOverride = '';
-            if (mode === 'override') rawOverride = document.getElementById('raw-prompt-input').value;
-            else feedback = document.getElementById('user-feedback-input').value;
+            let feedback = '', rawOverride = '', imgStart = '', imgEnd = '';
+            if (mode === 'override') {
+                rawOverride = document.getElementById('raw-prompt-input').value;
+                imgStart = document.getElementById('image-prompt-start').value;
+                imgEnd = document.getElementById('image-prompt-end').value;
+            } else {
+                feedback = document.getElementById('user-feedback-input').value;
+            }
 
-            if (!feedback && !rawOverride) { alert('Please provide input.'); return; }
+            if (!feedback && !rawOverride && targetRenderer !== 'image_to_video') {
+                alert('Please provide input.'); return;
+            }
+            if (targetRenderer === 'image_to_video' && !imgStart && !feedback) {
+                alert('Please provide a start image prompt or AI instruction.'); return;
+            }
 
             btn.disabled = true;
             statusText.innerText = 'Initiating…';
+
+            let provider = 'wan';
+            if (targetRenderer === 'text_to_video' || targetRenderer === 'image_to_video') provider = 'gpu';
 
             try {
                 const payload = {
                     section_id: currentRefineData.sectionId,
                     beat_id: currentRefineData.beatId,
-                    renderer: currentRefineData.renderer,
+                    renderer: targetRenderer,
                     user_feedback: feedback,
                     raw_prompt_override: rawOverride,
-                    video_provider: selectedProvider
+                    image_prompt_start: imgStart,
+                    image_prompt_end: imgEnd,
+                    video_provider: provider
                 };
                 const res = await fetch(`/job/${JOB_ID}/generate_preview`, {
                     method: 'POST',
@@ -1159,16 +1273,24 @@
             btn.innerText = 'Approving…'; btn.disabled = true;
 
             try {
+                const targetRenderer = document.getElementById('renderer-select').value;
                 const mode = document.querySelector('input[name="refine-mode"][value="override"]');
                 const finalPrompt = (mode && mode.checked)
                     ? document.getElementById('raw-prompt-input').value
                     : document.getElementById('user-feedback-input').value;
 
+                // Grab the image prompts if we're in image_to_video mode (or always pass them so they map)
+                const imgStart = document.getElementById('image-prompt-start').value.trim();
+                const imgEnd = document.getElementById('image-prompt-end').value.trim();
+
                 const payload = {
                     section_id: currentRefineData.sectionId,
                     beat_id: currentRefineData.beatId,
                     preview_path: 'videos/' + currentRefineData.previewFilename,
-                    new_prompt: finalPrompt
+                    new_prompt: finalPrompt,
+                    image_prompt_start: imgStart,
+                    image_prompt_end: imgEnd,
+                    renderer: targetRenderer
                 };
 
                 const res = await fetch(`/job/${JOB_ID}/approve_preview`, {

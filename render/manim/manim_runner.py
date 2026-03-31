@@ -860,8 +860,13 @@ def _render_manim_segment_specs(
 
     for idx, spec in enumerate(specs):
         seg_id = spec.get("segment_id", f"beat_{idx}")
-        # Filename: topic_{topic_id}_beat_{idx}.mp4
-        output_path = str(Path(output_dir) / f"topic_{topic_id}_beat_{idx}.mp4")
+        # Prefer explicit beat_id (e.g. "eq_beat_1" from explanation_visual) so
+        # quiz beats don't overwrite main-section beat_0, beat_1 files.
+        # Falls back to index-based name for normal content beats.
+        beat_id = spec.get("beat_id") or f"beat_{idx}"
+        import re as _re
+        safe_beat = _re.sub(r"[^\w\-]", "_", str(beat_id))
+        output_path = str(Path(output_dir) / f"topic_{topic_id}_{safe_beat}.mp4")
 
         # Duration lookup
         duration = spec.get("duration_seconds")

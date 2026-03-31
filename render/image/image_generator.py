@@ -303,12 +303,27 @@ def generate_image_for_beat(
 
     output_path = str(images_dir / f"{job_id}_{beat_id}.png")
 
-    # Generate
+    # Generate with up to 2 retries on failure
+    MAX_RETRIES = 2
     gen = ImageGenerator()
-    abs_path = gen.generate_image(image_prompt, output_path)
-    
+    abs_path = None
+    for attempt in range(1 + MAX_RETRIES):
+        abs_path = gen.generate_image(image_prompt, output_path)
+        if abs_path is not None:
+            if attempt > 0:
+                logger.info(f"[ImageGen] Retry {attempt} succeeded for beat {beat_id}")
+            break
+        if attempt < MAX_RETRIES:
+            logger.warning(
+                f"[ImageGen] Attempt {attempt + 1} failed for beat {beat_id} — "
+                f"retrying ({attempt + 1}/{MAX_RETRIES})..."
+            )
+
     if abs_path is None:
+        logger.error(
+            f"[ImageGen] All {1 + MAX_RETRIES} attempts failed for beat {beat_id}"
+        )
         return None
-        
+
     # Return relative path only for browser compatibility
     return os.path.join("images", os.path.basename(abs_path))

@@ -790,6 +790,57 @@ def execute_renderer(
                     except Exception as e:
                         print(f"[IMAGE_TO_VIDEO] ✗ Image {beat_id}_{slot}: {e}")
 
+            # ── OUTER RETRY: Re-attempt failed image slots (up to 2 rounds) ───────
+            IMAGE_OUTER_RETRIES = 2
+            for retry_round in range(IMAGE_OUTER_RETRIES):
+                # Collect all (beat_id, slot) pairs that still have no image
+                failed_slots = []
+                for beat in beats:
+                    bid = beat.get("beat_id")
+                    for slot in ("start", "end"):
+                        img_prompt = beat.get(f"image_prompt_{slot}", "")
+                        if not img_prompt:
+                            continue  # slot not used
+                        if image_paths.get(bid, {}).get(slot):
+                            continue  # already succeeded
+                        failed_slots.append((bid, slot, img_prompt))
+
+                if not failed_slots:
+                    break  # nothing left to retry
+
+                print(
+                    f"[IMAGE_TO_VIDEO] Outer retry round {retry_round + 1}/{IMAGE_OUTER_RETRIES}: "
+                    f"{len(failed_slots)} image slot(s) still missing — retrying in parallel..."
+                )
+                with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+                    retry_future_to_key = {}
+                    for bid, slot, img_prompt in failed_slots:
+                        future = executor.submit(
+                            generate_image_for_beat,
+                            beat={"beat_id": f"{bid}_{slot}", "image_prompt": img_prompt},
+                            job_id=job_id,
+                            section_id=str(topic_id),
+                            output_dir=output_dir,
+                        )
+                        retry_future_to_key[future] = (bid, slot)
+
+                    for future in concurrent.futures.as_completed(retry_future_to_key):
+                        bid, slot = retry_future_to_key[future]
+                        try:
+                            img_path = future.result()
+                            if img_path:
+                                image_paths.setdefault(bid, {})[slot] = img_path
+                                print(
+                                    f"[IMAGE_TO_VIDEO] ✓ Outer retry {retry_round + 1} succeeded: "
+                                    f"{bid}_{slot} → {Path(img_path).name}"
+                                )
+                        except Exception as e:
+                            print(
+                                f"[IMAGE_TO_VIDEO] ✗ Outer retry {retry_round + 1} failed: "
+                                f"{bid}_{slot}: {e}"
+                            )
+            # ── END OUTER RETRY ───────────────────────────────────────────────────
+
             # Step 2: Generate videos in parallel using start + end reference images
             video_beats = []
             for beat in beats:

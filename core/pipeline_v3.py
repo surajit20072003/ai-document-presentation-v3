@@ -705,6 +705,9 @@ def run_v3_pipeline(
                             duration = beat_ev.get("duration", exp_visual.get("duration_seconds", 15.0))
                             spec = {
                                 "segment_id": f"quiz_{sec_id}_{q_label}_beat{beat_idx_ev}",
+                                # Use the LLM beat_id (e.g. "eq_beat_1") so the output file
+                                # is topic_N_eq_beat_1.mp4 and does NOT overwrite beat_0.mp4
+                                "beat_id": beat_ev.get("beat_id", f"eq_beat_{beat_idx_ev}"),
                                 "beat_idx": beat_idx_ev,
                                 "py_path": None,
                                 "duration_seconds": duration,
@@ -743,7 +746,7 @@ def run_v3_pipeline(
                                     topic_title=section.get("title", ""),
                                     output_dir=str(output_path / "videos"),
                                     dry_run=dry_run,
-                                    topic=section,
+                                    topic=None,  # Don't write quiz video into main narration segments
                                 )
                                 if rendered:
                                     rel_path = f"videos/{Path(rendered[0]).name}"
@@ -762,6 +765,8 @@ def run_v3_pipeline(
                     duration = exp_visual.get("duration_seconds", 15.0)
                     spec = {
                         "segment_id": f"quiz_{sec_id}_{q_label}",
+                        # Use eq_beat_0 so this never collides with main section beat_0
+                        "beat_id": exp_visual.get("beat_id", "eq_beat_0"),
                         "beat_idx": 0,
                         "py_path": None,  # will be generated fresh
                         "duration_seconds": duration,
@@ -803,7 +808,7 @@ def run_v3_pipeline(
                             topic_title=section.get("title", ""),
                             output_dir=str(output_path / "videos"),
                             dry_run=dry_run,
-                            topic=section,
+                            topic=None,  # Don't write quiz video into main narration segments
                         )
                         if rendered:
                             rel_path = f"videos/{Path(rendered[0]).name}"
