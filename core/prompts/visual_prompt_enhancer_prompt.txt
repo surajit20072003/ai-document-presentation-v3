@@ -26,6 +26,25 @@ COMMON LEAKS TO CATCH:
   "seamlessly merges" → write "overlaps and fuses at the boundary line"
   "beautifully balanced" → write "held at equal mass on both arms of the scale"
 
+BANNED PHRASES IN VIDEO PROMPT:
+In addition to banned words, these phrases are FORBIDDEN in video_prompt:
+  - "representing [concept]"
+  - "symbolizing [concept]"
+  - "embodying [concept]"
+  - "acting as a metaphor"
+  - "standing in for"
+
+Replace with the physical action that directly demonstrates the concept.
+
+HEX CODES IN VIDEO PROMPT — FORBIDDEN:
+Hex codes (#RRGGBB) are FORBIDDEN in video_prompt.
+LTX-2.3 does not interpret hex values — they increase motion instability.
+Use descriptive color words only in video_prompt:
+  WRONG: "saree in #FF5733"
+  RIGHT: "saree in deep orange-red"
+
+Hex codes remain valid and encouraged in image_prompt_start and image_prompt_end.
+
 ═══════════════════════════════════════════════════════════
 MANDATORY video_prompt FORMAT — FILL THIS TEMPLATE EXACTLY
 ═══════════════════════════════════════════════════════════
@@ -142,6 +161,25 @@ EXAMPLE (correct):
   restock shelves as goods are sold, representing the body's continuous
   correction back to equilibrium.
 
+═══════════════════════════════════════════════════════════
+IPS / IPE STABILITY RULE (MANDATORY)
+═══════════════════════════════════════════════════════════
+image_prompt_end MUST describe the SAME SCENE as image_prompt_start.
+
+IDENTICAL between IPS and IPE:
+  - Architecture and background
+  - Lighting color and mood
+  - Number of people or objects
+  - Camera composition
+
+MAY DIFFER (slightly only):
+  - Character positions (moved slightly)
+  - Object positions (suggest recent use)
+  - Light angle (minimally — "sunlight now slightly lower")
+
+SELF-CHECK: After writing IPE, count shared noun phrases with IPS.
+If fewer than 60% of IPS nouns appear in IPE → rewrite IPE.
+
 
 ═══════════════════════════════════════════════════════════
 VISUAL MODE SELECTION
@@ -209,6 +247,41 @@ Required descriptors: translucent / semi-transparent / layered / textured /
 glowing core / structured boundary / crystalline surface
 
 ═══════════════════════════════════════════════════════════
+HUMAN SCENE RULES (MANDATORY — applies when scene contains people)
+═══════════════════════════════════════════════════════════
+Triggered when IPS contains any of:
+person, woman, man, student, worker, vendor, villager, teacher, child, crowd, people
+
+RULE 1 — MAX 3 CHARACTERS:
+Never describe more than 3 people in any beat.
+Replace "villagers" / "crowd" / "students" with exactly 1–3 named characters.
+
+RULE 2 — LOCK CHARACTER IDENTITY:
+Every character must have ALL THREE defined:
+  - Age range (young woman / middle-aged man / elderly woman)
+  - Clothing (blue saree with gold border / white dhoti / green kurta)
+  - Hair (long braided hair / short grey hair / hair tied in bun)
+Repeat these EXACTLY — word-for-word — in IPS, IPE, and VP.
+
+RULE 3 — DETERMINISTIC ACTIONS ONLY IN VP:
+REJECTED (symbolic):
+  "representing cellular processes"
+  "symbolizing nutrient transport"
+REQUIRED (deterministic):
+  "slowly draws water from the well using both hands"
+  "walks steadily from left to right carrying a clay pot"
+  "remains seated, weaving a basket with slow hand movements"
+
+RULE 4 — MOTION CONSTRAINTS (add to VP CAMERA section):
+  - Camera: static / slow lateral pan / slow drift — pick one
+  - No zoom. No cuts. Fixed height.
+
+RULE 5 — MOTION STYLE (add to VP MECHANISM section):
+Always end MECHANISM with:
+  "Slow, natural, continuous human motion.
+   No sudden changes. No character switching. Same faces throughout."
+
+═══════════════════════════════════════════════════════════
 MOTION RULES (cinematic beats only)
 ═══════════════════════════════════════════════════════════
 Motion MUST be:
@@ -245,6 +318,25 @@ PRIORITY ORDER (never reverse):
   1. Scientific accuracy
   2. Concept clarity
   3. Visual quality and mode
+
+═══════════════════════════════════════════════════════════
+ANALOGY QUALITY RULE (MANDATORY FOR RECAP BEATS)
+═══════════════════════════════════════════════════════════
+When a recap beat uses a cultural or everyday analogy to represent a concept,
+the analogy MUST have a visible physical mechanism matching the concept.
+
+TEST before using any analogy:
+"If a student watches this scene, can they SEE the mechanism happening?"
+If NO → reject and pick a different analogy.
+
+GOOD ANALOGIES BY CONCEPT:
+  Selective permeability → toll booth, security checkpoint, water filter, sieve
+  Homeostasis → pressure cooker valve, water tank float valve, AC thermostat
+  Negative feedback → AC turning off when room cools, dam gates closing
+  Cells working together → factory assembly line, kitchen brigade, railway network
+
+Cultural setting is free — India, global, or fictional.
+Do NOT force a setting if a better analogy exists elsewhere.
 
 ═══════════════════════════════════════════════════════════
 LABEL RULE

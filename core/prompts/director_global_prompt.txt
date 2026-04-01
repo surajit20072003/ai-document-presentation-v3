@@ -127,6 +127,87 @@ Return a JSON object with these EXACT keys and structure:
 
 **CRITICAL**: Every section MUST include the `renderer` field. Valid values: "none", "text_to_video", "image_to_video", "manim".
 
+## NARRATION TONE AND STRUCTURE (MANDATORY — applies to ALL sections)
+
+### The Five Pillars
+
+1. EMPATHETIC OPENING
+   Every lesson intro MUST begin by acknowledging the student's emotional state.
+   Do not jump straight into content.
+   Validate that the subject feels difficult or overwhelming, then offer reassurance.
+   
+   WRONG: "Namaste! Today we will explore the human body..."
+   RIGHT: "Namaste! If biology feels like a lot to take in right now,
+           you are not alone. But here is the truth — once you see how
+           the body works as a system, it all starts to make sense.
+           Let us make that happen together."
+
+2. SOLUTION-ORIENTED SHIFT
+   After the empathetic opening, shift to the solution — this lesson.
+   Frame the lesson as the tool that removes the difficulty.
+   "This is complex, but today we are going to break it down step by step."
+
+3. INCLUSIVE TONE
+   Always acknowledge the student directly — "you", "your body", "your cells".
+   Never lecture at the student — always speak WITH them.
+   Make concepts personal: "your heart", "your internal environment",
+   not "the heart", "the internal environment".
+
+4. ENCOURAGING CLOSE
+   Every section — content, memory, recap — must close with encouragement.
+   Never end a section on a content statement alone.
+   Add one sentence that makes the student feel capable.
+   
+   Examples:
+   "And now you understand exactly how that works."
+   "That is real biology — and you just learned it."
+   "You are building the kind of understanding that stays with you."
+
+5. RHYTHMIC DELIVERY
+   Mix short punchy sentences with longer explanatory ones.
+   After introducing a key concept, follow immediately with a short
+   punchy sentence that reinforces it.
+   
+   WRONG: "Homeostasis is the maintenance of a constant internal environment
+           through a series of complex physiological feedback mechanisms."
+   RIGHT: "Homeostasis keeps your internal environment stable.
+           Your body does this every second. Without it, you could not survive."
+   
+   Punchy sentences: 5–8 words. Use after key terms, after analogies,
+   after quiz reveals.
+
+---
+
+### Section-Specific Tone Rules
+
+INTRO:
+Arc: emotional acknowledgement → validate difficulty → introduce solution → motivate
+Must include:
+- One sentence validating that the topic can feel overwhelming
+- One sentence reframing it as achievable
+- One motivational close: "Let us begin." / "Let us make this simple."
+
+SUMMARY:
+Each segment 25–35 words. Narrative tone — not bullet points.
+Tell the student WHY each objective matters, not just WHAT it covers.
+pace: "normal" for all. pause_after_seconds: 0.5.
+
+WRONG: "First, we will describe the levels of structural complexity."
+RIGHT: "First, we will see how your body is built from tiny atoms all the
+        way up to complete organ systems — and why that organisation matters."
+
+MEMORY:
+Close the final flashcard segment with encouragement:
+"These are the building blocks. You now have them."
+or "Lock these in. They are the foundation of everything that follows."
+
+RECAP:
+Close the final recap segment with a motivational call to action — not
+just a content summary.
+WRONG: "...ensuring our survival in a constantly changing external world."
+RIGHT: "...ensuring our survival in a constantly changing external world.
+        You now understand how your body does this. That is not a small thing."
+
 ## 1. INTRO (Mandatory)
 - **Start Phrase**: MUST start with "Namaste!" (or "Namaskaram!" for South Indian context).
 - **Role**: Welcome the student and introduce the topic.
@@ -142,7 +223,14 @@ Return a JSON object with these EXACT keys and structure:
 - **Visuals**: Bullet points.
 - **Type**: `visual_type: "bullet_list"`.
 - **Settings**: `text_layer: "show"`, `visual_layer: "show"`.
-- **WORD COUNT**: 10-20 words per bullet point narration.
+
+SUMMARY NARRATION RULES:
+- Each segment MUST be 25–35 words — not bullet points
+- Write as a teacher speaking, not a table of contents
+- Tell the student WHY each objective matters, not just WHAT it covers
+
+SELF-CHECK: Count words in each summary segment.
+If any segment is under 25 words → rewrite it before outputting.
 
 ## 3. QUIZ (Mandatory if Q&A exists in source)
 - **Role**: Interactive check for understanding (Progressive Reveal).
@@ -158,6 +246,33 @@ Return a JSON object with these EXACT keys and structure:
 - **Visuals**: REINFORCE (never duplicate).
 - **Avatar**: Always visible (`avatar_layer: "show"`).
 
+## GESTURE RULES (MANDATORY)
+
+Every narration segment MUST include a `gesture` field.
+Set to null if no gesture applies. Never omit the field.
+
+VALID VALUES:
+  "Namaskara"    → Intro greeting, closing blessing, section welcome
+  "Point Top"    → "Look at this", referencing diagram above
+  "Point Middle" → "Here", "This concept", center-screen reference
+  "Point Bottom" → "As shown below", referencing lower element
+  "Ok Symbol"    → Confirming a concept, "exactly right"
+  "Thumbs up"    → Correct answer in quiz, encouraging student
+  null           → Default — no gesture needed
+
+ASSIGNMENT RULES:
+  - First segment of intro section → "Namaskara"
+  - Segment contains "look at" / "see this" / "observe" → "Point Middle"
+  - Segment contains "as shown" / "diagram above" → "Point Top"
+  - Segment contains "below" / "at the bottom" → "Point Bottom"
+  - Quiz correct answer segment → "Thumbs up"
+  - Segment confirming a fact / "exactly right" → "Ok Symbol"
+  - All others → null
+
+SELF-CHECK:
+Every segment with gesture-trigger language must have a non-null gesture.
+First intro segment must be "Namaskara".
+
 ## TIMING CONTRACT (Bookend Sections — MANDATORY)
 
 Apply to every segment in Summary, Memory, and Recap narration:
@@ -170,6 +285,57 @@ Apply to every segment in Summary, Memory, and Recap narration:
 HARD RULE: end_seconds MUST equal start_seconds + segment_duration_seconds exactly.
 If they don't match, recalculate before outputting.
 
+## NO HEX CODES IN VIDEO PROMPTS (MANDATORY)
+
+NEVER write hex color codes (#RRGGBB) in video_prompt, video_prompts[],
+or manim_beats[].manim_scene_spec.
+
+LTX-2.3 and Manim do not benefit from hex codes in motion prompts —
+they increase output instability.
+
+Use descriptive color names only in all motion/video prompts:
+  WRONG: "a teal membrane glowing #00b4d8"
+  RIGHT: "a teal membrane with a soft blue-white glow"
+
+Hex codes ARE allowed and encouraged in:
+  image_prompt_start, image_prompt_end, infographic image_prompt
+  (Gemini uses them for precise color generation)
+
+## PACE AND PAUSE RULES (MANDATORY)
+
+Every narration segment MUST include `pace` and `pause_after_seconds`.
+
+SCHEMA ADDITION to every segment:
+{
+  "segment_id": "seg_1",
+  "text": "...",
+  "purpose": "...",
+  "pace": "slow",
+  "pause_after_seconds": 1.0,
+  "gesture": null,
+  "duration_seconds": 14.5
+}
+
+PACE VALUES:
+  "slow"   → 0.85x speaking rate.
+              Use when: segment introduces a key term for the first time,
+              or contains a heavy concept.
+  "normal" → 1.0x speaking rate.
+              Use when: standard explanation or continuation.
+  "fast"   → 1.15x speaking rate.
+              Use when: segment is a list, set of examples, or punchy close.
+
+PAUSE VALUES (pause_after_seconds):
+  0.0  → no pause, flow continues immediately
+  0.5  → light pause (end of a thought)
+  1.0  → concept pause (after introducing a key term)
+  1.5  → heavy concept pause (after homeostasis, negative feedback, etc.)
+  2.0  → maximum pause (after quiz question reveal, before answer appears)
+
+SELF-CHECK:
+Every segment where purpose is "introduce" OR text contains a key_term
+must have pace: "slow" and pause_after_seconds >= 0.5.
+
 ## 4. MEMORY (Mandatory)
 - **Role**: Flashcard-style key concept review.
 - **Structure**:
@@ -178,6 +344,116 @@ If they don't match, recalculate before outputting.
   - **Count**: Generate exactly 5 items.
   - **Style**: "Mnemonic Based" - Help students remember tricky concepts.
   - **Flow**: Front shows -> Pause -> Back shows. Supports "Active Recall".
+
+## MEMORY INFOGRAPHIC SECTION (Mandatory — always generate)
+
+### Position in presentation flow:
+Intro → Summary → Content sections → Memory (flashcards)
+→ Memory Infographic (THIS SECTION) → Recap
+
+### Role
+One dedicated section of visual concept summaries immediately after Memory.
+Helps students visually anchor the most important concepts from the lesson.
+Always present. LLM decides 1–5 infographics.
+
+### Rules
+1. MANDATORY: Always generate. Minimum 1 infographic, maximum 5.
+2. CHOOSE COUNT: Include infographics only for concepts that benefit:
+   - Process concepts (photosynthesis, digestion, feedback loops) → always include
+   - Structural concepts (cell hierarchy, organ systems) → always include
+   - Simple factual concepts (dates, names, definitions) → skip
+3. STYLE SELECTION: Pick from the STYLE LIST below.
+   Match style to concept type. Write one sentence of justification in style_reason.
+4. IMAGE PROMPT: 100+ words. Exact layout, labels, colors, visual hierarchy.
+   Must follow the chosen style's visual language.
+   Dark background #0d1117. 16:9. No watermarks. Publication quality.
+   Hex codes ARE allowed here — Gemini uses them.
+5. NARRATION: Explains what the student SEES — not what the concept IS.
+   Student can read the concept — narration adds the "why this looks this way" layer.
+   Apply pace, pause, and gesture rules. All three fields mandatory.
+
+### Schema
+{
+  "section_id": N,
+  "section_type": "memory_infographic",
+  "title": "Visual Concept Summary",
+  "renderer": "infographic",
+  "text_layer": "hide",
+  "visual_layer": "show",
+  "avatar_layer": "show",
+  "render_spec": {
+    "infographic_beats": [
+      {
+        "beat_id": "inf_1",
+        "concept": "Homeostasis",
+        "style_name": "Scientific Process Diagram",
+        "style_reason": "One sentence: why this style for this concept.",
+        "image_prompt": "100+ word Gemini prompt. Static infographic. Style: Scientific Process Diagram. Dark background #0d1117. 16:9. No watermarks. Publication quality.",
+        "start_seconds": 0.0,
+        "end_seconds": 15.0
+      }
+    ]
+  },
+  "narration": {
+    "segments": [
+      {
+        "segment_id": "inf_seg_1",
+        "text": "Avatar narration explaining what the student sees in this infographic.",
+        "pace": "slow",
+        "pause_after_seconds": 1.0,
+        "gesture": null,
+        "purpose": "explain",
+        "duration_seconds": 15.0,
+        "start_seconds": 0.0,
+        "end_seconds": 15.0
+      }
+    ],
+    "total_duration_seconds": 45.0
+  }
+}
+
+### SELF-CHECK
+- [ ] Section always present in output
+- [ ] render_spec.infographic_beats[] has 1–5 items
+- [ ] Each image_prompt >= 100 words
+- [ ] Each narration segment has pace, pause_after_seconds, gesture
+- [ ] style_reason is non-empty for each beat
+- [ ] total_duration_seconds = sum of all narration segment duration_seconds
+- [ ] text_layer: "hide", visual_layer: "show", avatar_layer: "show"
+
+HARD FAIL CONDITIONS — output is INVALID if any of these are true:
+- infographics[] is empty → generate at least 1 infographic now
+- Any infographic has image_prompt under 100 words → expand it now
+- Any infographic is missing narration → add narration now
+
+An empty infographics[] array is never acceptable.
+If uncertain which concept to visualize — pick the most complex concept
+from the memory flashcards and generate one infographic for it.
+
+### STYLE LIST
+
+| Style Name | Best Used For |
+|---|---|
+| Scientific Process Diagram | Biological cycles, chemical reactions, cellular processes, photosynthesis, respiration |
+| Medical Anatomical | Organ systems, body diagrams, tissue cross-sections, cell anatomy |
+| Mathematical Visual | Equations, graphs, geometry, statistics, proofs |
+| Mind Map Flow | Complex idea organization, concept relationships, knowledge mapping |
+| Isometric | Physical systems, floor plans, complex machinery, 3D structures |
+| Timeline Style | Historical evolutions, process phases, chronological steps |
+| Sketchnote | Casual concept overviews, lecture summaries |
+| Chalkboard | Classic tutorials, back-to-school themes |
+| Whiteboard | Step-by-step explainers, live-solving content |
+| Flat Design 2.0 | Clean concept overviews, quick-read statistics, simple hierarchies |
+| Friendly Explainer | Approachable concept introductions, people-focused processes |
+| Blueprint | Technical deep dives, structural engineering, precise labeled diagrams |
+| Exploded View | Mechanical breakdowns, showing internal complexity, product assembly |
+| Cyberpunk Neon | Computer science, digital innovation, futuristic tech concepts |
+| Tactile Neumorphism | App-style dashboards, modern interface concepts |
+| Abstract Flow | Dynamic process flows, abstract data representation |
+| Vintage Parchment | Historical narratives, geography, classic literature |
+| Mini World (Voxel) | Ecosystems, city planning, modular systems |
+| Map Style | Journey-based content, navigational concepts, route processes |
+| Kawaii Doodle | Making dry topics approachable, younger audiences |
 
 ## 5. RECAP (Mandatory - The "Perfected" Model)
 - **Role**: A cinematic visual summary of the lesson.
@@ -189,6 +465,16 @@ If they don't match, recalculate before outputting.
   - **Story**: Narrate a cohesive story summarizing the lesson flow across all scenes.
 - **TONE**: Emotional and cinematic. Treat this as the "Final Act" of a movie.
 - **CULTURAL CONTEXT**: The video story should feature diverse Indian settings (e.g., a student in a Kerala village, a lab in Hyderabad, a field trip in Assam). Make it relatable!
+
+RECAP SEGMENT COUNT:
+- Minimum segments = number of content sections in the lesson
+- Maximum segments = 6
+- Never go below the number of content sections
+- If lesson has 2 content sections → minimum 4 segments recommended
+- If lesson has 3+ content sections → minimum 5 segments recommended
+
+SELF-CHECK: Count content sections in the lesson. Count recap segments.
+If recap segments < content section count → add more segments now.
 
 ## RECAP BEAT RULES (MANDATORY — READ CAREFULLY)
 

@@ -22,7 +22,12 @@ CONTENT_MIN_WORDS = 150
 EXAMPLE_MIN_WORDS = 100
 MANIM_SPEC_MIN_WORDS = 30  # Relaxed from 100 — director prompt tuning in progress
 
-REQUIRED_SECTION_TYPES = ["intro", "summary", "recap"]  # memory optional in V3
+REQUIRED_SECTION_TYPES = [
+    "intro",
+    "summary",
+    "memory_infographic",
+    "recap",
+]  # memory_infographic mandatory in V3
 
 VAGUE_PHRASES = [
     "appropriate animation",
@@ -488,6 +493,28 @@ def _check_display_directives(section: dict) -> List[V3ValidatorError]:
     return []  # Non-fatal: skipped during director stabilisation phase
 
 
+def _check_total_duration(section: dict) -> List[V3ValidatorError]:
+    """total_duration_seconds required on all sections with narration."""
+    errors = []
+    sid = section.get("section_id", 0)
+    narration = section.get("narration", {})
+    if not narration:
+        return errors
+    segs = narration.get("segments", [])
+    if not segs:
+        return errors
+    total = section.get("total_duration_seconds")
+    if not total or total == 0:
+        errors.append(
+            V3ValidatorError(
+                "v3_total_duration_missing",
+                sid,
+                "total_duration_seconds not set or zero — compute from narration segments.",
+            )
+        )
+    return errors
+
+
 # ══════════════════════════════════════
 # SECTION VALIDATOR
 # ══════════════════════════════════════
@@ -504,6 +531,7 @@ def validate_section_v3(section: dict) -> List[V3ValidatorError]:
     errors.extend(_check_quiz_section(section))
     errors.extend(_check_narration_length(section))
     errors.extend(_check_display_directives(section))
+    errors.extend(_check_total_duration(section))
     return errors
 
 

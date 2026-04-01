@@ -55,10 +55,10 @@ class V25Validator:
                     f"Memory must have exactly 5 flashcards, got {len(cards)}."
                 )
 
-            # Bible Rule: 1 Intro + 5 Card Segments = 6 Total
-            if len(narr_segs) < 6:
+            # V3: 5 flashcards with 5 narration segments (no intro segment in V3)
+            if len(narr_segs) < 5:
                 errors.append(
-                    f"Memory must have 6 narration segments (1 Intro + 5 Cards), got {len(narr_segs)}."
+                    f"Memory must have at least 5 narration segments (1 per card), got {len(narr_segs)}."
                 )
 
         # 4. RECAP (Bible: 5 Segments, Video Renderer)
@@ -66,10 +66,15 @@ class V25Validator:
         if not recap:
             errors.append("Missing 'recap' section.")
         else:
-            # V3: Accept text_to_video, video, or wan_video for recap renderer
-            if recap.get("renderer") not in ["video", "wan_video", "text_to_video"]:
+            # V3: Accept image_to_video, text_to_video, video, or wan_video for recap renderer
+            if recap.get("renderer") not in [
+                "video",
+                "wan_video",
+                "text_to_video",
+                "image_to_video",
+            ]:
                 errors.append(
-                    f"Recap renderer must be 'video'/'wan_video'/'text_to_video', got '{recap.get('renderer')}'."
+                    f"Recap renderer must be 'video'/'wan_video'/'text_to_video'/'image_to_video', got '{recap.get('renderer')}'."
                 )
 
             # V3: Check for render_spec (new format) OR video_prompts (old format)
@@ -77,10 +82,17 @@ class V25Validator:
             # Check both inside render_spec AND at top level (for old format compatibility)
             video_prompts_in_spec = render_spec.get("video_prompts", [])
             video_prompts_top = recap.get("video_prompts", [])
+            image_to_video_beats = render_spec.get("image_to_video_beats", [])
             narr_segs = recap.get("narration", {}).get("segments", [])
 
+            # V3 format: render_spec.image_to_video_beats[] (one beat per segment)
+            if image_to_video_beats and isinstance(image_to_video_beats, list):
+                if len(image_to_video_beats) < 3:
+                    errors.append(
+                        f"Recap render_spec.image_to_video_beats must have 3-5 items. Found {len(image_to_video_beats)}."
+                    )
             # V3 format: render_spec.video_prompts[] (one prompt per segment)
-            if video_prompts_in_spec and isinstance(video_prompts_in_spec, list):
+            elif video_prompts_in_spec and isinstance(video_prompts_in_spec, list):
                 if len(video_prompts_in_spec) != 5:
                     errors.append(
                         f"Recap render_spec.video_prompts must have 5 items. Found {len(video_prompts_in_spec)}."
@@ -102,13 +114,13 @@ class V25Validator:
             # Neither format found - might be single video_prompt
             elif not render_spec.get("video_prompt"):
                 errors.append(
-                    "Recap must have render_spec.video_prompts[] (5 items) or render_spec.video_prompt or video_prompts[]."
+                    "Recap must have render_spec.image_to_video_beats[] (3-5 items) or render_spec.video_prompts[] (5 items) or video_prompts[]."
                 )
 
-            # Narration segments check
-            if len(narr_segs) != 5:
+            # Narration segments check — V3 allows dynamic count (3-6) matching beat count
+            if not (3 <= len(narr_segs) <= 6):
                 errors.append(
-                    f"Recap must have 5 narration segments. Found {len(narr_segs)}."
+                    f"Recap must have 3-6 narration segments. Found {len(narr_segs)}."
                 )
 
         # 5. QUIZ (Optional but Strict if Present)

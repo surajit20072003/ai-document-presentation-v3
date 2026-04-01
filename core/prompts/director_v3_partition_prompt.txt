@@ -259,6 +259,67 @@ same tone
 These are examples of the kind of reference to use, not a fixed list. 
 Pick whatever fits the concept naturally.
 
+## ANALOGY QUALITY RULE (MANDATORY)
+
+When choosing an analogy or cultural setting to represent a concept,
+the analogy MUST have a visible physical mechanism matching the concept.
+
+STEP 1 — The analogy must have a visible physical mechanism:
+  Selective permeability → security checkpoint, toll booth, water filter
+  Homeostasis → thermostat + AC, pressure cooker valve, float valve
+  Negative feedback → AC turning off when cool, dam gates closing
+  Cells working together → factory line, kitchen brigade, railway network
+
+STEP 2 — Test the analogy:
+  "If a student watches this scene, can they SEE the mechanism happening?"
+  If NO → reject and pick a different analogy.
+
+STEP 3 — Cultural setting is free.
+  Do NOT force Indian settings if a better analogy exists elsewhere.
+
+## NARRATION TONE RULES FOR CONTENT SECTIONS (MANDATORY)
+
+### Opening Hook (first segment of every content section)
+Do NOT start with a content statement.
+Start with one of:
+- A relatable analogy: "Think of [concept] like [everyday thing]..."
+- A question that makes the student curious: "Have you ever wondered why...?"
+- A direct address: "Here is something happening inside you right now..."
+
+The hook must connect the concept to the student's personal experience
+before any explanation begins.
+
+### Sentence Rhythm
+Mix short punchy sentences with longer explanatory ones.
+Pattern: [Explain concept] → [Short punchy reinforcement] → [Continue]
+
+Example:
+"Every cell in your body is enclosed by a plasma membrane.
+ It controls everything that enters and exits.
+ Nothing gets through without permission."
+
+Punchy sentences: 5–8 words. Use after:
+- Introducing a key term for the first time
+- Completing an analogy
+- Finishing a step in a process
+
+### Encouraging Close (last segment of every content section)
+End every content section with one sentence that makes the
+student feel capable — not just a content summary.
+
+Examples:
+"And now you understand exactly how that works."
+"That is real biology — and you just learned it."
+"You are building the kind of understanding that stays with you."
+
+Never end a section on a content statement alone.
+
+### SELF-CHECK
+- First segment: does it start with a hook or analogy? If not → rewrite.
+- Last segment: does it end with encouragement? If not → add one sentence.
+- Scan all segments: are there short punchy sentences after key terms?
+  If all sentences are medium-length → add rhythm variation.
+
 ---
 
 ## SOURCE IMAGE HANDLING (MANDATORY — SCAN EVERY CHUNK)
@@ -395,6 +456,97 @@ Every `render_spec` and every `explanation_visual` MUST include `renderer_reason
 - **infographic / image beats**: duration = narration for that beat. Min 3s.
 - HARD RULE: end_seconds MUST equal start_seconds + duration_seconds exactly. 
   If they don't match, you have made an error — recalculate before outputting
+
+## NO HEX CODES IN VIDEO PROMPTS (MANDATORY)
+
+NEVER write hex color codes (#RRGGBB) in video_prompt, video_prompts[],
+or manim_beats[].manim_scene_spec.
+
+LTX-2.3 and Manim do not benefit from hex codes in motion prompts —
+they increase output instability.
+
+Use descriptive color names only in all motion/video prompts:
+  WRONG: "a teal membrane glowing #00b4d8"
+  RIGHT: "a teal membrane with a soft blue-white glow"
+
+Hex codes ARE allowed and encouraged in:
+  image_prompt_start, image_prompt_end, infographic image_prompt
+  (Gemini uses them for precise color generation)
+
+## PACE AND PAUSE RULES (MANDATORY)
+
+Every narration segment MUST include `pace` and `pause_after_seconds`.
+
+SCHEMA ADDITION to every segment:
+{
+  "segment_id": "seg_1",
+  "text": "...",
+  "purpose": "...",
+  "pace": "slow",
+  "pause_after_seconds": 1.0,
+  "gesture": null,
+  "duration_seconds": 14.5
+}
+
+PACE VALUES:
+  "slow"   → 0.85x speaking rate.
+              Use when: segment introduces a key term for the first time,
+              or contains a heavy concept.
+  "normal" → 1.0x speaking rate.
+              Use when: standard explanation or continuation.
+  "fast"   → 1.15x speaking rate.
+              Use when: segment is a list, set of examples, or punchy close.
+
+PAUSE VALUES (pause_after_seconds):
+  0.0  → no pause, flow continues immediately
+  0.5  → light pause (end of a thought)
+  1.0  → concept pause (after introducing a key term)
+  1.5  → heavy concept pause (after homeostasis, negative feedback, etc.)
+  2.0  → maximum pause (after quiz question reveal, before answer appears)
+
+SELF-CHECK:
+Every segment where purpose is "introduce" OR text contains a key_term
+must have pace: "slow" and pause_after_seconds >= 0.5.
+
+HARD CONSTRAINT — pace: "fast" is FORBIDDEN when segment text contains
+any of these terms:
+homeostasis, negative feedback, positive feedback, plasma membrane,
+selective permeability, interstitial fluid, photosynthesis, respiration,
+diffusion, osmosis, mitosis, meiosis, ATP, enzyme, DNA, RNA, osmosis,
+anatomy, physiology, pathology, tissue, organ system
+
+If segment contains any of the above → pace MUST be "slow" or "normal".
+pace: "fast" on a heavy concept is a schema error.
+
+SELF-CHECK: Before outputting, scan every segment where pace=fast.
+If text contains a heavy concept term → change pace to "slow".
+
+## GESTURE RULES (MANDATORY)
+
+Every narration segment MUST include a `gesture` field.
+Set to null if no gesture applies. Never omit the field.
+
+VALID VALUES:
+  "Namaskara"    → Intro greeting, closing blessing, section welcome
+  "Point Top"    → "Look at this", referencing diagram above
+  "Point Middle" → "Here", "This concept", center-screen reference
+  "Point Bottom" → "As shown below", referencing lower element
+  "Ok Symbol"    → Confirming a concept, "exactly right"
+  "Thumbs up"    → Correct answer in quiz, encouraging student
+  null           → Default — no gesture needed
+
+ASSIGNMENT RULES:
+  - First segment of intro section → "Namaskara"
+  - Segment contains "look at" / "see this" / "observe" → "Point Middle"
+  - Segment contains "as shown" / "diagram above" → "Point Top"
+  - Segment contains "below" / "at the bottom" → "Point Bottom"
+  - Quiz correct answer segment → "Thumbs up"
+  - Segment confirming a fact / "exactly right" → "Ok Symbol"
+  - All others → null
+
+SELF-CHECK:
+Every segment with gesture-trigger language must have a non-null gesture.
+First intro segment must be "Namaskara".
 
 ---
 

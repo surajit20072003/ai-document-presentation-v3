@@ -1653,6 +1653,7 @@
             content: { label: 'CONTENT', cls: 'badge-content' },
             example: { label: 'EXAMPLE', cls: 'badge-example' },
             memory: { label: 'MEMORY', cls: 'badge-memory' },
+            memory_infographic: { label: 'MEMORY VISUAL', cls: 'badge-memory' },
             recap: { label: 'RECAP', cls: 'badge-recap' },
             quiz: { label: 'QUIZ', cls: 'badge-quiz' },
         };
@@ -2356,7 +2357,8 @@
                             if (hasVid) { _manimLoaded = true; loadManimScene(sec, actualDur, box); }
                         } else if (renderer === 'video' || renderer === 'wan_video' ||
                             renderer === 'text_to_video' || renderer === 'image_to_video' ||
-                            sec.section_type === 'recap') {
+                            sec.section_type === 'recap' ||
+                            sec.section_type === 'memory_infographic') {
                             _videoLoaded = true; // FIX: mark so durationchange skips
                             loadVideoScene(sec, actualDur, box);
                         }
@@ -2370,7 +2372,8 @@
                         var renderer = capturedSec.renderer || 'none';
                         if (renderer === 'video' || renderer === 'wan_video' ||
                             renderer === 'text_to_video' || renderer === 'image_to_video' ||
-                            capturedSec.section_type === 'recap') {
+                            capturedSec.section_type === 'recap' ||
+                            capturedSec.section_type === 'memory_infographic') {
                             if (_videoLoaded) return; // FIX: skip if already loaded via onloadedmetadata
                             _videoLoaded = true;
                             loadVideoScene(capturedSec, vid.duration, box);
@@ -2442,7 +2445,8 @@
                     loadManimScene(sec, fallbackDur, { started: true });
                 } else if (renderer === 'video' || renderer === 'wan_video' ||
                     renderer === 'text_to_video' || renderer === 'image_to_video' ||
-                    sec.section_type === 'recap') {
+                    sec.section_type === 'recap' ||
+                    sec.section_type === 'memory_infographic') {
                     loadVideoScene(sec, fallbackDur, { started: true });
                 }
             }
@@ -2453,6 +2457,7 @@
             var secType2 = sec.section_type || sec.type || 'content';
             if (secType2 === 'summary') initSummarySection(sec, idx);
             if (secType2 === 'memory') initMemorySection(sec, idx);
+            if (secType2 === 'memory_infographic') initMemoryInfographicSection(sec, idx);
             if (secType2 === 'recap') initRecapSection(sec, idx);
             G_PLAYBACK_INTENDED = true;
         }
@@ -3127,6 +3132,12 @@
                 }
             }
             avEl.addEventListener('timeupdate', onTimeUpdate);
+        }
+
+        function initMemoryInfographicSection(sec) {
+            // Memory infographic uses loadVideoScene() for visual display.
+            // Visual beats are driven by render_spec.infographic_beats timing.
+            // No additional UI needed — images sync to avatar narration automatically.
         }
 
         // ══════════════════════════════════════════════════════════

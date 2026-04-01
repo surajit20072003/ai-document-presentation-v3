@@ -360,8 +360,8 @@ class PartitionDirectorGenerator:
                 if update_status_callback:
                     update_status_callback("image_injection", msg)
 
-        # 4. Memory and Recap (Global Footer)
-        for key in ["memory", "recap"]:
+        # 4. Memory, Memory Infographic, and Recap (Global Footer)
+        for key in ["memory", "memory_infographic", "recap"]:
             if global_results.get(key):
                 sec = global_results[key]
                 sec["section_id"] = current_id
@@ -435,7 +435,9 @@ class PartitionDirectorGenerator:
                                 sec["renderer"] = "image_to_video"
                                 # Always force-correct the render_spec for recap
                                 rs = sec.get("render_spec", {})
-                                rs["renderer"] = "image_to_video"  # force even if LLM set text_to_video
+                                rs["renderer"] = (
+                                    "image_to_video"  # force even if LLM set text_to_video
+                                )
 
                                 # Convert video_prompts -> image_to_video_beats if needed
                                 if not rs.get("image_to_video_beats"):
@@ -444,39 +446,55 @@ class PartitionDirectorGenerator:
                                     if video_prompts:
                                         beats = []
                                         for i, vp in enumerate(video_prompts):
-                                            prompt_text = vp if isinstance(vp, str) else vp.get("prompt", "Cinematic recap scene.")
-                                            beats.append({
-                                                "beat_id": f"recap_beat_{i + 1}",
-                                                "image_prompt_start": f"Cinematic recap opening frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
-                                                "image_prompt_end": f"Cinematic recap closing frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
-                                                "video_prompt": prompt_text,
-                                                "duration": 15
-                                            })
+                                            prompt_text = (
+                                                vp
+                                                if isinstance(vp, str)
+                                                else vp.get(
+                                                    "prompt", "Cinematic recap scene."
+                                                )
+                                            )
+                                            beats.append(
+                                                {
+                                                    "beat_id": f"recap_beat_{i + 1}",
+                                                    "image_prompt_start": f"Cinematic recap opening frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
+                                                    "image_prompt_end": f"Cinematic recap closing frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
+                                                    "video_prompt": prompt_text,
+                                                    "duration": 15,
+                                                }
+                                            )
                                         rs["image_to_video_beats"] = beats
                                         rs.pop("video_prompts", None)
                                     elif segs:
                                         beats = []
                                         for i, seg in enumerate(segs):
-                                            beats.append({
-                                                "beat_id": f"recap_beat_{i + 1}",
-                                                "image_prompt_start": f"Cinematic recap opening frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
-                                                "image_prompt_end": f"Cinematic recap closing frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
-                                                "video_prompt": seg.get("text", "Cinematic recap scene."),
-                                                "duration": 15
-                                            })
+                                            beats.append(
+                                                {
+                                                    "beat_id": f"recap_beat_{i + 1}",
+                                                    "image_prompt_start": f"Cinematic recap opening frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
+                                                    "image_prompt_end": f"Cinematic recap closing frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
+                                                    "video_prompt": seg.get(
+                                                        "text", "Cinematic recap scene."
+                                                    ),
+                                                    "duration": 15,
+                                                }
+                                            )
                                         rs["image_to_video_beats"] = beats
                                     else:
-                                        rs["image_to_video_beats"] = [{
-                                            "beat_id": "recap_fallback",
-                                            "image_prompt_start": "Cinematic recap opening frame.",
-                                            "image_prompt_end": "Cinematic recap closing frame.",
-                                            "video_prompt": "Cinematic lesson recap summary.",
-                                            "duration": 15
-                                        }]
+                                        rs["image_to_video_beats"] = [
+                                            {
+                                                "beat_id": "recap_fallback",
+                                                "image_prompt_start": "Cinematic recap opening frame.",
+                                                "image_prompt_end": "Cinematic recap closing frame.",
+                                                "video_prompt": "Cinematic lesson recap summary.",
+                                                "duration": 15,
+                                            }
+                                        ]
 
                                 # Recalculate total_duration_seconds
                                 beats = rs.get("image_to_video_beats", [])
-                                rs["total_duration_seconds"] = sum(b.get("duration", 15) for b in beats)
+                                rs["total_duration_seconds"] = sum(
+                                    b.get("duration", 15) for b in beats
+                                )
                                 sec["render_spec"] = rs
                     return data
 

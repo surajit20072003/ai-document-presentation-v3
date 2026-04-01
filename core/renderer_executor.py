@@ -80,7 +80,7 @@ def _render_videos_parallel(
             beat_idx = beat.get("beat_idx", 0)
             prompt = beat.get("prompt") or beat.get("video_prompt", "")
             duration = int(beat.get("duration", 15))
-            image_path = beat.get("image_path")          # start frame
+            image_path = beat.get("image_path")  # start frame
             image_path_end = beat.get("image_path_end")  # end frame (new)
 
             # Filename: topic_{section_id}_{beat_id}.mp4
@@ -94,7 +94,7 @@ def _render_videos_parallel(
                 duration=duration,
                 output_path=out_path,
                 image_path=image_path,
-                image_path_end=image_path_end,   # ← pass end frame
+                image_path_end=image_path_end,  # ← pass end frame
             )
             future_to_beat[future] = beat_id
 
@@ -170,6 +170,10 @@ def enforce_renderer_policy(presentation: dict) -> dict:
             "example",
         ):
             pass  # Allow Manim/Three.js renderer through unchanged
+
+        # V3: 'infographic' is valid for memory_infographic — never override
+        elif current_renderer == "infographic" and section_type == "memory_infographic":
+            pass  # Allow infographic renderer through unchanged
 
     if changes_made > 0:
         print(f"[RENDERER POLICY] Applied {changes_made} renderer overrides")
@@ -527,13 +531,15 @@ def execute_renderer(
         }
 
     # Check for specs at both render_spec level and top level (for explanation_visual)
-    manim_scene_spec = render_spec.get("manim_scene_spec") or render_spec.get("manim_beats") or topic.get(
-        "manim_scene_spec", ""
-    ) or topic.get("manim_beats", [])
+    manim_scene_spec = (
+        render_spec.get("manim_scene_spec")
+        or render_spec.get("manim_beats")
+        or topic.get("manim_scene_spec", "")
+        or topic.get("manim_beats", [])
+    )
     video_prompts = render_spec.get("video_prompts") or topic.get("video_prompts", [])
-    image_to_video_beats = (
-        render_spec.get("image_to_video_beats")
-        or topic.get("image_to_video_beats", [])
+    image_to_video_beats = render_spec.get("image_to_video_beats") or topic.get(
+        "image_to_video_beats", []
     )
     has_v12_specs = (
         bool(manim_scene_spec) or bool(video_prompts) or bool(image_to_video_beats)
@@ -647,12 +653,26 @@ def execute_renderer(
                 beats = []
                 for i, img_p in enumerate(image_prompts):
                     vid_p = video_prompts[i] if i < len(video_prompts) else {}
-                    
-                    img_prompt_text = img_p if isinstance(img_p, str) else img_p.get("prompt", "")
-                    beat_id = f"seg_{i + 1}" if isinstance(img_p, str) else img_p.get("segment_id", f"seg_{i + 1}")
-                    duration = 15 if isinstance(img_p, str) else img_p.get("duration", 15)
-                    
-                    vid_prompt_text = vid_p if isinstance(vid_p, str) else (vid_p.get("prompt", "") if isinstance(vid_p, dict) else "")
+
+                    img_prompt_text = (
+                        img_p if isinstance(img_p, str) else img_p.get("prompt", "")
+                    )
+                    beat_id = (
+                        f"seg_{i + 1}"
+                        if isinstance(img_p, str)
+                        else img_p.get("segment_id", f"seg_{i + 1}")
+                    )
+                    duration = (
+                        15 if isinstance(img_p, str) else img_p.get("duration", 15)
+                    )
+
+                    vid_prompt_text = (
+                        vid_p
+                        if isinstance(vid_p, str)
+                        else (
+                            vid_p.get("prompt", "") if isinstance(vid_p, dict) else ""
+                        )
+                    )
 
                     beats.append(
                         {
@@ -670,10 +690,18 @@ def execute_renderer(
                 # Only video_prompts[] - need to generate images from video prompts
                 beats = []
                 for i, vid_p in enumerate(video_prompts):
-                    beat_id = f"seg_{i + 1}" if isinstance(vid_p, str) else vid_p.get("segment_id", f"seg_{i + 1}")
-                    vid_prompt_text = vid_p if isinstance(vid_p, str) else vid_p.get("prompt", "")
-                    duration = 15 if isinstance(vid_p, str) else vid_p.get("duration", 15)
-                    
+                    beat_id = (
+                        f"seg_{i + 1}"
+                        if isinstance(vid_p, str)
+                        else vid_p.get("segment_id", f"seg_{i + 1}")
+                    )
+                    vid_prompt_text = (
+                        vid_p if isinstance(vid_p, str) else vid_p.get("prompt", "")
+                    )
+                    duration = (
+                        15 if isinstance(vid_p, str) else vid_p.get("duration", 15)
+                    )
+
                     beats.append(
                         {
                             "beat_id": beat_id,
@@ -771,7 +799,10 @@ def execute_renderer(
                             continue
                         future = executor.submit(
                             generate_image_for_beat,
-                            beat={"beat_id": f"{beat_id}_{slot}", "image_prompt": img_prompt},
+                            beat={
+                                "beat_id": f"{beat_id}_{slot}",
+                                "image_prompt": img_prompt,
+                            },
                             job_id=job_id,
                             section_id=str(topic_id),
                             output_dir=output_dir,
@@ -817,7 +848,10 @@ def execute_renderer(
                     for bid, slot, img_prompt in failed_slots:
                         future = executor.submit(
                             generate_image_for_beat,
-                            beat={"beat_id": f"{bid}_{slot}", "image_prompt": img_prompt},
+                            beat={
+                                "beat_id": f"{bid}_{slot}",
+                                "image_prompt": img_prompt,
+                            },
                             job_id=job_id,
                             section_id=str(topic_id),
                             output_dir=output_dir,
@@ -861,8 +895,8 @@ def execute_renderer(
                             "beat_id": beat_id,
                             "prompt": beat.get("prompt", ""),
                             "duration": beat.get("duration", 15),
-                            "image_path": start_path,       # start frame (absolute)
-                            "image_path_end": end_path,     # end frame (absolute, may be None)
+                            "image_path": start_path,  # start frame (absolute)
+                            "image_path_end": end_path,  # end frame (absolute, may be None)
                         }
                     )
 
@@ -935,7 +969,9 @@ def execute_renderer(
                         bid = beat.get("beat_id")
                         if bid and bid in beat_video_map:
                             beat["video_path"] = beat_video_map[bid]
-                            print(f"  [I2V WRITEBACK] visual_beat {bid} → {beat_video_map[bid]}")
+                            print(
+                                f"  [I2V WRITEBACK] visual_beat {bid} → {beat_video_map[bid]}"
+                            )
 
                     # 2. Update narration by beat_id match
                     for eid, rel_path in beat_video_map.items():
@@ -952,7 +988,9 @@ def execute_renderer(
                         if seg.get("video_path") is None and i < len(sorted_beat_paths):
                             seg["video_path"] = sorted_beat_paths[i]
                             seg["beat_videos"] = [sorted_beat_paths[i]]
-                            print(f"  [I2V WRITEBACK] narr_seg[{i}] fallback → {sorted_beat_paths[i]}")
+                            print(
+                                f"  [I2V WRITEBACK] narr_seg[{i}] fallback → {sorted_beat_paths[i]}"
+                            )
 
                     # FIX 2: Write beat_video_paths + video_path into topic dict (saves to presentation.json)
                     rel_paths = sorted(beat_video_map.values())
@@ -960,7 +998,6 @@ def execute_renderer(
                     topic["video_path"] = rel_paths[0] if rel_paths else None
                     result["beat_video_paths"] = rel_paths
                     result["video_path"] = topic["video_path"]
-
 
                 else:
                     result["status"] = "failed"
@@ -995,7 +1032,11 @@ def execute_renderer(
                 # NEW FORMAT: video_prompts[] array - one video per segment
                 beats = []
                 for i, p in enumerate(video_prompts):
-                    beat_id = f"seg_{i + 1}" if isinstance(p, str) else p.get("segment_id", f"seg_{i + 1}")
+                    beat_id = (
+                        f"seg_{i + 1}"
+                        if isinstance(p, str)
+                        else p.get("segment_id", f"seg_{i + 1}")
+                    )
                     prompt_text = p if isinstance(p, str) else p.get("prompt", "")
                     duration = 15 if isinstance(p, str) else p.get("duration", 15)
                     beats.append(
@@ -1107,7 +1148,9 @@ def execute_renderer(
                         bid = beat.get("beat_id")
                         if bid and bid in beat_video_map:
                             beat["video_path"] = beat_video_map[bid]
-                            print(f"  [T2V WRITEBACK] visual_beat {bid} → {beat_video_map[bid]}")
+                            print(
+                                f"  [T2V WRITEBACK] visual_beat {bid} → {beat_video_map[bid]}"
+                            )
 
                     # 2. Update narration / video_prompts
                     for eid, rel_path in beat_video_map.items():
@@ -1281,7 +1324,9 @@ def execute_renderer(
 
             if valid_paths:
                 result["video_path"] = f"videos/{Path(valid_paths[0]).name}"
-                result["beat_video_paths"] = [f"videos/{Path(p).name}" for p in valid_paths]
+                result["beat_video_paths"] = [
+                    f"videos/{Path(p).name}" for p in valid_paths
+                ]
                 result["beat_videos"] = result["beat_video_paths"]
                 result["all_video_paths"] = valid_paths
                 result["status"] = "success" if failed_count == 0 else "partial"
@@ -1292,17 +1337,18 @@ def execute_renderer(
                 print(
                     f"[RENDER] Manim multi-beat: {len(valid_paths)}/{len(video_path)} beat videos for section {topic_id}"
                 )
-                
+
                 # --- NEW WRITEBACK LOGIC for MANIM ---
                 beat_video_map = {}
                 import re
+
                 for path_str in valid_paths:
                     fname = Path(path_str).name
                     rel_path = f"videos/{fname}"
                     m = re.search(rf"topic_{topic_id}_(.+)\.mp4", fname)
                     if m:
                         beat_video_map[m.group(1)] = rel_path
-                        
+
                 # Update visual_beats
                 for beat in topic.get("visual_beats", []):
                     bid = beat.get("beat_id")
@@ -1316,15 +1362,15 @@ def execute_renderer(
                     if eid in beat_video_map:
                         seg["video_path"] = beat_video_map[eid]
                         seg["beat_videos"] = [beat_video_map[eid]]
-                        
+
                 # FIX: Index-based fallback for manim (manim outputs beat_0, beat_1... but json has beat_1, seg_1)
                 sorted_beat_paths = sorted(beat_video_map.values())
-                
+
                 # 1. Fallback for visual_beats
                 for i, beat in enumerate(topic.get("visual_beats", [])):
                     if beat.get("video_path") is None and i < len(sorted_beat_paths):
                         beat["video_path"] = sorted_beat_paths[i]
-                
+
                 # 2. Fallback for narration
                 for i, seg in enumerate(narr_segs):
                     if seg.get("video_path") is None and i < len(sorted_beat_paths):
@@ -2425,17 +2471,17 @@ def submit_v3_segment_background_job(
             quiz_sources.append(("explanation", quiz))
             # Also check nested questions in quiz
             for qi, q in enumerate(quiz.get("questions", [])):
-                quiz_sources.append((f"q{qi+1}_explanation", q))
-        
+                quiz_sources.append((f"q{qi + 1}_explanation", q))
+
         # Also check section level questions (sometimes Director puts them there)
         for qi, q in enumerate(section.get("questions", [])):
-            quiz_sources.append((f"sec_q{qi+1}_explanation", q))
+            quiz_sources.append((f"sec_q{qi + 1}_explanation", q))
 
         for suffix, source in quiz_sources:
             exp = source.get("explanation_visual", {})
             if not exp or not isinstance(exp, dict):
                 continue
-                
+
             renderer = exp.get("renderer", "")
             if renderer not in segments_by_renderer:
                 continue
@@ -2443,29 +2489,40 @@ def submit_v3_segment_background_job(
             # Handle multi-beat explanation visuals by flattening them for the queue
             # (image_to_video_beats, video_prompts, etc.)
             sub_beats = (
-                exp.get("image_to_video_beats") or 
-                exp.get("video_prompts") or 
-                exp.get("manim_beats") or 
-                []
+                exp.get("image_to_video_beats")
+                or exp.get("video_prompts")
+                or exp.get("manim_beats")
+                or []
             )
-            
+
             if sub_beats and isinstance(sub_beats, list):
                 for bi, beat in enumerate(sub_beats):
                     # Create a flattened spec for the background job
                     flat_spec = beat.copy()
                     flat_spec["_section_id"] = section_id
-                    flat_spec["segment_id"] = f"quiz_{section_id}_{suffix}_b{bi+1}"
+                    flat_spec["segment_id"] = f"quiz_{section_id}_{suffix}_b{bi + 1}"
                     flat_spec["renderer"] = renderer
                     # Map duration keys
-                    if "duration" in flat_spec and "segment_duration_seconds" not in flat_spec:
+                    if (
+                        "duration" in flat_spec
+                        and "segment_duration_seconds" not in flat_spec
+                    ):
                         flat_spec["segment_duration_seconds"] = flat_spec["duration"]
-                    elif "duration_seconds" in flat_spec and "segment_duration_seconds" not in flat_spec:
-                        flat_spec["segment_duration_seconds"] = flat_spec["duration_seconds"]
-                    
+                    elif (
+                        "duration_seconds" in flat_spec
+                        and "segment_duration_seconds" not in flat_spec
+                    ):
+                        flat_spec["segment_duration_seconds"] = flat_spec[
+                            "duration_seconds"
+                        ]
+
                     segments_by_renderer[renderer].append(flat_spec)
-                    
+
                     # Ensure image_prompt is set for the background task if using dual prompts
-                    if "image_prompt_start" in flat_spec and "image_prompt" not in flat_spec:
+                    if (
+                        "image_prompt_start" in flat_spec
+                        and "image_prompt" not in flat_spec
+                    ):
                         flat_spec["image_prompt"] = flat_spec["image_prompt_start"]
             else:
                 # Single beat explanation visual
@@ -2474,11 +2531,11 @@ def submit_v3_segment_background_job(
                 # Map duration keys
                 if "duration_seconds" in exp and "segment_duration_seconds" not in exp:
                     exp["segment_duration_seconds"] = exp["duration_seconds"]
-                
+
                 # Ensure image_prompt is set
                 if "image_prompt_start" in exp and "image_prompt" not in exp:
                     exp["image_prompt"] = exp["image_prompt_start"]
-                
+
                 segments_by_renderer[renderer].append(exp)
 
     for renderer, specs in segments_by_renderer.items():
