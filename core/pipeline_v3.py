@@ -736,6 +736,23 @@ def run_v3_pipeline(
                         f"[V3] Manim render failed for sec {sec_id}: {render_err}"
                     )
                     log("manim_render", f"  ⚠️ Sec {sec_id} render failed: {render_err}")
+                    # Recover any partial paths already written to narration segments
+                    # by the runner (topic is passed by reference so seg["video_path"]
+                    # was set in-memory for every beat that DID succeed before the failure)
+                    partial = [
+                        seg["video_path"]
+                        for seg in section.get("narration", {}).get("segments", [])
+                        if seg.get("video_path")
+                    ]
+                    if partial:
+                        section["video_path"] = partial[0]
+                        section["manim_video_paths"] = partial
+                        section["beat_video_paths"] = partial
+                        rendered_total += len(partial)
+                        log(
+                            "manim_render",
+                            f"  ⚠️ Sec {sec_id}: recovered {len(partial)} partial beat(s) from segment data.",
+                        )
 
             log(
                 "manim_render",
@@ -1348,7 +1365,30 @@ def run_v3_pipeline(
         log("wan_video", "No video sections found — skipping WAN/LTX.")
 
     # ─────────────────────────────────────────────
-    # Phase 7: Final save
+    # Phase 7: Downgrade all job videos to 360p
+    # Runs after ALL video generation is complete.
+    # Encodes every .mp4 in videos/ to 360p in-place.
+    # Original high-res file is deleted on success.
+    # Non-fatal: errors are logged, pipeline continues.
+    # ─────────────────────────────────────────────
+    log("video_downgrade", "Phase 7: Downgrading all job videos to 360p...")
+    try:
+        from core.video_downgrader import downgrade_videos_to_360p
+
+        downgrade_count = downgrade_videos_to_360p(
+            videos_dir=str(output_path / "videos"),
+            log_fn=log,
+        )
+        log(
+            "video_downgrade",
+            f"✅ Phase 7 complete: {downgrade_count} video(s) downgraded to 360p.",
+        )
+    except Exception as e:
+        logger.warning(f"[V3] 360p downgrade error (non-fatal): {e}")
+        log("video_downgrade", f"⚠️ Phase 7 error (non-fatal): {e}")
+
+    # ─────────────────────────────────────────────
+    # Phase 8: Final save
     # ─────────────────────────────────────────────
 
     # Re-read from disk (avatar generator may have updated it)

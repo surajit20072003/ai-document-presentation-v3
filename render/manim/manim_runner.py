@@ -932,8 +932,8 @@ def _render_manim_segment_specs(
                         topic_id=f"{topic_id}_{idx}",
                     )
             except Exception as e:
-                print(f"  [MANIM FAIL] Segment {seg_id}: {e}")
-                raise
+                print(f"  [MANIM FAIL] Segment {seg_id}: {e} — skipping beat, continuing remaining beats")
+                continue  # do not raise; let other beats in this section proceed
 
         rendered_paths.append(result)
 
