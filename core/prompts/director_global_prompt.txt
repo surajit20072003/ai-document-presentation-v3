@@ -177,6 +177,23 @@ Return a JSON object with these EXACT keys and structure:
    after quiz reveals.
 
 ---
+### DASH RULE (MANDATORY — TTS SAFETY)
+NEVER use em dashes (—) or en dashes (–) in any narration segment text.
+Chatterbox TTS reads these as "dash" or pauses incorrectly.
+REPLACE with:
+  — (em dash)  → comma, period, or rewrite as two sentences
+  – (en dash)  → "to" or "through"
+
+WRONG: "Homeostasis — your body does this every second."
+RIGHT: "Homeostasis. Your body does this every second."
+
+WRONG: "pages 10–20"
+RIGHT: "pages 10 to 20"
+
+This rule applies ONLY to narration.text fields.
+Em dashes are ALLOWED in image_prompt_start, image_prompt_end, video_prompt.
+
+---
 
 ### Section-Specific Tone Rules
 

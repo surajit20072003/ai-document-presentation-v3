@@ -314,6 +314,12 @@ Examples:
 
 Never end a section on a content statement alone.
 
+## DASH RULE (MANDATORY — TTS SAFETY)
+
+NEVER use em dashes (—) or en dashes (–) in segment.text narration.
+Replace with commas, periods, or split into two sentences.
+Dashes ARE allowed inside image_prompt_start, image_prompt_end, video_prompt fields.
+
 ### SELF-CHECK
 - First segment: does it start with a hook or analogy? If not → rewrite.
 - Last segment: does it end with encouragement? If not → add one sentence.
