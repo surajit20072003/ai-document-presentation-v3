@@ -2688,7 +2688,20 @@
                 if (b.start_seconds !== undefined) infoByStart[String(b.start_seconds)] = b;
             });
 
-            if (vbeats.length > 0) {
+            // FIX: memory_infographic sections have no visual_beats —
+            // build schedule directly from infographic_beats
+            if (vbeats.length === 0 && infos.length > 0 && sec.renderer === 'infographic') {
+                infos.forEach(function (ib) {
+                    var imgSrc = ib.image_path || ib.image_source || '';
+                    if (!imgSrc) return;
+                    schedule.push({
+                        start: ib.start_seconds || 0,
+                        end: ib.end_seconds || 9999,
+                        type: 'image',
+                        src: imgSrc
+                    });
+                });
+            } else if (vbeats.length > 0) {
                 var vidIdx = 0;
                 vbeats.forEach(function (vb) {
                     var start = vb.beat_start_seconds;
@@ -2726,17 +2739,18 @@
 
             if (infos.length > 0) {
                 infos.forEach(function (ib) {
-                    if (!ib.image_source) return;
+                    if (!ib.image_source && !ib.image_path) return;
+                    var ibSrc = ib.image_source || ib.image_path;
                     var ibStart = ib.start_seconds || 0;
                     var ibEnd = ib.end_seconds || 9999;
                     var replaced = false;
                     for (var si = 0; si < schedule.length; si++) {
                         if (schedule[si].type === 'video' && Math.abs(schedule[si].start - ibStart) < 1.0) {
-                            schedule[si] = { start: ibStart, end: ibEnd, type: 'image', src: ib.image_source };
+                            schedule[si] = { start: ibStart, end: ibEnd, type: 'image', src: ibSrc };
                             replaced = true; break;
                         }
                     }
-                    if (!replaced) schedule.push({ start: ibStart, end: ibEnd, type: 'image', src: ib.image_source });
+                    if (!replaced) schedule.push({ start: ibStart, end: ibEnd, type: 'image', src: ibSrc });
                 });
                 schedule.sort(function (a, b) { return a.start - b.start; });
             }
@@ -2921,15 +2935,16 @@
             var infoBe = sec.render_spec && sec.render_spec.infographic_beats;
             if (infoBe && infoBe.length > 0) {
                 infoBe.forEach(function (ib) {
-                    if (!ib.image_source) return;
+                    if (!ib.image_source && !ib.image_path) return;
+                    var ibSrc = ib.image_source || ib.image_path;
                     var ibStart = ib.start_seconds || 0;
                     var ibEnd = ib.end_seconds || 9999;
                     var already = schedule.some(function (s) {
-                        return s.type === 'image' && s.imgSrc === ib.image_source
+                        return s.type === 'image' && s.imgSrc === ibSrc
                             && Math.abs(s.start - ibStart) < 0.5;
                     });
                     if (!already) {
-                        schedule.push({ start: ibStart, end: ibEnd, type: 'image', imgSrc: ib.image_source });
+                        schedule.push({ start: ibStart, end: ibEnd, type: 'image', imgSrc: ibSrc });
                     }
                 });
                 schedule.sort(function (a, b) { return a.start - b.start; });
@@ -3168,9 +3183,9 @@
         }
 
         function initMemoryInfographicSection(sec) {
-            // Memory infographic uses loadVideoScene() for visual display.
-            // Visual beats are driven by render_spec.infographic_beats timing.
-            // No additional UI needed — images sync to avatar narration automatically.
+            // Image display is handled by loadVideoScene() via infographic_beats schedule.
+            // Subtitles are handled by startSubtitleDriver() called from onloadedmetadata.
+            // No additional UI init required.
         }
 
         // ══════════════════════════════════════════════════════════

@@ -429,6 +429,22 @@ Always present. LLM decides 1–5 infographics.
   }
 }
 
+⛔ INFOGRAPHIC BEAT FORBIDDEN FIELDS — NEVER add these inside infographic_beats[] entries:
+  - image_prompt_start  (that is for image_to_video_beats only)
+  - image_prompt_end    (that is for image_to_video_beats only)
+  - video_prompt        (that is for image_to_video_beats only)
+  - visual_reasoning    (not used here)
+An infographic_beats entry has EXACTLY: beat_id, concept, style_name, style_reason,
+image_prompt, start_seconds, end_seconds. Nothing else.
+
+⛔ SELF-CHECK — MANDATORY BEFORE WRITING ANY infographic_beats[] ENTRY:
+Scan your draft for these fields: image_prompt_start, image_prompt_end,
+video_prompt, visual_reasoning.
+If ANY are present inside an infographic_beats[] entry → DELETE them immediately.
+image_prompt is the ONLY visual field permitted here.
+Writing the three-prompt structure inside infographic_beats is a schema violation
+regardless of content quality.
+
 ### SELF-CHECK
 - [ ] Section always present in output
 - [ ] render_spec.infographic_beats[] has 1–5 items

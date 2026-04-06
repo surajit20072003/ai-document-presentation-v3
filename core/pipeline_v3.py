@@ -1131,14 +1131,27 @@ def run_v3_pipeline(
 
                 result = execute_renderer(
                     topic=section,
-                    output_dir=str(output_path / "images"),
+                    output_dir=str(output_path),  # Bug fix: pass job root; generate_image_for_beat appends 'images/' internally
                     dry_run=dry_run,
                     skip_wan=skip_wan,
                     video_provider=video_provider,
                 )
 
                 if result.get("status") == "success":
-                    log("infographic", f"    ✅ Section {section_id} complete")
+                    # Bug fix: write image paths back into section and beat dicts
+                    all_paths = result.get("all_image_paths") or []
+                    if not all_paths and result.get("image_path"):
+                        all_paths = [result["image_path"]]
+                    # Write path into each infographic_beat so it persists in presentation.json
+                    beats_in_section = section.get("render_spec", {}).get("infographic_beats", [])
+                    for i, beat in enumerate(beats_in_section):
+                        if i < len(all_paths):
+                            beat["image_path"] = f"images/{Path(all_paths[i]).name}"
+                            beat["image_source"] = beat["image_path"]  # player compatibility
+                    # Set top-level image_path for player as the first image
+                    if all_paths:
+                        section["image_path"] = f"images/{Path(all_paths[0]).name}"
+                    log("infographic", f"    ✅ Section {section_id} complete: {[Path(p).name for p in all_paths]}")
                 else:
                     log(
                         "infographic",

@@ -166,19 +166,29 @@ IPS / IPE STABILITY RULE (MANDATORY)
 ═══════════════════════════════════════════════════════════
 image_prompt_end MUST describe the SAME SCENE as image_prompt_start.
 
-IDENTICAL between IPS and IPE:
-  - Architecture and background
-  - Lighting color and mood
+IDENTICAL between IPS and IPE — never change these:
+  - Background color and depth
+  - Lighting color, direction, and mood
+  - Camera angle and composition
+  - Object position, orientation, and scale in the frame
   - Number of people or objects
-  - Camera composition
 
-MAY DIFFER (slightly only):
-  - Character positions (moved slightly)
-  - Object positions (suggest recent use)
-  - Light angle (minimally — "sunlight now slightly lower")
+MAY DIFFER — only these elements:
+  - Object internal state (tipped → balanced, closed → open, assembled → exploded)
+  - Object surface appearance (dim → glowing, static → energized)
+  - Character positions (moved slightly — human scenes only)
+  - Light intensity (minimally — "amber glow now present on fulcrum")
 
-SELF-CHECK: After writing IPE, count shared noun phrases with IPS.
-If fewer than 60% of IPS nouns appear in IPE → rewrite IPE.
+POSITION LOCK (CRITICAL):
+The subject must occupy the SAME position, orientation, and scale
+in both IPS and IPE. Even a slight shift in object position between
+IPS and IPE causes LTX-2.3 to regenerate rather than transition.
+
+SELF-CHECK: After writing IPE, verify:
+  - Is the object in the same position as IPS? If not → rewrite.
+  - Is the background identical? If not → rewrite.
+  - Is the lighting identical except for minor intensity changes? If not → rewrite.
+  - Are fewer than 60% of IPS nouns present in IPE? If so → rewrite.
 
 
 ═══════════════════════════════════════════════════════════
@@ -272,12 +282,41 @@ REQUIRED (deterministic):
   "walks steadily from left to right carrying a clay pot"
   "remains seated, weaving a basket with slow hand movements"
 
-RULE 4 — MOTION CONSTRAINTS (add to VP CAMERA section):
-  - Camera: static / slow lateral pan / slow drift — pick one
-  - No zoom. No cuts. Fixed height.
+RULE 4 — CAMERA: TWO MODES — choose based on beat subject type:
 
-RULE 5 — MOTION STYLE (add to VP MECHANISM section):
-Always end MECHANISM with:
+MODE A — OBJECT EVOLUTION BEAT:
+  Triggered when: IPS and IPE show the same object in two states
+  (assembled → exploded, tipped → balanced, closed → open,
+   dim → glowing, collapsed → expanded)
+
+  CAMERA: Fully locked and static. Absolutely no movement.
+  The object transformation IS the motion. Camera never moves.
+
+  Add to VP CAMERA section:
+  "CAMERA: Fully locked and static. No drift. No push. No pan.
+   Object state change is the only motion in the frame."
+
+MODE B — HUMAN SCENE BEAT:
+  Triggered when: IPS contains person, woman, man, student,
+  worker, vendor, villager, teacher, child, crowd, people
+
+  CAMERA: Slow lateral drift or slow pan only. Fixed height.
+  Character movement is the primary motion.
+
+  Add to VP CAMERA section:
+  "CAMERA: Slow lateral pan [direction]. Fixed height. No zoom. No cuts."
+
+NEVER apply MODE A camera to human scenes.
+NEVER apply MODE B camera to object evolution beats.
+If beat contains BOTH objects and people → use MODE B (human scenes take priority).
+
+RULE 5 — MOTION STYLE: add to VP MECHANISM section based on mode:
+
+MODE A (object evolution):
+  "Object transformation is the only motion. No camera movement.
+   Transition is almost imperceptible and continuous."
+
+MODE B (human scenes):
   "Slow, natural, continuous human motion.
    No sudden changes. No character switching. Same faces throughout."
 

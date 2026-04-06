@@ -109,6 +109,19 @@ MANIM SECTION:
   Narration 31-45s → 3 beats  (3 entries, each 15s)
   manim_beats[] has ONE entry per beat.
 
+  MANIM BEAT DURATION — CRITICAL:
+  beat.duration MUST equal segment.duration_seconds EXACTLY.
+  Do NOT round to a clean number. Do NOT use a shorter estimate.
+  If narration is 10.15s → beat duration = 10.15, not 9.0 or 10.0.
+  If narration is 16.75s → split into 2 beats, each duration = 8.375.
+  The Manim code generator uses this exact value as its total runtime.
+  A shorter duration = Manim finishes before avatar = blank screen gap.
+  A longer duration = animation exceeds audio = Hard Sync WARNING.
+
+  SELF-CHECK: For every manim beat, verify:
+    beat.duration == segment.duration_seconds (or exact split thereof).
+    If they do not match → correct beat.duration before outputting.
+
 VIDEO SECTION (image_to_video / text_to_video):
   Each beat = ONE LTX-2 video = max 15 seconds
   Narration ≤ 15s  → 1 beat   (1 entry)
@@ -452,6 +465,23 @@ Every `render_spec` and every `explanation_visual` MUST include `renderer_reason
 ## TIMING CONTRACT (MANDATORY)
 
 - `segment_duration_seconds` = narration word count ÷ 130 × 60. Round to 0.5s.
+  NOTE: This rounding applies to narration segment_duration_seconds ONLY.
+  NEVER round manim beat.duration — use the exact segment_duration_seconds value.
+
+  MANIM BEAT DURATION — NO ROUNDING:
+  The beat.duration field MUST equal segment.duration_seconds exactly.
+  Do NOT round to 0.5s increments. Do NOT use a shorter estimate.
+
+  WRONG: segment=15.23s → beat duration=15.0s or 14.5s
+  RIGHT: segment=15.23s → beat duration=15.23
+
+  WRONG: segment=17.26s → beat duration=15.5s
+  RIGHT: segment=17.26s → beat duration=17.26 (or split: 8.63 + 8.63)
+
+  SELF-CHECK: After writing every manim beat, read back beat.duration.
+  If it is a round number ending in .0 or .5 — you have rounded it.
+  Recalculate from the narration word count and set the exact decimal value.
+
 - `start_seconds` of segment 1 = 0.0 always
 - `start_seconds` of segment N = `end_seconds` of segment N-1
 - `end_seconds` = `start_seconds` + `segment_duration_seconds`
@@ -606,6 +636,23 @@ Show a triangle with sine labels.
 - Always specify `frame_width` (default 10, use 14 for wide diagrams)
 - Always end spec with: "Duration exactly Xs."
 - ZERO blank gaps allowed. Fill any remaining time up to the exact duration with a static hold (e.g. "Hold final frame until 15s").
+- ANIMATION BUDGET — track cumulative run_time as you write:
+  Every `run_time=X` you write consumes X seconds of the beat's duration.
+  Sum all run_time values + all wait() values before ending the spec.
+  Total MUST equal beat.duration exactly. Not more. Not less.
+
+  EXAMPLE for a 10.15s beat:
+    self.wait(1.0)          → 1.0s used  (total: 1.0s)
+    self.play(..., run_time=2.0) → 2.0s  (total: 3.0s)
+    self.play(..., run_time=1.5) → 1.5s  (total: 4.5s)
+    self.play(..., run_time=2.0) → 2.0s  (total: 6.5s)
+    self.wait(1.0)          → 1.0s used  (total: 7.5s)
+    self.play(..., run_time=1.5) → 1.5s  (total: 9.0s)
+    self.wait(1.15)         → 1.15s      (total: 10.15s) ← exactly matches
+
+  SELF-CHECK: Before writing "Duration exactly Xs" — count all run_times
+  and waits in the spec. If sum ≠ beat.duration → adjust the final
+  self.wait() to make up the difference. Never exceed beat.duration.
 - Coordinates MUST stay within the camera frame (x within [-4.5, +4.5], y within [-3, +3]). Objects out of bounds render as a blank screen.
 
 **SOURCE IMAGES IN MANIM SECTIONS:**
@@ -896,6 +943,102 @@ Return a single valid JSON object. No text before or after.
 
 ---
 
+## EVOLUTION BEAT PATTERN (use for labeled diagrams and biological structures)
+
+When a beat needs to show both MECHANISM (animation) and LABELS (text annotations):
+Split into TWO beats — never put labels in image_to_video beats.
+
+REASON: LTX-2.3 treats text labels as fluid image data and distorts them
+during animation. Labels must always be delivered via static infographic beats.
+
+### Beat 1 — image_to_video (animation, NO labels)
+
+image_prompt_start rules:
+  - Describe subject in INITIAL state
+  - NO text, NO arrows, NO labels anywhere in the scene
+  - Same position, centered, dark background #0d1117
+  - Dramatic low-key lighting
+
+image_prompt_end rules:
+  - SAME subject in EVOLVED state
+  - Same position, same orientation, same lighting as IPS
+  - Still NO text, NO arrows, NO labels
+  - Only the object's internal state or appearance has changed
+  - Set use_start_as_ipe_reference: true (image generator uses IPS as reference)
+
+video_prompt rules:
+  - CAMERA: Fully locked and static. No movement.
+  - Object transformation is the only motion.
+  - Describe the state change physically — what moves, in which direction
+
+### Beat 2 — infographic (labeled static PNG, NO animation)
+
+image_prompt rules:
+  - Same subject in its FINAL evolved state
+  - Now add ALL labels, arrows, callouts, and annotations
+  - Same position, same lighting as video beat end state
+  - Clean readable labels in white sans-serif
+  - Publication quality. 16:9. Dark background #0d1117. No watermarks.
+
+narration rules:
+  - Beat 1 narration: describe what student SEES happening
+    ("Watch how the scale tips back to balance as the corrective force appears")
+  - Beat 2 narration: explain the labels one by one
+    ("Notice the labels. The sensor detects the change...")
+
+### Schema
+```json
+{
+  "image_to_video_beats": [
+    {
+      "beat_id": "beat_1a",
+      "segment_id": "seg_1",
+      "duration": 10,
+      "use_start_as_ipe_reference": true,
+      "image_prompt_start": "Clean unlabeled [subject] in initial state. No text. No arrows. Centered. Dark background #0d1117. Dramatic low-key lighting.",
+      "image_prompt_end": "Same [subject] in evolved state. Same position, same lighting. No text. No arrows.",
+      "video_prompt": "SUBJECT: [subject]. INITIAL STATE: [describe]. MECHANISM: [state change]. RESULT: [final state]. CAMERA: Fully locked and static. No movement. Object transformation is the only motion. DURATION: 10 seconds. 24fps. No text overlays."
+    }
+  ],
+  "infographic_beats": [
+    {
+      "beat_id": "beat_1b",
+      "segment_id": "seg_1",
+      "duration": 10,
+      "image_prompt": "Same [subject] in final evolved state. Now add all labels, arrows, and callouts. Same position and lighting as video beat. White sans-serif labels. Publication quality. 16:9. Dark background #0d1117. No watermarks."
+    }
+  ]
+
+⛔ INFOGRAPHIC BEAT FORBIDDEN FIELDS — NEVER add these inside infographic_beats[] entries:
+  - image_prompt_start  (that is for image_to_video_beats only)
+  - image_prompt_end    (that is for image_to_video_beats only)
+  - video_prompt        (that is for image_to_video_beats only)
+  - visual_reasoning    (not used here)
+An infographic_beats entry has EXACTLY: beat_id, segment_id, duration, image_prompt (and optionally image_source, start_seconds, end_seconds, concept, style_name, style_reason).
+}
+```
+⛔ SELF-CHECK — MANDATORY BEFORE WRITING ANY infographic_beats[] ENTRY:
+Scan your draft for these fields: image_prompt_start, image_prompt_end,
+video_prompt, visual_reasoning.
+If ANY are present → DELETE them immediately and do not proceed.
+You are writing an infographic beat. image_prompt is the ONLY
+visual field permitted. Writing the three-prompt structure here
+is a schema violation regardless of content quality.
+### When to use the Evolution Beat Pattern
+
+USE when:
+  - Explanation visual contains labeled diagrams
+  - Beat shows a biological structure with component names
+  - Beat shows a process with step labels (Sensor → Integrator → Effector)
+  - Any beat where the Director would naturally want text annotations visible
+
+DO NOT USE when:
+  - Beat shows pure environment or landscape (no labels needed)
+  - Beat shows human characters in cultural settings
+  - Beat is already an infographic-only beat
+
+---
+
 ## FIELD RULES SUMMARY
 
 | Field | Rule |
@@ -908,8 +1051,9 @@ Return a single valid JSON object. No text before or after.
 | `start_seconds` / `end_seconds` | Required on every narration segment. Contiguous — no gaps. |
 | `render_spec.manim_beats[]` | Required if renderer is manim. ONE entry per beat. Each beat has manim_scene_spec (100+ words) and duration. ZERO blank gaps. |
 | `render_spec.image_to_video_beats[]` | Required if renderer is image_to_video. ONE entry per beat. Each beat has image_prompt_start (100+w), image_prompt_end (100+w), video_prompt (80+w), duration. |
+| `use_start_as_ipe_reference` | Optional boolean on `image_to_video_beats[]` entries. When `true`, image generator passes the IPS PNG as a reference image when generating IPE — locks object position and lighting between frames. Only set `true` on object evolution beats. Default: `false` or absent. |
 | `render_spec.video_prompts[]` | Required if renderer is text_to_video. ONE entry per segment. Each 80+ words. |
-| `render_spec.infographic_beats[]` | Optional. Source images or generated infographics alongside any section. |
+| `render_spec.infographic_beats[]` | Optional. Source images or generated infographics alongside any section. Each entry: `beat_id`, `segment_id`, `duration`, `image_prompt`. ⛔ NEVER add `image_prompt_start`, `image_prompt_end`, `video_prompt`, or `visual_reasoning` here — those are image_to_video_beats fields only. |
 | `visual_beats[].image_source` | Required if visual_type is "image". Exact filename from source markdown. NEVER null when source image exists. |
 | `key_terms` | 2-5 terms. Appear in GOLD in Manim. Required for manim sections. |
 | `complexity` | simple / medium / complex |

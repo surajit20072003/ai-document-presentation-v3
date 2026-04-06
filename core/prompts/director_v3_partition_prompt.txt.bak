@@ -190,6 +190,66 @@ Set duration to match narration word count
 
 **Never do it backwards.** Never decide the visual first and write narration to fit it.
 
+VISUAL MECHANISM RULE (MANDATORY)
+
+For each narration beat, visuals must represent a clear mechanism.
+
+Prefer:
+- transformation (structure changes, splitting, folding)
+- flow (movement of particles, signals, energy)
+- interaction (binding, activation, transfer)
+
+Avoid:
+- static descriptive visuals
+- generic scenes without concept meaning
+
+Guideline:
+Each beat must answer: "What is physically happening right now?"
+
+Convert abstract ideas into visual subjects: cell, neuron, membrane, system, particle, pathway.
+
+VISUAL REPRESENTATION RULE (MANDATORY)
+
+DETERMINE VISUAL MODE:
+
+STRUCTURE / EXPLANATION:
+Use infographic-style visuals
+When narration describes:
+structure
+hierarchy
+labeled components
+
+MECHANISM / PROCESS:
+Use cinematic-style visuals
+When narration describes:
+movement
+transformation
+interaction
+cause-effect
+
+SECTION CONSISTENCY:
+
+Each section should follow a consistent visual approach by default
+
+CONTROLLED OVERRIDE:
+
+A beat may differ ONLY if narration clearly changes type
+Override must be rare and justified
+Do NOT switch styles between consecutive beats unless:
+narration clearly shifts between structure ↔ mechanism
+
+CONSISTENCY MEMORY:
+
+Maintain consistency with previous beats unless a clear change is required
+
+CRITICAL:
+
+Every visual must be justified by narration
+Maintain:
+same background
+same color system
+same tone
+
 ---
 
 ## PERSONA (MANDATORY)
@@ -198,6 +258,73 @@ Set duration to match narration word count
 - Use at least one relatable Indian everyday-life analogy per chunk to explain a concept — draw from daily experiences like local transport, food,cricket, festivals, markets, family life. 
 These are examples of the kind of reference to use, not a fixed list. 
 Pick whatever fits the concept naturally.
+
+## ANALOGY QUALITY RULE (MANDATORY)
+
+When choosing an analogy or cultural setting to represent a concept,
+the analogy MUST have a visible physical mechanism matching the concept.
+
+STEP 1 — The analogy must have a visible physical mechanism:
+  Selective permeability → security checkpoint, toll booth, water filter
+  Homeostasis → thermostat + AC, pressure cooker valve, float valve
+  Negative feedback → AC turning off when cool, dam gates closing
+  Cells working together → factory line, kitchen brigade, railway network
+
+STEP 2 — Test the analogy:
+  "If a student watches this scene, can they SEE the mechanism happening?"
+  If NO → reject and pick a different analogy.
+
+STEP 3 — Cultural setting is free.
+  Do NOT force Indian settings if a better analogy exists elsewhere.
+
+## NARRATION TONE RULES FOR CONTENT SECTIONS (MANDATORY)
+
+### Opening Hook (first segment of every content section)
+Do NOT start with a content statement.
+Start with one of:
+- A relatable analogy: "Think of [concept] like [everyday thing]..."
+- A question that makes the student curious: "Have you ever wondered why...?"
+- A direct address: "Here is something happening inside you right now..."
+
+The hook must connect the concept to the student's personal experience
+before any explanation begins.
+
+### Sentence Rhythm
+Mix short punchy sentences with longer explanatory ones.
+Pattern: [Explain concept] → [Short punchy reinforcement] → [Continue]
+
+Example:
+"Every cell in your body is enclosed by a plasma membrane.
+ It controls everything that enters and exits.
+ Nothing gets through without permission."
+
+Punchy sentences: 5–8 words. Use after:
+- Introducing a key term for the first time
+- Completing an analogy
+- Finishing a step in a process
+
+### Encouraging Close (last segment of every content section)
+End every content section with one sentence that makes the
+student feel capable — not just a content summary.
+
+Examples:
+"And now you understand exactly how that works."
+"That is real biology — and you just learned it."
+"You are building the kind of understanding that stays with you."
+
+Never end a section on a content statement alone.
+
+## DASH RULE (MANDATORY — TTS SAFETY)
+
+NEVER use em dashes (—) or en dashes (–) in segment.text narration.
+Replace with commas, periods, or split into two sentences.
+Dashes ARE allowed inside image_prompt_start, image_prompt_end, video_prompt fields.
+
+### SELF-CHECK
+- First segment: does it start with a hook or analogy? If not → rewrite.
+- Last segment: does it end with encouragement? If not → add one sentence.
+- Scan all segments: are there short punchy sentences after key terms?
+  If all sentences are medium-length → add rhythm variation.
 
 ---
 
@@ -335,6 +462,97 @@ Every `render_spec` and every `explanation_visual` MUST include `renderer_reason
 - **infographic / image beats**: duration = narration for that beat. Min 3s.
 - HARD RULE: end_seconds MUST equal start_seconds + duration_seconds exactly. 
   If they don't match, you have made an error — recalculate before outputting
+
+## NO HEX CODES IN VIDEO PROMPTS (MANDATORY)
+
+NEVER write hex color codes (#RRGGBB) in video_prompt, video_prompts[],
+or manim_beats[].manim_scene_spec.
+
+LTX-2.3 and Manim do not benefit from hex codes in motion prompts —
+they increase output instability.
+
+Use descriptive color names only in all motion/video prompts:
+  WRONG: "a teal membrane glowing #00b4d8"
+  RIGHT: "a teal membrane with a soft blue-white glow"
+
+Hex codes ARE allowed and encouraged in:
+  image_prompt_start, image_prompt_end, infographic image_prompt
+  (Gemini uses them for precise color generation)
+
+## PACE AND PAUSE RULES (MANDATORY)
+
+Every narration segment MUST include `pace` and `pause_after_seconds`.
+
+SCHEMA ADDITION to every segment:
+{
+  "segment_id": "seg_1",
+  "text": "...",
+  "purpose": "...",
+  "pace": "slow",
+  "pause_after_seconds": 1.0,
+  "gesture": null,
+  "duration_seconds": 14.5
+}
+
+PACE VALUES:
+  "slow"   → 0.85x speaking rate.
+              Use when: segment introduces a key term for the first time,
+              or contains a heavy concept.
+  "normal" → 1.0x speaking rate.
+              Use when: standard explanation or continuation.
+  "fast"   → 1.15x speaking rate.
+              Use when: segment is a list, set of examples, or punchy close.
+
+PAUSE VALUES (pause_after_seconds):
+  0.0  → no pause, flow continues immediately
+  0.5  → light pause (end of a thought)
+  1.0  → concept pause (after introducing a key term)
+  1.5  → heavy concept pause (after homeostasis, negative feedback, etc.)
+  2.0  → maximum pause (after quiz question reveal, before answer appears)
+
+SELF-CHECK:
+Every segment where purpose is "introduce" OR text contains a key_term
+must have pace: "slow" and pause_after_seconds >= 0.5.
+
+HARD CONSTRAINT — pace: "fast" is FORBIDDEN when segment text contains
+any of these terms:
+homeostasis, negative feedback, positive feedback, plasma membrane,
+selective permeability, interstitial fluid, photosynthesis, respiration,
+diffusion, osmosis, mitosis, meiosis, ATP, enzyme, DNA, RNA, osmosis,
+anatomy, physiology, pathology, tissue, organ system
+
+If segment contains any of the above → pace MUST be "slow" or "normal".
+pace: "fast" on a heavy concept is a schema error.
+
+SELF-CHECK: Before outputting, scan every segment where pace=fast.
+If text contains a heavy concept term → change pace to "slow".
+
+## GESTURE RULES (MANDATORY)
+
+Every narration segment MUST include a `gesture` field.
+Set to null if no gesture applies. Never omit the field.
+
+VALID VALUES:
+  "Namaskara"    → Intro greeting, closing blessing, section welcome
+  "Point Top"    → "Look at this", referencing diagram above
+  "Point Middle" → "Here", "This concept", center-screen reference
+  "Point Bottom" → "As shown below", referencing lower element
+  "Ok Symbol"    → Confirming a concept, "exactly right"
+  "Thumbs up"    → Correct answer in quiz, encouraging student
+  null           → Default — no gesture needed
+
+ASSIGNMENT RULES:
+  - First segment of intro section → "Namaskara"
+  - Segment contains "look at" / "see this" / "observe" → "Point Middle"
+  - Segment contains "as shown" / "diagram above" → "Point Top"
+  - Segment contains "below" / "at the bottom" → "Point Bottom"
+  - Quiz correct answer segment → "Thumbs up"
+  - Segment confirming a fact / "exactly right" → "Ok Symbol"
+  - All others → null
+
+SELF-CHECK:
+Every segment with gesture-trigger language must have a non-null gesture.
+First intro segment must be "Namaskara".
 
 ---
 
@@ -678,6 +896,102 @@ Return a single valid JSON object. No text before or after.
 
 ---
 
+## EVOLUTION BEAT PATTERN (use for labeled diagrams and biological structures)
+
+When a beat needs to show both MECHANISM (animation) and LABELS (text annotations):
+Split into TWO beats — never put labels in image_to_video beats.
+
+REASON: LTX-2.3 treats text labels as fluid image data and distorts them
+during animation. Labels must always be delivered via static infographic beats.
+
+### Beat 1 — image_to_video (animation, NO labels)
+
+image_prompt_start rules:
+  - Describe subject in INITIAL state
+  - NO text, NO arrows, NO labels anywhere in the scene
+  - Same position, centered, dark background #0d1117
+  - Dramatic low-key lighting
+
+image_prompt_end rules:
+  - SAME subject in EVOLVED state
+  - Same position, same orientation, same lighting as IPS
+  - Still NO text, NO arrows, NO labels
+  - Only the object's internal state or appearance has changed
+  - Set use_start_as_ipe_reference: true (image generator uses IPS as reference)
+
+video_prompt rules:
+  - CAMERA: Fully locked and static. No movement.
+  - Object transformation is the only motion.
+  - Describe the state change physically — what moves, in which direction
+
+### Beat 2 — infographic (labeled static PNG, NO animation)
+
+image_prompt rules:
+  - Same subject in its FINAL evolved state
+  - Now add ALL labels, arrows, callouts, and annotations
+  - Same position, same lighting as video beat end state
+  - Clean readable labels in white sans-serif
+  - Publication quality. 16:9. Dark background #0d1117. No watermarks.
+
+narration rules:
+  - Beat 1 narration: describe what student SEES happening
+    ("Watch how the scale tips back to balance as the corrective force appears")
+  - Beat 2 narration: explain the labels one by one
+    ("Notice the labels. The sensor detects the change...")
+
+### Schema
+```json
+{
+  "image_to_video_beats": [
+    {
+      "beat_id": "beat_1a",
+      "segment_id": "seg_1",
+      "duration": 10,
+      "use_start_as_ipe_reference": true,
+      "image_prompt_start": "Clean unlabeled [subject] in initial state. No text. No arrows. Centered. Dark background #0d1117. Dramatic low-key lighting.",
+      "image_prompt_end": "Same [subject] in evolved state. Same position, same lighting. No text. No arrows.",
+      "video_prompt": "SUBJECT: [subject]. INITIAL STATE: [describe]. MECHANISM: [state change]. RESULT: [final state]. CAMERA: Fully locked and static. No movement. Object transformation is the only motion. DURATION: 10 seconds. 24fps. No text overlays."
+    }
+  ],
+  "infographic_beats": [
+    {
+      "beat_id": "beat_1b",
+      "segment_id": "seg_1",
+      "duration": 10,
+      "image_prompt": "Same [subject] in final evolved state. Now add all labels, arrows, and callouts. Same position and lighting as video beat. White sans-serif labels. Publication quality. 16:9. Dark background #0d1117. No watermarks."
+    }
+  ]
+
+⛔ INFOGRAPHIC BEAT FORBIDDEN FIELDS — NEVER add these inside infographic_beats[] entries:
+  - image_prompt_start  (that is for image_to_video_beats only)
+  - image_prompt_end    (that is for image_to_video_beats only)
+  - video_prompt        (that is for image_to_video_beats only)
+  - visual_reasoning    (not used here)
+An infographic_beats entry has EXACTLY: beat_id, segment_id, duration, image_prompt (and optionally image_source, start_seconds, end_seconds, concept, style_name, style_reason).
+}
+```
+⛔ SELF-CHECK — MANDATORY BEFORE WRITING ANY infographic_beats[] ENTRY:
+Scan your draft for these fields: image_prompt_start, image_prompt_end,
+video_prompt, visual_reasoning.
+If ANY are present → DELETE them immediately and do not proceed.
+You are writing an infographic beat. image_prompt is the ONLY
+visual field permitted. Writing the three-prompt structure here
+is a schema violation regardless of content quality.
+### When to use the Evolution Beat Pattern
+
+USE when:
+  - Explanation visual contains labeled diagrams
+  - Beat shows a biological structure with component names
+  - Beat shows a process with step labels (Sensor → Integrator → Effector)
+  - Any beat where the Director would naturally want text annotations visible
+
+DO NOT USE when:
+  - Beat shows pure environment or landscape (no labels needed)
+  - Beat shows human characters in cultural settings
+  - Beat is already an infographic-only beat
+
+---
+
 ## FIELD RULES SUMMARY
 
 | Field | Rule |
@@ -690,8 +1004,9 @@ Return a single valid JSON object. No text before or after.
 | `start_seconds` / `end_seconds` | Required on every narration segment. Contiguous — no gaps. |
 | `render_spec.manim_beats[]` | Required if renderer is manim. ONE entry per beat. Each beat has manim_scene_spec (100+ words) and duration. ZERO blank gaps. |
 | `render_spec.image_to_video_beats[]` | Required if renderer is image_to_video. ONE entry per beat. Each beat has image_prompt_start (100+w), image_prompt_end (100+w), video_prompt (80+w), duration. |
+| `use_start_as_ipe_reference` | Optional boolean on `image_to_video_beats[]` entries. When `true`, image generator passes the IPS PNG as a reference image when generating IPE — locks object position and lighting between frames. Only set `true` on object evolution beats. Default: `false` or absent. |
 | `render_spec.video_prompts[]` | Required if renderer is text_to_video. ONE entry per segment. Each 80+ words. |
-| `render_spec.infographic_beats[]` | Optional. Source images or generated infographics alongside any section. |
+| `render_spec.infographic_beats[]` | Optional. Source images or generated infographics alongside any section. Each entry: `beat_id`, `segment_id`, `duration`, `image_prompt`. ⛔ NEVER add `image_prompt_start`, `image_prompt_end`, `video_prompt`, or `visual_reasoning` here — those are image_to_video_beats fields only. |
 | `visual_beats[].image_source` | Required if visual_type is "image". Exact filename from source markdown. NEVER null when source image exists. |
 | `key_terms` | 2-5 terms. Appear in GOLD in Manim. Required for manim sections. |
 | `complexity` | simple / medium / complex |
@@ -727,4 +1042,66 @@ Return a single valid JSON object. No text before or after.
 
 ---
 
-Return ONLY valid JSON. No explanation. No markdown. No text before or after the JSON.
+## 🔍 PRE-FLIGHT AUDIT — Run this before outputting. Fix every FAIL before proceeding.
+
+### A — Quiz fields (most common production failures)
+
+1. `understanding_quiz.question` — must NOT be empty string and must NOT be missing.
+   The question text belongs here, not only in question_script.
+   FAIL: `"question": ""` → write the actual question sentence now.
+
+2. `understanding_quiz.correct` — field name is `correct` (NOT `correct_option`).
+   FAIL: `"correct_option"` → rename to `"correct"`.
+
+3. `narration` must have ALL 4 keys present and non-empty:
+   question_script, correct_script, wrong_script, explanation_script.
+   FAIL: any missing or empty → write it now.
+
+4. `avatar_clips` must have ALL 4 keys: question, correct, wrong, explanation.
+   Path pattern: `avatars/en/quiz_{section_id}_q1_{type}.mp4`
+   FAIL: any missing → add it.
+
+5. `option_reveal_seconds` must have EXACTLY 4 float values.
+   FAIL: fewer than 4 → space them at ~1.8s intervals from 3.5s.
+
+6. `explanation_visual` must NOT be null. Must have `renderer` and `renderer_reason`.
+   FAIL: null or missing → generate a minimal image_to_video beat now.
+
+7. `explanation_visual` prompts — if renderer is image_to_video:
+   image_prompt_start ≥ 100 words, image_prompt_end ≥ 100 words, video_prompt ≥ 80 words.
+   FAIL: null or under word count → write them now.
+
+### B — Beat count (second most common failure)
+
+8. Count narration segments. Count render_spec beats (manim_beats / image_to_video_beats / video_prompts).
+   They MUST be equal (or beats = ceil(segment_duration / 15) for long segments).
+   FAIL: 7 segments but 3 beats → you dropped beats. Write all of them.
+
+9. No beat may have a null, empty, or placeholder spec.
+   FAIL: `"manim_scene_spec": ""` or `"image_prompt_start": "..."` → write real content.
+
+### C — Timing integrity
+
+10. segment[0].start_seconds MUST equal 0.0.
+    FAIL: any other value → reset.
+
+11. For every segment: end_seconds = start_seconds + duration_seconds (exact, no independent rounding).
+    FAIL: gap or mismatch → recalculate end_seconds = start + duration.
+
+12. total_duration_seconds = sum of all segment duration_seconds.
+    FAIL: mismatch → recalculate.
+
+### D — Schema hygiene
+
+13. `render_spec.renderer` must NOT exist anywhere in output.
+    FAIL: found it → delete it. Only `section.renderer` is valid.
+
+14. `text_layer` must be "hide" on every content/example segment.
+    FAIL: any "show" → change to "hide".
+
+15. `visual_beats[].image_source` — if visual_type is "image", this must be the real filename.
+    FAIL: null when source image exists → set the filename from the source markdown.
+
+All 15 checks pass → output JSON.
+
+Return ONLY valid JSON. No markdown fences, no commentary, no explanation outside the JSON object.

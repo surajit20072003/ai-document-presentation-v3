@@ -1223,7 +1223,8 @@ def execute_renderer(
                 return result
 
             image_paths = []
-            job_id = str(Path(output_dir).parent.name)
+            # job_id: output_dir is the job root (e.g. .../jobs/JOB_ID), so .name gives the job ID directly
+            job_id = str(Path(output_dir).name)
 
             for beat in beats_data:
                 beat_id = beat.get("beat_id", f"inf_{len(image_paths)}")
@@ -1242,8 +1243,8 @@ def execute_renderer(
 
                 if image_path:
                     image_paths.append(image_path)
-                    # Update segment spec with path
-                    spec["image_path"] = f"images/{Path(image_path).name}"
+                    # Write path back into the beat dict (Bug fix: was `spec`, stale ref from outer loop)
+                    beat["image_path"] = f"images/{Path(image_path).name}"
                     print(f"  [{beat_id}] -> infographic complete: {image_path}")
 
             if image_paths:
