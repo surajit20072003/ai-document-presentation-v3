@@ -1,0 +1,136 @@
+// V3 Player types — standalone, no shared types with educational player
+
+export type V3SectionType =
+    | 'intro'
+    | 'content'
+    | 'summary'
+    | 'memory'
+    | 'memory_infographic'
+    | 'recap'
+    | 'quiz';
+
+export interface V3Segment {
+    text: string;
+    duration_seconds?: number;
+    duration?: number;
+    start_seconds?: number;
+    end_seconds?: number;
+    purpose?: string;
+    beat_videos?: string[];
+    video_path?: string;
+}
+
+export interface V3Narration {
+    full_text?: string;
+    total_duration_seconds?: number;
+    segments: V3Segment[];
+}
+
+export interface V3VisualBeat {
+    beat_start_seconds: number;
+    beat_end_seconds: number;
+    visual_type: string;
+    video_path?: string;
+    image_source?: string;
+    image_path?: string;
+}
+
+export interface V3InfographicBeat {
+    start_seconds?: number;
+    end_seconds?: number;
+    image_source?: string;
+    image_path?: string;
+}
+
+export interface V3RenderSpec {
+    infographic_beats?: V3InfographicBeat[];
+    manim_beats?: Array<{
+        duration?: number;
+        duration_seconds?: number;
+        text?: string;
+    }>;
+}
+
+export interface V3ExplanationVisual {
+    video_path?: string;
+    wan_video_path?: string;
+    image_path?: string;
+    image_source?: string;
+    renderer?: string;
+    image_to_video_beats?: Array<{ video_path?: string; wan_video_path?: string }>;
+}
+
+export interface V3QuizNarration {
+    option_reveal_seconds?: number[];
+    question_script?: string;
+    correct_script?: string;
+    wrong_script?: string;
+    explanation_script?: string;
+}
+
+export interface V3Question {
+    question: string;
+    question_text?: string;
+    options: Record<string, string>;
+    correct: string;
+    correct_option?: string;
+    explanation?: string;
+    option_reveal_seconds?: number[];
+    narration?: V3QuizNarration;
+    avatar_clips?: {
+        question?: string;
+        correct?: string;
+        wrong?: string;
+        explanation?: string;
+    };
+    script?: {
+        question?: string;
+        correct?: string;
+        wrong?: string;
+        explanation?: string;
+    };
+    explanation_visual?: V3ExplanationVisual;
+}
+
+export interface V3Flashcard {
+    q?: string;
+    a?: string;
+    front?: string;
+    back?: string;
+    question?: string;
+    answer?: string;
+}
+
+export interface V3Section {
+    section_id: string | number;
+    title: string;
+    section_type: V3SectionType;
+    type?: string;
+    renderer?: string;
+    narration?: V3Narration;
+    avatar_video?: string;
+    avatar_url?: string;
+    avatar?: string;
+    b2_url?: string;
+    video_path?: string;
+    manim_video_paths?: string[];
+    beat_video_paths?: string[];
+    visual_beats?: V3VisualBeat[];
+    render_spec?: V3RenderSpec;
+    flashcards?: V3Flashcard[];
+    understanding_quiz?: V3Question;
+    questions?: V3Question[];
+    segment_duration_seconds?: number;
+    dur?: number;
+    avatar_layer?: unknown;
+}
+
+export interface V3Presentation {
+    presentation_title?: string;
+    title?: string;
+    avatar_name?: string;
+    subject?: string;
+    sections: V3Section[];
+}
+
+export type SubtitleMode = 'karaoke' | 'full' | 'off';

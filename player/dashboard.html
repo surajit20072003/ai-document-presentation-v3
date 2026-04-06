@@ -465,6 +465,9 @@
                     Video</button>
                 <button class="btn" id="playBtnV3" style="display: none; background: #7c4dff; color: #fff;"
                     onclick="openPlayerV3()">&#9654; V3 Player</button>
+                <button class="btn" id="playBtnV3React"
+                    style="display: none; background: #00bcd4; color: #000; font-weight:600;"
+                    onclick="openPlayerV3React()">&#9883; V3 React Player</button>
             </div>
 
             <div class="files-section" id="filesSection" style="display: none;">
@@ -870,6 +873,7 @@
                 // Show V3 player button only for V3 pipeline jobs
                 const isV3 = data.pipeline_version === 'v3' || (data.metadata && data.metadata.pipeline_version === 'v3');
                 document.getElementById('playBtnV3').style.display = isV3 ? 'inline-block' : 'none';
+                document.getElementById('playBtnV3React').style.display = isV3 ? 'inline-block' : 'none';
 
                 const basePath = `/player/jobs/${currentJobId}`;
                 document.getElementById('presentationLink').href = `${basePath}/presentation.json`;
@@ -878,6 +882,7 @@
             } else {
                 document.getElementById('playBtn').style.display = 'none';
                 document.getElementById('playBtnV3').style.display = 'none';
+                document.getElementById('playBtnV3React').style.display = 'none';
                 document.getElementById('filesSection').style.display = 'none';
             }
         }
@@ -893,6 +898,13 @@
             const jid = jobId || currentJobId;
             if (jid) {
                 window.open(`/player/jobs/${jid}/player_v3.html`, '_blank');
+            }
+        }
+
+        function openPlayerV3React(jobId) {
+            const jid = jobId || currentJobId;
+            if (jid) {
+                window.open(`/player/v3-player-app/dist/index.html?job=${jid}`, '_blank');
             }
         }
 
@@ -957,7 +969,10 @@
                             <button class="btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px; background: #ff6b35; color: #fff;" onclick="showReviewModal('${job.job_id}')">Review</button>
                             <button class="btn-repair" onclick="repairMissingAssets('${job.job_id}')">Repair Assets</button>
                             <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="window.open('/player_v2/?job=${job.job_id}', '_blank')">Play</button>
-                            ${job.pipeline_version === 'v3' ? `<button class="btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px; background: #7c4dff; color: #fff;" onclick="window.open('/player/jobs/${job.job_id}/player_v3.html', '_blank')">&#9654; V3 Player</button>` : ''}
+                            ${job.pipeline_version === 'v3' ? `
+                                <button class="btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px; background: #7c4dff; color: #fff;" onclick="window.open('/player/jobs/${job.job_id}/player_v3.html', '_blank')">&#9654; V3 Player</button>
+                                <button class="btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px; background: #00bcd4; color: #000; font-weight:600;" onclick="window.open('/player/v3-player-app/dist/index.html?job=${job.job_id}', '_blank')">&#9883; V3 React Player</button>
+                            ` : ''}
                         `;
 
                     } else if (job.status === 'failed') {
