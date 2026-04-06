@@ -275,12 +275,166 @@ class ImageGenerator:
         logger.info(f"[ImageGen] Downloaded to {real_path}")
         return real_path
 
+    def generate_image_with_reference(
+        self,
+        prompt: str,
+        reference_image_path: str,
+        output_path: str,
+    ) -> Optional[str]:
+        """
+        Generate an image using a reference image to lock position and lighting.
+
+        Sends the reference image (IPS PNG) alongside the text prompt as a
+        multimodal message so Gemini treats it as a visual anchor. This is used
+        for the IPE (image_prompt_end) when use_start_as_ipe_reference is True
+        on an object-evolution beat — it prevents LTX-2.3 from regenerating the
+        subject from scratch and causes a true state-change transition instead.
+
+        Args:
+            prompt: The IPE text description
+            reference_image_path: Absolute path to the IPS PNG already on disk
+            output_path: Where to save the generated IPE image
+
+        Returns:
+            Path to generated image file, or None on failure
+        """
+        logger.info(f"[ImageGen] Generating IPE with IPS reference: {reference_image_path}")
+
+        if not self.openrouter_key:
+            logger.error("[ImageGen] No OpenRouter key — cannot generate with reference")
+            return None
+
+        try:
+            # Read and encode the reference image as base64
+            with open(reference_image_path, "rb") as f:
+                ref_bytes = f.read()
+            ref_b64 = base64.b64encode(ref_bytes).decode()
+
+            # Detect MIME type from magic bytes
+            ext = _detect_extension(ref_bytes)
+            mime = "image/png" if ext == ".png" else ("image/webp" if ext == ".webp" else "image/jpeg")
+
+            url = "https://openrouter.ai/api/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.openrouter_key}",
+                "HTTP-Referer": "https://opencode.ai",
+                "X-Title": "AI Document Presentation",
+                "Content-Type": "application/json",
+            }
+
+            # Multimodal message: reference image + IPE prompt
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:{mime};base64,{ref_b64}"},
+                            },
+                            {
+                                "type": "text",
+                                "text": (
+                                    "Use the image above as a strict visual reference. "
+                                    "Keep the subject in the SAME position, orientation, "
+                                    "scale, background, and lighting. Only change the "
+                                    "internal state or surface appearance of the subject "
+                                    "as described below.\n\n" + prompt
+                                ),
+                            },
+                        ],
+                    }
+                ],
+            }
+
+            import json
+            resp = requests.post(url, headers=headers, json=payload, timeout=120)
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Reuse the same response-parsing logic as the text-only path
+            choices = data.get("choices", [])
+            if not choices:
+                raise ImageGeneratorError(f"No choices in reference response: {data}")
+
+            message = choices[0].get("message", {})
+
+            # Parse image from response (same logic as _generate_openrouter)
+            images = message.get("images") or []
+            if images:
+                img = images[0]
+                image_data = None
+                if isinstance(img, str):
+                    image_data = img
+                elif isinstance(img, dict):
+                    if img.get("type") == "image_url":
+                        url_str = img.get("image_url", {}).get("url", "")
+                    else:
+                        url_str = img.get("url") or img.get("data") or img.get("b64_json") or ""
+                    if url_str.startswith("data:image"):
+                        image_data = url_str.split(",", 1)[1]
+                    elif url_str.startswith("http"):
+                        return self._download_image(url_str, output_path)
+                    else:
+                        image_data = url_str
+                if image_data:
+                    image_bytes = base64.b64decode(image_data)
+                    real_path = _save_image(image_bytes, output_path)
+                    logger.info(f"[ImageGen] IPE (with reference) saved to {real_path}")
+                    return real_path
+
+            parts = message.get("content_parts") or message.get("parts") or []
+            if not parts and isinstance(message.get("content"), list):
+                parts = message["content"]
+
+            image_data = None
+            for part in parts:
+                if isinstance(part, dict):
+                    if part.get("type") == "image_url":
+                        url_str = part.get("image_url", {}).get("url", "")
+                        if url_str.startswith("data:image"):
+                            image_data = url_str.split(",", 1)[1]
+                        elif url_str.startswith("http"):
+                            return self._download_image(url_str, output_path)
+                    elif "inline_data" in part:
+                        image_data = part["inline_data"].get("data", "")
+                    elif part.get("type") == "image" and "data" in part:
+                        image_data = part["data"]
+
+            if not image_data:
+                content = message.get("content")
+                if content and isinstance(content, str) and len(content) > 200:
+                    if content.startswith("data:image"):
+                        image_data = content.split(",", 1)[1]
+                    elif content.startswith("http"):
+                        return self._download_image(content, output_path)
+                    else:
+                        image_data = content
+
+            if not image_data:
+                raise ImageGeneratorError("No image data in reference-based response")
+
+            image_bytes = base64.b64decode(image_data)
+            real_path = _save_image(image_bytes, output_path)
+            logger.info(f"[ImageGen] IPE (with reference) saved to {real_path}")
+            return real_path
+
+        except Exception as e:
+            logger.warning(
+                f"[ImageGen] Reference-based IPE generation failed: {e} — "
+                f"falling back to text-only generation"
+            )
+            # Graceful fallback to standard text-only generation
+            return self.generate_image(prompt, output_path)
+
 
 def generate_image_for_beat(
     beat: dict, job_id: str, section_id: str, output_dir: str
 ) -> Optional[str]:
     """
-    Generate image for a single beat.
+    Generate image for a single beat using the beat's image_prompt field.
+    Used for: infographic beats and IPS (image_prompt_start) generation.
 
     Args:
         beat: Beat dict with image_prompt
@@ -326,4 +480,73 @@ def generate_image_for_beat(
         return None
 
     # Return relative path only for browser compatibility
+    return os.path.join("images", os.path.basename(abs_path))
+
+
+def generate_ipe_image(
+    beat: dict,
+    job_id: str,
+    section_id: str,
+    output_dir: str,
+    ips_image_path: Optional[str] = None,
+) -> Optional[str]:
+    """
+    Generate the IPE (image_prompt_end) image for an image_to_video beat.
+
+    When use_start_as_ipe_reference is True on the beat AND the IPS image file
+    exists on disk, the IPS PNG is sent as a visual reference to Gemini so the
+    generated IPE has the same subject position, orientation, and lighting —
+    preventing LTX-2.3 from regenerating the subject from scratch.
+
+    Falls back to standard text-only generation if:
+      - use_start_as_ipe_reference is false / absent (default behaviour, no change)
+      - ips_image_path is None or the file does not exist yet
+      - the reference-based call raises an exception
+
+    Args:
+        beat: Beat dict with image_prompt_end and optionally use_start_as_ipe_reference
+        job_id: Job ID for folder naming
+        section_id: Section ID for file naming
+        output_dir: Base output directory
+        ips_image_path: Absolute path to the already-generated IPS image, or None
+
+    Returns:
+        Path to generated IPE image (relative to output_dir), or None
+    """
+    image_prompt = beat.get("image_prompt_end", "")
+    if not image_prompt:
+        logger.warning(f"[ImageGen] No image_prompt_end in beat")
+        return None
+
+    beat_id = beat.get("beat_id", f"beat_{section_id}")
+    images_dir = Path(output_dir) / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+    output_path = str(images_dir / f"{job_id}_{beat_id}_ipe.png")
+
+    use_reference = beat.get("use_start_as_ipe_reference", False)
+    gen = ImageGenerator()
+
+    abs_path: Optional[str] = None
+    if use_reference and ips_image_path and Path(ips_image_path).exists():
+        logger.info(
+            f"[ImageGen] Beat {beat_id}: use_start_as_ipe_reference=true "
+            f"— generating IPE with IPS reference {Path(ips_image_path).name}"
+        )
+        abs_path = gen.generate_image_with_reference(
+            prompt=image_prompt,
+            reference_image_path=ips_image_path,
+            output_path=output_path,
+        )
+    else:
+        if use_reference and not (ips_image_path and Path(ips_image_path).exists()):
+            logger.warning(
+                f"[ImageGen] Beat {beat_id}: use_start_as_ipe_reference=true "
+                f"but IPS file not found — falling back to text-only IPE generation"
+            )
+        abs_path = gen.generate_image(image_prompt, output_path)
+
+    if abs_path is None:
+        logger.error(f"[ImageGen] IPE generation failed for beat {beat_id}")
+        return None
+
     return os.path.join("images", os.path.basename(abs_path))
