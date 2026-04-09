@@ -12,7 +12,6 @@ from core.unified_content_generator import (
     call_openrouter_llm,
     normalize_output,
 )
-from core.llm_routing import call_llm_routed
 from core.utils.smart_partitioner import SmartPartitioner
 from core.tts_duration import update_durations_simplified
 
@@ -23,6 +22,7 @@ def inject_missing_image_ids(
     sections: List[Dict], images_list: str, source_content: str
 ) -> int:
     """
+    Pipeline-level fix: Scan visual_beats for diagram/image types with null image_id
     and inject the correct image_id based on markdown_pointer matching.
 
     Returns: Number of image_ids injected
@@ -191,11 +191,9 @@ class PartitionDirectorGenerator:
         config: Optional[GeneratorConfig] = None,
         content_prompt_file: Optional[str] = None,
         global_prompt_file: Optional[str] = None,
-        llm_routing: Optional[dict] = None,
     ):
         self.config = config or GeneratorConfig()
-        self.llm_routing = llm_routing or {}
-        self.partitioner = SmartPartitioner(self.config, llm_routing=self.llm_routing)
+        self.partitioner = SmartPartitioner(self.config)
         self.content_prompt_file = (
             content_prompt_file or "core/prompts/director_v3_partition_prompt.txt"
         )
@@ -404,7 +402,7 @@ class PartitionDirectorGenerator:
 
         while retries < max_retries:
             try:
-                r, _ = call_llm_routed(sys_p, current_prompt, self.config, component="director", routing=self.llm_routing)
+                r, _ = call_openrouter_llm(sys_p, current_prompt, self.config)
                 data = extract_json_from_response(r)
 
                 # VALIDATION GATE (GLOBAL)
@@ -501,8 +499,10 @@ class PartitionDirectorGenerator:
                     return data
 
                 # Validation Failed
-                print(f"DEBUG GLOBAL WORKER (Attempt {retries + 1}) - Validation Failed: {errors}")
-                
+                logger.warning(
+                    f"Global Worker Validation Failed (Attempt {retries + 1}): {errors}"
+                )
+
                 # Feedback Loop
                 error_msg = "\n- ".join(errors)
                 current_prompt += (
@@ -512,7 +512,6 @@ class PartitionDirectorGenerator:
                 )
                 retries += 1
             except Exception as e:
-                print(f"DEBUG GLOBAL WORKER EXCEPTION (Attempt {retries + 1}): {e}")
                 logger.error(f"Global Worker Exception (Attempt {retries + 1}): {e}")
                 retries += 1
 
@@ -560,8 +559,8 @@ class PartitionDirectorGenerator:
 
             while retries < max_retries:
                 try:
-                    response, _ = call_llm_routed(
-                        sys_p, current_prompt, self.config, component="director", routing=self.llm_routing
+                    response, _ = call_openrouter_llm(
+                        sys_p, current_prompt, self.config
                     )
 
                     # [DEBUG] Save Raw LLM Response

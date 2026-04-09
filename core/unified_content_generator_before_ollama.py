@@ -163,13 +163,7 @@ def extract_json_from_response(response: str) -> dict:
         raise ValueError("Response is None - cannot parse JSON")
         
     content = response.strip()
-
-    # Strip <think>...</think> blocks from Qwen3 / DeepSeek chain-of-thought models.
-    # These appear BEFORE the actual JSON and cause every parse attempt to fail.
-    import re as _re
-    content = _re.sub(r'<think>.*?</think>', '', content, flags=_re.DOTALL).strip()
-
-
+    
     if content.startswith("```json"):
         content = content[7:]
     elif content.startswith("```"):
@@ -195,47 +189,28 @@ def extract_json_from_response(response: str) -> dict:
             return json.loads(fixed_content)
         except json.JSONDecodeError as second_err:
             # ISS-FIX: Handle Truncated JSON (Model stopped early)
-            # Try to auto-close brackets/braces using a stack-based approach
+            # Try to auto-close brackets/braces
             try:
-                stack = []
-                in_string = False
-                escape = False
+                # Naive helper to close open structures
+                # Count opens/closes
+                opens_br = content.count('{') - content.count('}')
+                opens_sq = content.count('[') - content.count(']')
                 
-                for char in content:
-                    if escape:
-                        escape = False
-                        continue
-                    if char == '\\':
-                        escape = True
-                        continue
-                    if char == '"':
-                        in_string = not in_string
-                        continue
-                        
-                    if not in_string:
-                        if char == '{':
-                            stack.append('}')
-                        elif char == '[':
-                            stack.append(']')
-                        elif char == '}' or char == ']':
-                            if stack and stack[-1] == char:
-                                stack.pop()
-                                
                 repaired = content
-                if in_string:
-                    repaired += '"'
+                # Close quotes if needed (simple heuristic)
+                if repaired.strip()[-1] not in ['"', '}', ']'] and '"' in repaired.splitlines()[-1]:
+                     repaired += '"'
+                     
+                repaired += '}' * opens_br
+                repaired += ']' * opens_sq
                 
-                # Remove any trailing commas before we close the structures
-                import re
-                repaired = re.sub(r',\s*$', '', repaired)
+                # Double check braces balance, sometimes we need to close ] before }
+                # Better approach: recursive fix or just try simple append
+                # For now, appending }]*20 is safer? No.
                 
-                while stack:
-                    char_to_add = stack.pop()
-                    repaired += char_to_add
-                    
-                # Extra cleanup just in case there are trailing commas before closing braces
-                repaired = re.sub(r',\s*([\]}])', r'\1', repaired)
-
+                # Let's try just the simple count balance
+                # If the last char was inside a string, we might have botched it.
+                # Recovering from mid-string check:
                 val = json.loads(repaired)
                 print(f"[WARN] Recovered from TRUNCATED JSON by auto-closing tags.")
                 return val

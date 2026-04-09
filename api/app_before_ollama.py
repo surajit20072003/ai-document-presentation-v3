@@ -1659,12 +1659,6 @@ def submit_job():
         generation_scope = request.form.get("generation_scope", "full")
         model = request.form.get("model")
         video_provider = request.form.get("video_provider", "kie")
-        # Parse per-component LLM routing (JSON dict from dashboard toggles)
-        llm_routing_raw = request.form.get("llm_routing", "{}")
-        try:
-            llm_routing = json.loads(llm_routing_raw) if llm_routing_raw else {}
-        except Exception:
-            llm_routing = {}
         print(f"=" * 80)
         print(
             f"[ROUTING DEBUG] Received pipeline_version from form: '{pipeline_version}'"
@@ -1780,7 +1774,6 @@ def submit_job():
                     generation_scope=generation_scope,
                     model=model,
                     video_provider=video_provider,
-                    llm_routing=llm_routing,
                 )
             else:
                 with open(temp_file, "r", encoding="utf-8") as f:
@@ -1832,7 +1825,6 @@ def submit_job():
                     tts_provider=tts_provider,
                     pipeline_version=pipeline_version,
                     generation_scope=generation_scope,
-                    llm_routing=llm_routing,
                 )
 
         elif request.is_json:
@@ -4001,7 +3993,6 @@ def process_document_job_v3(
     source_file: Optional[str] = None,
     tts_provider: str = "edge_tts",
     model: Optional[str] = None,
-    llm_routing: Optional[dict] = None,  # Per-component LLM provider routing
     **kwargs,
 ) -> dict:
     """V3 document processor: PDF/DOC/DOCX → Markdown → V3 pipeline."""
@@ -4054,8 +4045,7 @@ def process_document_job_v3(
             source_file=source_file,
             tts_provider=tts_provider,
             model=model,
-            images_dict=images_dict,
-            llm_routing=llm_routing or {},  # ← forward routing to V3 pipeline
+            images_dict=images_dict,  # ← FIX: pass images through
         )
     except DatalabConversionError as e:
         raise RuntimeError(f"[V3] Document conversion failed: {e}")
@@ -4285,7 +4275,6 @@ def process_markdown_job_v3(
     tts_provider: str = "edge_tts",
     model: Optional[str] = None,
     images_dict: Optional[dict] = None,  # ← FIX: accept source images from PDF
-    llm_routing: Optional[dict] = None,  # Per-component LLM provider routing
     **kwargs,
 ) -> dict:
     """
@@ -4328,8 +4317,7 @@ def process_markdown_job_v3(
             tts_provider=tts_provider,
             model=model,
             job_update_callback=job_update_callback,
-            images_dict=images_dict,
-            llm_routing=llm_routing or {},
+            images_dict=images_dict,  # ← FIX: pass images into V3 pipeline
         )
 
         # Save analytics

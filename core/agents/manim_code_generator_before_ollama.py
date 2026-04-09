@@ -32,13 +32,12 @@ class ManimCodeGenerator:
     max_tokens = 8192  # Claude Sonnet 4.5 output limit
     max_retries = 3
 
-    def __init__(self, openrouter_api_key: Optional[str] = None, llm_routing: Optional[dict] = None, **kwargs):
+    def __init__(self, openrouter_api_key: Optional[str] = None, **kwargs):
         from core.llm_config import get_manim_model_name
 
         self.model = get_manim_model_name()
         self.api_key = openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
         self.prompts_dir = kwargs.get("prompts_dir", "core/prompts")
-        self.llm_routing = llm_routing
         self._system_prompt: Optional[str] = None
         self._user_template: Optional[str] = None
 
@@ -309,30 +308,48 @@ IMPORTANT: The user has specifically requested the above improvements. Please re
     def _invoke_claude(
         self, user_prompt: str, system_prompt: str
     ) -> Tuple[str, List[str]]:
-        """Helper to invoke Claude API (or local LLM via routing)."""
-        from core.llm_routing import call_llm_routed
-        
-        class DummyConfig:
-            temperature = self.temperature
-            max_tokens = self.max_tokens or 8192
-            timeout = 180
+        """Helper to invoke Claude API."""
+        import requests
+
+        request_payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens or 8192,
+        }
 
         try:
-            content, usage = call_llm_routed(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                config=DummyConfig(),
-                component="manim_renderer",
-                routing=self.llm_routing
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://replit.com",
+                    "X-Title": "AI Education Manim Generator",
+                },
+                json=request_payload,
+                timeout=120,
             )
+
+            if response.status_code != 200:
+                logger.error(f"[MANIM GEN] API Error: {response.text}")
+                return "", [f"API error: {response.status_code}"]
+
+            result = response.json()
+            choice = result.get("choices", [{}])[0]
+            code = choice.get("message", {}).get("content", "")
+            finish_reason = choice.get("finish_reason", "")
 
             # Log Code Stats
-            lines = len([l for l in content.split("\n") if l.strip()])
+            lines = len([l for l in code.split("\n") if l.strip()])
             logger.info(
-                f"[MANIM GEN] Code stats: {lines} lines generated."
+                f"[MANIM SONNET 4.5] Code stats: {lines} lines, Finish: {finish_reason}"
             )
 
-            return self._extract_python_code(content), []
+            return self._extract_python_code(code), []
         except Exception as e:
             logger.error(f"[MANIM GEN] Request failed: {e}")
             return "", [f"Request failed: {e}"]

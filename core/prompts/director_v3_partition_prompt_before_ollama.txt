@@ -1098,13 +1098,9 @@ DO NOT USE when:
    FAIL: `"question": ""` → write the actual question sentence now.
 
 2. `understanding_quiz.correct` — field name is `correct` (NOT `correct_option`).
-   The correct answer letter goes here.
-   FAIL: `"correct_option": "B"` → rename to `"correct": "B"`.
+   FAIL: `"correct_option"` → rename to `"correct"`.
 
-3. `section.total_duration_seconds` & `section.segment_duration_seconds` — these fields MUST exist at the ROOT of the section object.
-   FAIL: missing from the section root → add them.
-
-4. `narration` must have ALL 4 keys present and non-empty:
+3. `narration` must have ALL 4 keys present and non-empty:
    question_script, correct_script, wrong_script, explanation_script.
    FAIL: any missing or empty → write it now.
 

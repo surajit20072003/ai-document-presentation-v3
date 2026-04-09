@@ -3,13 +3,15 @@ import json
 import re
 import os
 from typing import List, Dict, Optional
-from core.unified_content_generator import call_openrouter_llm, extract_json_from_response, GeneratorConfig
+from core.unified_content_generator import extract_json_from_response, GeneratorConfig
+from core.llm_routing import call_llm_routed
 
 logger = logging.getLogger(__name__)
 
 class SmartPartitioner:
-    def __init__(self, config: GeneratorConfig):
+    def __init__(self, config: GeneratorConfig, llm_routing: Optional[dict] = None):
         self.config = config
+        self.llm_routing = llm_routing or {}
         
     def partition_markdown(self, markdown_content: str, subject: str, grade: str) -> List[Dict]:
         """
@@ -63,7 +65,7 @@ class SmartPartitioner:
         chunk_hint = "\nIMPORTANT: The document is large. Aim for chunks of roughly 10,000 to 15,000 characters each to allow parallel processing." if len(markdown_content) > 15000 else ""
         user_prompt += chunk_hint
         
-        response, _ = call_openrouter_llm(system_prompt, user_prompt, flash_config)
+        response, _ = call_llm_routed(system_prompt, user_prompt, flash_config, component="chunker", routing=self.llm_routing)
         data = extract_json_from_response(response)
         
         # [PHASE 1 DEBUG]

@@ -427,21 +427,6 @@
                     Select options to customize the job processing.
                 </div>
 
-                <!-- ── LLM Provider Routing ───────────────────────────────── -->
-                <div
-                    style="margin-top:18px; padding:16px; background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.25); border-radius:10px;">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                        <span style="font-size:1.1rem;">⚡</span>
-                        <span style="color:#00d4ff; font-weight:600; font-size:0.95rem;">LLM Provider per
-                            Component</span>
-                        <span style="color:#888; font-size:0.78rem; margin-left:auto;">Image Generation always uses
-                            Gemini</span>
-                    </div>
-                    <div id="llmRoutingToggles" style="display:flex; flex-direction:column; gap:9px;">
-                        <!-- rows injected by JS -->
-                    </div>
-                </div>
-
                 <div class="btn-group">
                     <button type="submit" class="btn btn-primary" id="submitBtn">Submit Job</button>
                 </div>
@@ -696,89 +681,6 @@
         let currentJobId = null;
         let pollInterval = null;
 
-        // ── LLM Routing Toggle ───────────────────────────────────────────
-        const LLM_COMPONENTS = [
-            { id: 'chunker', label: 'Chunker', icon: '✂️' },
-            { id: 'director', label: 'Director', icon: '🎬' },
-            { id: 'manim_renderer', label: 'Manim Renderer', icon: '🧦' },
-            { id: 'remotion_renderer', label: 'Remotion Renderer', icon: '📹', v3na: true },
-            { id: 'video_renderer', label: 'Video Renderer', icon: '🎥', v3na: true },
-            { id: 'prompt_enhancer', label: 'Prompt Enhancer', icon: '✨' },
-        ];
-
-        // Source of truth for routing state — never read from DOM styles
-        const llmRoutingState = {};
-
-        function initLlmRoutingToggles() {
-            const container = document.getElementById('llmRoutingToggles');
-            if (!container) return;
-            container.innerHTML = '';
-            LLM_COMPONENTS.forEach(comp => {
-                llmRoutingState[comp.id] = 'openrouter';  // default
-                const row = document.createElement('div');
-                row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px;';
-
-                if (comp.v3na) {
-                    // V3 N/A — no LLM call in V3 pipeline for this component
-                    row.innerHTML = `
-                        <span style="color:#999; font-size:0.88rem; min-width:140px">${comp.icon} ${comp.label}</span>
-                        <span title="No LLM call in V3 pipeline — uses GPU server directly" style="padding:3px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:#555; font-size:0.75rem; cursor:default;">⛔ V3 N/A</span>
-                    `;
-                } else {
-                    row.innerHTML = `
-                        <span style="color:#ccc; font-size:0.88rem; min-width:140px">${comp.icon} ${comp.label}</span>
-                        <div style="display:flex; gap:4px;">
-                            <button type="button"
-                                id="llm_${comp.id}_openrouter"
-                                onclick="setLlmProvider('${comp.id}', 'openrouter')"
-                                style="padding:4px 12px; border-radius:20px; border:1px solid rgba(46,204,113,0.6); background:rgba(39,174,96,0.25); color:#2ecc71; font-size:0.78rem; cursor:pointer; font-weight:600; transition:all 0.2s;">
-                                ☁️ OpenRouter
-                            </button>
-                            <button type="button"
-                                id="llm_${comp.id}_local"
-                                onclick="setLlmProvider('${comp.id}', 'local')"
-                                style="padding:4px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:transparent; color:#888; font-size:0.78rem; cursor:pointer; font-weight:500; transition:all 0.2s;">
-                                🐋 Local Ollama
-                            </button>
-                        </div>
-                    `;
-                }
-                container.appendChild(row);
-            });
-        }
-
-
-
-        function setLlmProvider(componentId, provider) {
-            const orBtn = document.getElementById(`llm_${componentId}_openrouter`);
-            const locBtn = document.getElementById(`llm_${componentId}_local`);
-            if (!orBtn || !locBtn) return;
-            // Write to state object — this is the authoritative record
-            llmRoutingState[componentId] = provider;
-            if (provider === 'openrouter') {
-                orBtn.style.background = 'rgba(39,174,96,0.25)';
-                orBtn.style.color = '#2ecc71';
-                orBtn.style.borderColor = 'rgba(46,204,113,0.6)';
-                locBtn.style.background = 'transparent';
-                locBtn.style.color = '#888';
-                locBtn.style.borderColor = 'rgba(255,255,255,0.15)';
-            } else {
-                locBtn.style.background = 'rgba(156,39,176,0.25)';
-                locBtn.style.color = '#ce93d8';
-                locBtn.style.borderColor = 'rgba(156,39,176,0.6)';
-                orBtn.style.background = 'transparent';
-                orBtn.style.color = '#888';
-                orBtn.style.borderColor = 'rgba(255,255,255,0.15)';
-            }
-        }
-
-        function getLlmRouting() {
-            // Read from the JS state object — NOT from DOM styles (browsers normalize rgba() adding spaces)
-            return Object.assign({}, llmRoutingState);
-        }
-
-        document.addEventListener('DOMContentLoaded', () => { initLlmRoutingToggles(); });
-
         function formatIST(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
@@ -842,7 +744,6 @@
             formData.append('generation_scope', document.getElementById('generation_scope').value);
             formData.append('video_provider', document.getElementById('video_provider').value);
             formData.append('skip_threejs', document.getElementById('skip_threejs').checked ? 'true' : 'false');
-            formData.append('llm_routing', JSON.stringify(getLlmRouting()));
             const modelOverride = document.getElementById('model').value.trim();
             if (modelOverride) {
                 formData.append('model', modelOverride);

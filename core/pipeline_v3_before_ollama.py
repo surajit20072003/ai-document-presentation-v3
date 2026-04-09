@@ -73,8 +73,9 @@ def run_v3_pipeline(
     job_update_callback=None,
     video_provider: str = "ltx",
     skip_wan: bool = False,
-    images_dict: Optional[dict] = None,
-    llm_routing: Optional[dict] = None,  # Per-component LLM provider routing
+    images_dict: Optional[
+        dict
+    ] = None,  # ← FIX: source images extracted from uploaded PDF
 ) -> Dict[str, Any]:
     """
     Full V3 pipeline. Returns (presentation_dict, analytics_dict).
@@ -150,7 +151,6 @@ def run_v3_pipeline(
             global_prompt_file=str(
                 Path(__file__).parent / "prompts" / "director_global_prompt.txt"
             ),
-            llm_routing=llm_routing,  # ← forward per-component routing to Director
         )
 
         log(
@@ -207,18 +207,13 @@ def run_v3_pipeline(
             hint_lines = [
                 "CRITICAL VALIDATION ERRORS — Fix these in your next attempt:",
             ]
-            # Format error details for feedback hint
-            error_details = "\n".join(
-                [f"- {e.details} [{e.condition}]" for e in retryable]
-            )
-            validation_hint = f"Your previous output failed validation. Fix these issues:\n{error_details}"
-            
-            print(f"DEBUG V3 VALIDATOR ERRORS: {error_details}")
-            logger.info(f"DEBUG V3 VALIDATOR ERRORS: {error_details}")
-
+            for err in retryable:
+                hint_lines.append(f"- Section {err.section_id}: {err.details}")
+            validation_hint = "\n".join(hint_lines)
             log(
                 "director_v3",
-                f"⚠️ Validation attempt {attempt}/{max_validation_retries} — {len(retryable)} retryable errors. Retrying with feedback...",
+                f"⚠️ Validation attempt {attempt}/{max_validation_retries} — "
+                f"{len(retryable)} retryable errors. Retrying with feedback...",
             )
 
         log(
@@ -369,7 +364,7 @@ def run_v3_pipeline(
     try:
         from core.agents.visual_prompt_enhancer import run_prompt_enhancement
 
-        presentation = run_prompt_enhancement(presentation, log_fn=log, llm_routing=llm_routing)
+        presentation = run_prompt_enhancement(presentation, log_fn=log)
         log("prompt_enhancer", "✅ Phase 2.5 complete.")
     except Exception as e:
         logger.warning(f"[V3] Prompt enhancer error (non-fatal): {e}")
@@ -503,7 +498,7 @@ def run_v3_pipeline(
             )
             import concurrent.futures
 
-            gen = ManimCodeGenerator(llm_routing=llm_routing)
+            gen = ManimCodeGenerator()
             manim_dir = output_path / "manim"
             manim_dir.mkdir(parents=True, exist_ok=True)
 

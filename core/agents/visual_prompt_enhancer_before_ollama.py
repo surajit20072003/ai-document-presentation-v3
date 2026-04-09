@@ -292,40 +292,28 @@ def _enhance_quiz_explanation(section: dict) -> bool:
     return False
 
 
-def _call_api(messages: list, temperature: float = 0.2, llm_routing: Optional[dict] = None) -> Optional[str]:
-    """Shared API call used by both enhance_section and repair_beat.
-    Routes to local Ollama or OpenRouter via llm_routing.
-    """
-    from core.llm_routing import call_llm_routed
-    from typing import Optional as _Opt
-
-    system_prompt = ""
-    user_prompt = ""
-    for m in messages:
-        if m["role"] == "system":
-            system_prompt += m["content"] + "\n"
-        elif m["role"] == "user":
-            user_prompt += m["content"] + "\n"
-
-    class DummyConfig:
-        temperature_val = temperature
-        max_tokens = 8192
-        timeout = 600
-
-        @property
-        def temperature(self):
-            return self.temperature_val
+def _call_api(messages: list, temperature: float = 0.2) -> Optional[str]:
+    """Shared API call used by both enhance_section and repair_beat."""
+    import requests
 
     try:
-        content, _ = call_llm_routed(
-            system_prompt=system_prompt.strip(),
-            user_prompt=user_prompt.strip(),
-            config=DummyConfig(),
-            component="prompt_enhancer",
-            routing=llm_routing,
+        resp = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "HTTP-Referer": "https://opencode.ai",
+                "X-Title": "AI Document Presentation Enhancer",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": ENHANCER_MODEL,
+                "temperature": temperature,
+                "messages": messages,
+            },
+            timeout=180,
         )
-        
-        raw = content
+        resp.raise_for_status()
+        raw = resp.json()["choices"][0]["message"]["content"]
         if raw.strip().startswith("```"):
             raw = "\n".join(
                 line for line in raw.splitlines() if not line.strip().startswith("```")
@@ -463,7 +451,6 @@ No markdown. No explanation. JSON only."""
     raw = _call_api(
         messages=[{"role": "user", "content": repair_prompt}],
         temperature=0.3,
-        llm_routing=None,  # repair_beat is called from _enforce_quality, which passes routing below
     )
     if not raw:
         return None
@@ -530,13 +517,15 @@ def _enforce_quality(enhanced_beats: list, section_id) -> list:
 # ── API call ───────────────────────────────────────────────────────────────────
 
 
-def enhance_section(section: dict, llm_routing: Optional[dict] = None) -> Optional[list]:
+def enhance_section(section: dict) -> Optional[list]:
     """
-    Call the LLM (OpenRouter or Local Ollama) to enhance visual prompts for one section.
+    Call GPT-4o to enhance visual prompts for one section.
     Returns list of enhanced beats, or None on failure.
     """
-    if not OPENROUTER_API_KEY and not (llm_routing and llm_routing.get("prompt_enhancer") == "local"):
-        logger.warning("[Enhancer] OPENROUTER_API_KEY not set and no local routing — skipping.")
+    import requests
+
+    if not OPENROUTER_API_KEY:
+        logger.warning("[Enhancer] OPENROUTER_API_KEY not set — skipping enhancement.")
         return None
 
     beats = extract_beats(section)
@@ -548,7 +537,9 @@ def enhance_section(section: dict, llm_routing: Optional[dict] = None) -> Option
 
     user_payload = {
         "section_id": section.get("section_id"),
-        "section_type": section.get("section_type", ""),
+        "section_type": section.get(
+            "section_type", ""
+        ),  # FIX-3: recap vs content awareness
         "renderer": section.get("renderer"),
         "beats": beats,
     }
@@ -560,7 +551,6 @@ def enhance_section(section: dict, llm_routing: Optional[dict] = None) -> Option
                 {"role": "user", "content": json.dumps(user_payload)},
             ],
             temperature=0.2,
-            llm_routing=llm_routing,
         )
         if not raw:
             return None
@@ -577,15 +567,11 @@ def enhance_section(section: dict, llm_routing: Optional[dict] = None) -> Option
 # ── Main entry point ───────────────────────────────────────────────────────────
 
 
-def run_prompt_enhancement(presentation: dict, log_fn=None, llm_routing: Optional[dict] = None) -> dict:
+def run_prompt_enhancement(presentation: dict, log_fn=None) -> dict:
     """
     Main entry point called from pipeline_v3.py (Phase 2.5).
     Iterates all sections, enhances eligible ones, and returns
     the updated presentation dict.
-
-    Args:
-        llm_routing: Per-component routing dict. If prompt_enhancer is 'local',
-                     uses the local Ollama server instead of OpenRouter.
     """
 
     def _log(msg: str):
@@ -596,8 +582,7 @@ def run_prompt_enhancement(presentation: dict, log_fn=None, llm_routing: Optiona
     sections = presentation.get("sections", [])
     eligible = [s for s in sections if s.get("renderer") in ELIGIBLE_RENDERERS]
 
-    provider_label = "Local Ollama" if (llm_routing and llm_routing.get("prompt_enhancer") == "local") else "OpenRouter"
-    _log(f"Found {len(eligible)} eligible section(s) out of {len(sections)} total (provider={provider_label}).")
+    _log(f"Found {len(eligible)} eligible section(s) out of {len(sections)} total.")
 
     enhanced_count = 0
     for section in eligible:
@@ -606,14 +591,17 @@ def run_prompt_enhancement(presentation: dict, log_fn=None, llm_routing: Optiona
         _log(f"  Enhancing section {sec_id} (renderer={renderer})...")
 
         try:
-            enhanced_beats = enhance_section(section, llm_routing=llm_routing)
+            enhanced_beats = enhance_section(section)
             if enhanced_beats:
+                # ── NEW: enforce word counts and banned words programmatically ──
                 enhanced_beats = _enforce_quality(enhanced_beats, sec_id)
                 apply_enhanced_prompts(section, enhanced_beats)
                 _log(f"  ✅ Section {sec_id}: {len(enhanced_beats)} beat(s) enhanced.")
                 enhanced_count += 1
             else:
-                _log(f"  ⚠️ Section {sec_id}: no enhancement returned, keeping original prompts.")
+                _log(
+                    f"  ⚠️ Section {sec_id}: no enhancement returned, keeping original prompts."
+                )
 
         except Exception as e:
             _log(f"  ⚠️ Section {sec_id}: enhancement error (non-fatal): {e}")
@@ -624,10 +612,14 @@ def run_prompt_enhancement(presentation: dict, log_fn=None, llm_routing: Optiona
     for section in sections:
         try:
             if _enhance_quiz_explanation(section):
-                _log(f"  ✅ Section {section.get('section_id')} quiz explanation enhanced.")
+                _log(
+                    f"  ✅ Section {section.get('section_id')} quiz explanation enhanced."
+                )
                 quiz_enhanced += 1
         except Exception as e:
-            _log(f"  ⚠️ Section {section.get('section_id')} quiz explanation error (non-fatal): {e}")
+            _log(
+                f"  ⚠️ Section {section.get('section_id')} quiz explanation error (non-fatal): {e}"
+            )
     _log(f"Quiz explanations complete: {quiz_enhanced} enhanced.")
 
     _log(f"Enhancement complete: {enhanced_count}/{len(eligible)} section(s) improved.")

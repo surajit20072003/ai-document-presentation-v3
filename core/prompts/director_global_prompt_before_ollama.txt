@@ -359,11 +359,10 @@ must have pace: "slow" and pause_after_seconds >= 0.5.
   - `section_type: "memory"`.
   - `flashcards`: Array of objects with `front` (Question/Term) and `back` (Answer/Mnemonic).
   - **Count**: Generate exactly 5 items.
-  - **Narration Segments**: STRICT RULE - You MUST generate EXACTLY 5 narration segments in the `narration.segments` array (one segment to read/explain each flashcard). Grouping them into fewer segments will fail validation.
   - **Style**: "Mnemonic Based" - Help students remember tricky concepts.
   - **Flow**: Front shows -> Pause -> Back shows. Supports "Active Recall".
 
-## 5. MEMORY INFOGRAPHIC SECTION (Mandatory — always generate)
+## MEMORY INFOGRAPHIC SECTION (Mandatory — always generate)
 
 ### Position in presentation flow:
 Intro → Summary → Content sections → Memory (flashcards)
@@ -399,7 +398,6 @@ Always present. LLM decides 1–5 infographics.
   "text_layer": "hide",
   "visual_layer": "show",
   "avatar_layer": "show",
-  "total_duration_seconds": 45.0,
   "render_spec": {
     "infographic_beats": [
       {
@@ -490,7 +488,7 @@ from the memory flashcards and generate one infographic for it.
 | Map Style | Journey-based content, navigational concepts, route processes |
 | Kawaii Doodle | Making dry topics approachable, younger audiences |
 
-## 6. RECAP (Mandatory - The "Perfected" Model)
+## 5. RECAP (Mandatory - The "Perfected" Model)
 - **Role**: A cinematic visual summary of the lesson.
 - **Rules**:
   - **DYNAMIC NUMBER OF SEGMENTS**: Decide how many segments are needed to summarize the lesson (e.g., 3 to 6).
@@ -578,8 +576,8 @@ DO NOT GENERATE "CONTENT" SECTIONS. (Those are handled by another worker).
 7. For every segment: end_seconds = start_seconds + segment_duration_seconds (exact arithmetic).
    FAIL: gap or mismatch → recalculate. Do NOT round end_seconds independently.
 
-8. total_duration_seconds = sum of all segment durations. It MUST be placed at the ROOT of the section JSON (i.e. `section.total_duration_seconds`).
-   FAIL: mismatch or missing from section root → recalculate and add.
+8. total_duration_seconds = sum of all segment durations.
+   FAIL: mismatch → recalculate.
 
 ### C — Memory section
 

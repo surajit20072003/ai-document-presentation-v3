@@ -43,9 +43,6 @@ client = OpenAI(
     base_url=OPENROUTER_BASE_URL
 )
 
-# Import the per-component routing module
-from core.llm_routing import get_llm_config, make_openai_client
-
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 SCHEMAS_DIR = Path(__file__).parent.parent / "schemas"
 
@@ -155,66 +152,51 @@ def call_llm(
     tracker: Optional[AnalyticsTracker] = None,
     max_tokens: int = 16000,
     temperature: float = 0.3,
-    response_format: Optional[Dict] = None,
-    component: Optional[str] = None,
-    llm_routing: Optional[Dict] = None,
+    response_format: Optional[Dict] = None
 ) -> Tuple[str, Dict]:
     """Make an LLM call with retry and analytics tracking.
-
+    
     Args:
-        response_format: Optional dict for structured output.
-        component:       Pipeline component name (e.g. 'chunker', 'director').
-                         When provided alongside llm_routing, the appropriate
-                         provider (OpenRouter or Local Ollama) is selected.
-        llm_routing:     Per-component routing dict from the dashboard submission.
+        response_format: Optional dict for structured output, e.g.:
+            {"type": "json_object"} for basic JSON mode
+            {"type": "json_schema", "json_schema": {...}} for strict schema
     """
-
+    
     if tracker:
         tracker.start_phase(phase, model)
-
-    # Resolve client and model based on routing
-    if component and llm_routing:
-        routing_client, routing_model = make_openai_client(component, llm_routing)
-        active_client = routing_client
-        active_model  = routing_model
-        log(f"[LLM] {component}: using {'local Ollama' if llm_routing.get(component) == 'local' else 'OpenRouter'} → {active_model}")
-    else:
-        active_client = client
-        active_model  = model
-
+    
     try:
         create_kwargs = {
-            "model": active_model,
+            "model": model,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user",   "content": user_prompt}
+                {"role": "user", "content": user_prompt}
             ],
             "temperature": temperature,
-            "max_tokens":  max_tokens,
-            "timeout": 600
+            "max_tokens": max_tokens
         }
-
+        
         if response_format:
             create_kwargs["response_format"] = response_format
-            # Only add extra_body for OpenRouter (local Ollama doesn't support it)
-            if not (component and llm_routing and llm_routing.get(component) == "local"):
-                create_kwargs["extra_body"] = {
-                    "provider": {"require_parameters": True}
+            create_kwargs["extra_body"] = {
+                "provider": {
+                    "require_parameters": True
                 }
-
-        response = active_client.chat.completions.create(**create_kwargs)
-
+            }
+        
+        response = client.chat.completions.create(**create_kwargs)
+        
         content = response.choices[0].message.content or ""
         usage = {
-            "input_tokens":  response.usage.prompt_tokens if response.usage else 0,
+            "input_tokens": response.usage.prompt_tokens if response.usage else 0,
             "output_tokens": response.usage.completion_tokens if response.usage else 0
         }
-
+        
         if tracker:
             tracker.end_phase(phase, usage["input_tokens"], usage["output_tokens"])
-
+        
         return content, usage
-
+        
     except Exception as e:
         if tracker:
             tracker.end_phase(phase, 0, 0, status="failed", error=str(e))
@@ -223,42 +205,34 @@ def call_llm(
 
 def pass0_chunker(
     markdown_content: str,
-    tracker: Optional[AnalyticsTracker] = None,
-    llm_routing: Optional[Dict] = None,
+    tracker: Optional[AnalyticsTracker] = None
 ) -> Dict:
     """Pass 0: Split markdown into teachable chunks."""
     log("[Parse] Starting Chunker...")
-
+    
     system_prompt = load_prompt("chunker_system")
     user_template = load_prompt("chunker_user")
     user_prompt = user_template.replace("{markdown_content}", markdown_content)
-
-    # Resolve model: routing may override to local Ollama
-    from core.llm_routing import get_llm_config
-    cfg = get_llm_config("chunker", llm_routing)
-    model = MODELS["chunker"] if cfg["provider"] == "openrouter" else cfg["model"]
-
+    
     response_text, usage = call_llm(
-        model=model,
+        model=MODELS["chunker"],
         system_prompt=system_prompt,
         user_prompt=user_prompt,
         phase="chunker",
-        tracker=tracker,
-        component="chunker",
-        llm_routing=llm_routing,
+        tracker=tracker
     )
-
+    
     chunks = parse_json_response(response_text, "chunker")
-
+    
     if "chunks" not in chunks:
         if isinstance(chunks, list):
             chunks = {"chunks": chunks}
         else:
             raise PipelineError("Chunker output missing 'chunks' array", "chunker")
-
+    
     chunk_count = len(chunks.get("chunks", []))
     log(f"[Parse] Chunker complete: {chunk_count} chunks created")
-
+    
     return chunks
 
 
@@ -371,8 +345,7 @@ def pass1_director(
     subject: str,
     grade: str,
     chapter: str = "",
-    tracker: Optional[AnalyticsTracker] = None,
-    llm_routing: Optional[Dict] = None,
+    tracker: Optional[AnalyticsTracker] = None
 ) -> Dict:
     """Pass 1: Create pedagogy, structure, timing, renderer choices.
     
@@ -427,9 +400,7 @@ def pass1_director(
                 tracker=tracker,
                 max_tokens=32000,
                 temperature=0.2,
-                response_format=response_format,
-                component="director",
-                llm_routing=llm_routing,
+                response_format=response_format
             )
         
         try:
@@ -536,50 +507,43 @@ def pass1_director(
 
 def pass2_manim_renderer(
     section: Dict,
-    tracker: Optional[AnalyticsTracker] = None,
-    llm_routing: Optional[Dict] = None,
+    tracker: Optional[AnalyticsTracker] = None
 ) -> Dict:
     """Pass 2a: Generate manim_scene_spec for a section."""
     section_id = section.get("section_id") or section.get("id", 0)
     log(f"[Render:Manim] Section {section_id}...")
-
+    
     system_prompt = load_prompt("manim_renderer_system")
     user_template = load_prompt("manim_renderer_user")
-
+    
     section_json = json.dumps(section, indent=2)
     user_prompt = user_template.replace("{section_json}", section_json)
-
-    from core.llm_routing import get_llm_config
-    cfg = get_llm_config("manim_renderer", llm_routing)
-    active_model = MODELS["manim_renderer"] if cfg["provider"] == "openrouter" else cfg["model"]
-
+    
     response_text, usage = call_llm(
-        model=active_model,
+        model=MODELS["manim_renderer"],
         system_prompt=system_prompt,
         user_prompt=user_prompt,
         phase=f"manim_renderer_s{section_id}",
-        tracker=tracker,
-        component="manim_renderer",
-        llm_routing=llm_routing,
+        tracker=tracker
     )
-
+    
     save_raw_llm_response(
         renderer_type="manim",
         section_id=str(section_id),
         raw_response=response_text,
-        model=active_model,
+        model=MODELS["manim_renderer"],
         usage=usage
     )
-
+    
     result = parse_json_response(response_text, f"manim_renderer_s{section_id}")
-
+    
     if "manim_scene_spec" not in result:
         raise PipelineError(
             f"Manim renderer failed to generate scene_spec for section {section_id}",
             "manim_renderer",
             {"section_id": section_id}
         )
-
+    
     log(f"[Render:Manim] Scene spec generated for section {section_id}")
     return result
 
@@ -610,57 +574,53 @@ def validate_remotion_output(response_text: str, section_id: int) -> tuple:
 def pass2_remotion_renderer(
     section: Dict,
     tracker: Optional[AnalyticsTracker] = None,
-    max_retries: int = 1,
-    llm_routing: Optional[Dict] = None,
+    max_retries: int = 1
 ) -> Dict:
-    """Pass 2b: Generate remotion_scene_spec for a section."""
+    """Pass 2b: Generate remotion_scene_spec for a section.
+    
+    v1.3 CHANGE: Added validation with single retry on parse failure.
+    """
     section_id = section.get("section_id") or section.get("id", 0)
     log(f"[Render:Remotion] Section {section_id}...")
-
+    
     system_prompt = load_prompt("remotion_renderer_system")
     user_template = load_prompt("remotion_renderer_user")
-
+    
     section_json = json.dumps(section, indent=2)
     user_prompt = user_template.replace("{section_json}", section_json)
-
-    from core.llm_routing import get_llm_config
-    cfg = get_llm_config("remotion_renderer", llm_routing)
-    active_model = MODELS["remotion_renderer"] if cfg["provider"] == "openrouter" else cfg["model"]
-
+    
     last_error = "No attempts made"
     for attempt in range(max_retries + 1):
         phase_name = f"remotion_renderer_s{section_id}" if attempt == 0 else f"remotion_renderer_s{section_id}_retry{attempt}"
-
+        
         response_text, usage = call_llm(
-            model=active_model,
+            model=MODELS["remotion_renderer"],
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             phase=phase_name,
-            tracker=tracker,
-            component="remotion_renderer",
-            llm_routing=llm_routing,
+            tracker=tracker
         )
-
+        
         save_raw_llm_response(
             renderer_type="remotion",
             section_id=str(section_id) if attempt == 0 else f"{section_id}_retry{attempt}",
             raw_response=response_text,
-            model=active_model,
+            model=MODELS["remotion_renderer"],
             usage=usage
         )
-
+        
         is_valid, result_or_error = validate_remotion_output(response_text, section_id)
-
+        
         if is_valid:
             log(f"[Render:Remotion] Scene spec generated for section {section_id}")
             return result_or_error
-
+        
         last_error = result_or_error
         if attempt < max_retries:
             log(f"[Render:Remotion] Section {section_id} parse failed: {result_or_error}. Retrying ({attempt + 1}/{max_retries})...")
         else:
             log(f"[Render:Remotion] Section {section_id} FAILED after {max_retries + 1} attempts: {result_or_error}")
-
+    
     raise PipelineError(
         f"Remotion renderer failed to generate valid JSON for section {section_id} after {max_retries + 1} attempts",
         "remotion_renderer",
@@ -728,45 +688,42 @@ def validate_video_prompts(result: Dict, section_id: int) -> tuple:
 def pass2_video_renderer(
     section: Dict,
     tracker: Optional[AnalyticsTracker] = None,
-    max_retries: int = 2,
-    llm_routing: Optional[Dict] = None,
+    max_retries: int = 2
 ) -> Dict:
-    """Pass 2c: Generate video prompts (WAN prompts) for a section."""
+    """Pass 2c: Generate video prompts for a section.
+    
+    v1.3 CHANGE: Added validation for word count and vague phrases with retry.
+    v1.4 CHANGE: Increased max_retries to 2 (3 total attempts) for better 300+ word compliance.
+    """
     section_id = section.get("section_id") or section.get("id", 0)
     log(f"[Render:Video] Section {section_id}...")
-
+    
     system_prompt = load_prompt("video_renderer_system")
     user_template = load_prompt("video_renderer_user")
-
+    
     section_json = json.dumps(section, indent=2)
     user_prompt = user_template.replace("{section_json}", section_json)
-
-    from core.llm_routing import get_llm_config
-    cfg = get_llm_config("video_renderer", llm_routing)
-    active_model = MODELS["video_renderer"] if cfg["provider"] == "openrouter" else cfg["model"]
-
+    
     last_error = "No attempts made"
     for attempt in range(max_retries + 1):
         phase_name = f"video_renderer_s{section_id}" if attempt == 0 else f"video_renderer_s{section_id}_retry{attempt}"
-
+        
         response_text, usage = call_llm(
-            model=active_model,
+            model=MODELS["video_renderer"],
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             phase=phase_name,
-            tracker=tracker,
-            component="video_renderer",
-            llm_routing=llm_routing,
+            tracker=tracker
         )
-
+        
         save_raw_llm_response(
             renderer_type="video",
             section_id=str(section_id) if attempt == 0 else f"{section_id}_retry{attempt}",
             raw_response=response_text,
-            model=active_model,
+            model=MODELS["video_renderer"],
             usage=usage
         )
-
+        
         try:
             result = parse_json_response(response_text, phase_name)
         except Exception as e:
@@ -776,19 +733,19 @@ def pass2_video_renderer(
             else:
                 log(f"[Render:Video] Section {section_id} FAILED: Could not parse JSON")
                 return {"video_prompts": []}
-
+        
         is_valid, error = validate_video_prompts(result, section_id)
-
+        
         if is_valid:
             log(f"[Render:Video] Prompts generated for section {section_id} ({len(result.get('video_prompts', []))} beats)")
             return result
-
+        
         last_error = error
         if attempt < max_retries:
             log(f"[Render:Video] Section {section_id} validation failed: {error}. Retrying ({attempt + 1}/{max_retries})...")
         else:
             log(f"[Render:Video] Section {section_id} validation FAILED after {max_retries + 1} attempts: {error}")
-
+    
     raise PipelineError(
         f"WAN renderer failed validation for section {section_id} after {max_retries + 1} attempts: {last_error}",
         "video_renderer",
@@ -799,14 +756,20 @@ def pass2_video_renderer(
 def pass2_dispatch_renderers(
     presentation: Dict,
     tracker: Optional[AnalyticsTracker] = None,
-    use_remotion: bool = True,
-    llm_routing: Optional[Dict] = None,
+    use_remotion: bool = True
 ) -> Dict:
-    """Dispatch Render phase to appropriate renderers based on section renderer choice."""
+    """Dispatch Render phase to appropriate renderers based on section renderer choice.
+    
+    v1.3 CHANGE: Director decides renderer. Pipeline obeys. No collapse logic.
+    All sections (including intro/summary/memory) now have renderers assigned.
+    
+    Args:
+        use_remotion: v1.3 defaults to True - Remotion is now a required renderer.
+    """
     log("[Render v1.3] Dispatching to renderers (Director decides, pipeline obeys)...")
-
+    
     sections = presentation.get("sections", [])
-
+    
     for i, section in enumerate(sections):
         section_id = section.get("section_id") or section.get("id", i + 1)
         renderer = section.get("renderer", "")
@@ -814,20 +777,20 @@ def pass2_dispatch_renderers(
             renderer = renderer.get("type", renderer.get("name", ""))
         renderer = str(renderer).lower()
         section_type = section.get("section_type", "")
-
+        
         log(f"[Render v1.3] Section {section_id} ({section_type}): renderer='{renderer}'")
-
+        
         try:
             if renderer == "manim":
-                result = pass2_manim_renderer(section, tracker, llm_routing=llm_routing)
+                result = pass2_manim_renderer(section, tracker)
                 section["manim_scene_spec"] = result.get("manim_scene_spec")
-
+                
             elif renderer == "remotion":
-                result = pass2_remotion_renderer(section, tracker, llm_routing=llm_routing)
+                result = pass2_remotion_renderer(section, tracker)
                 section["remotion_scene_spec"] = result.get("remotion_scene_spec")
-
+                
             elif renderer in ["video", "wan", "wan_video"]:
-                result = pass2_video_renderer(section, tracker, llm_routing=llm_routing)
+                result = pass2_video_renderer(section, tracker)
                 if "video_prompts" in result:
                     section["video_prompts"] = result.get("video_prompts")
                 elif "wan_prompt" in result:
