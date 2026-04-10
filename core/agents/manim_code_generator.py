@@ -316,6 +316,7 @@ IMPORTANT: The user has specifically requested the above improvements. Please re
             temperature = self.temperature
             max_tokens = self.max_tokens or 8192
             timeout = 180
+            model = self.model
 
         try:
             content, usage = call_llm_routed(

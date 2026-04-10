@@ -2465,22 +2465,82 @@
                 };
             } else {
                 vid.src = '';
-                var fallbackDur = sec.segment_duration_seconds || sec.dur || 30;
-                startSubtitleDriver(sec, curSec);
-                timers.push(setTimeout(function () {
-                    if (sec.understanding_quiz || (sec.questions && sec.questions.length > 0)) {
-                        initQuizSection(sec);
-                    } else if (curSec < SECTIONS.length - 1) loadSection(curSec + 1);
-                }, fallbackDur * 1000));
+                var wrap2 = document.getElementById('av-overlay');
+                var audioPath = sec.audio_path || '';
 
-                var renderer = sec.renderer || 'none';
-                if (renderer === 'manim') {
-                    loadManimScene(sec, fallbackDur, { started: true });
-                } else if (renderer === 'video' || renderer === 'wan_video' ||
-                    renderer === 'text_to_video' || renderer === 'image_to_video' ||
-                    sec.section_type === 'recap' ||
-                    sec.section_type === 'memory_infographic') {
-                    loadVideoScene(sec, fallbackDur, { started: true });
+                if (audioPath) {
+                    var audioSrc = getMediaSrc(audioPath);
+                    wrap2.style.display = 'block';
+                    wrap2.setAttribute('data-sectype', sec.section_type || 'content');
+                    var avTag = document.getElementById('av-tag');
+                    if (avTag) avTag.textContent = '🎙️ Audio Narration';
+                    
+                    var avCanvas = document.getElementById('av-canvas');
+                    if (avCanvas) avCanvas.style.opacity = '0';
+                    var avFace = document.getElementById('av-vid');
+                    if (avFace) avFace.style.display = 'none';
+
+                    var audioEl = document.getElementById('_ao_audio');
+                    if (!audioEl) {
+                        audioEl = document.createElement('audio');
+                        audioEl.id = '_ao_audio';
+                        audioEl.style.display = 'none';
+                        document.body.appendChild(audioEl);
+                    }
+                    audioEl.src = audioSrc;
+                    audioEl.currentTime = 0;
+                    var sectionAtLoad2 = curSec;
+
+                    audioEl.onloadedmetadata = function () {
+                        var actualDur = (audioEl.duration && isFinite(audioEl.duration))
+                            ? audioEl.duration
+                            : (sec.audio_duration_seconds || sec.segment_duration_seconds || 30);
+                        var renderer = sec.renderer || 'none';
+                        if (renderer === 'manim') {
+                            var hasVid = sec.video_path || (sec.manim_video_paths && sec.manim_video_paths.length > 0);
+                            if (hasVid) loadManimScene(sec, actualDur, { started: true });
+                        } else if (renderer === 'video' || renderer === 'wan_video' ||
+                            renderer === 'text_to_video' || renderer === 'image_to_video' ||
+                            sec.section_type === 'recap' || sec.section_type === 'memory_infographic') {
+                            loadVideoScene(sec, actualDur, { started: true });
+                        }
+                        startSubtitleDriverAudio(sec, sectionAtLoad2, audioEl);
+                    };
+
+                    audioEl.onended = function () {
+                        if (curSec !== sectionAtLoad2) return;
+                        if (sec.understanding_quiz || (sec.questions && sec.questions.length > 0)) {
+                            initQuizSection(sec);
+                            return;
+                        }
+                        if (curSec < SECTIONS.length - 1) loadSection(curSec + 1);
+                    };
+
+                    audioEl.load();
+                    audioEl.play().catch(function () { });
+                } else {
+                    var avCanvas2 = document.getElementById('av-canvas');
+                    if (avCanvas2) avCanvas2.style.opacity = '';
+                    var avFace2 = document.getElementById('av-vid');
+                    if (avFace2) avFace2.style.display = '';
+
+                    var fallbackDur = sec.segment_duration_seconds || sec.dur || 30;
+                    startSubtitleDriver(sec, curSec);
+                    timers.push(setTimeout(function () {
+                        if (sec.understanding_quiz || (sec.questions && sec.questions.length > 0)) {
+                            initQuizSection(sec);
+                        } else if (curSec < SECTIONS.length - 1) loadSection(curSec + 1);
+                    }, fallbackDur * 1000));
+
+                    var renderer = sec.renderer || 'none';
+                    if (renderer === 'manim') {
+                        loadManimScene(sec, fallbackDur, { started: true });
+                    } else if (renderer === 'video' || renderer === 'wan_video' ||
+                        renderer === 'text_to_video' || renderer === 'image_to_video' ||
+                        sec.section_type === 'recap' ||
+                        sec.section_type === 'memory_infographic') {
+                        loadVideoScene(sec, fallbackDur, { started: true });
+                    }
                 }
             }
 
@@ -2498,6 +2558,56 @@
         // ══════════════════════════════════════════════════════════
         // SUBTITLES
         // ══════════════════════════════════════════════════════════
+        function startSubtitleDriverAudio(sec, sectionAtLoad, audioEl) {
+            if (!sec.narration || !sec.narration.segments) return;
+            var segments = sec.narration.segments;
+            var subtitleEl = document.getElementById('subtitle-overlay');
+            var textEl = document.getElementById('subtitle-text');
+
+            var table = [];
+            var accum = 0;
+            for (var i = 0; i < segments.length; i++) {
+                var seg = segments[i];
+                var start, end, dur;
+                if (seg.start_seconds !== undefined && seg.end_seconds !== undefined) {
+                    start = seg.start_seconds;
+                    end = seg.end_seconds;
+                    dur = end - start;
+                } else {
+                    dur = seg.duration_seconds || seg.duration || 5;
+                    start = accum;
+                    end = accum + dur;
+                    accum = end;
+                }
+                table.push({ start: start, end: end, dur: dur, text: (seg.text || '').trim() });
+            }
+
+            var lastIdx = -1;
+            var myEpoch = _subtitleEpoch;
+
+            function onTimeUpdateAudio() {
+                if (curSec !== sectionAtLoad || _subtitleEpoch !== myEpoch) {
+                    audioEl.removeEventListener('timeupdate', onTimeUpdateAudio);
+                    clearKaraokeTimer();
+                    subtitleEl.style.display = 'none';
+                    return;
+                }
+                var t = audioEl.currentTime;
+                var activeIdx = -1;
+                for (var i = 0; i < table.length; i++) {
+                    if (t >= table[i].start) activeIdx = i;
+                }
+                if (activeIdx >= 0 && activeIdx !== lastIdx) {
+                    lastIdx = activeIdx;
+                    var row = table[activeIdx];
+                    if (row.text) {
+                        renderSubtitleKaraoke(subtitleEl, textEl, row.text, row.dur, sectionAtLoad, row.start);
+                    }
+                }
+            }
+            audioEl.addEventListener('timeupdate', onTimeUpdateAudio);
+        }
+
         function startSubtitleDriver(sec, sectionAtLoad) {
             if (!sec.narration || !sec.narration.segments) return;
             var segments = sec.narration.segments;

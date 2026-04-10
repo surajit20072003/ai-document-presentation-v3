@@ -5,10 +5,11 @@ interface V3SubtitlesProps {
     section: V3Section | null;
     avatarVideoRef: React.RefObject<HTMLVideoElement | null>;
     mode: SubtitleMode;
+    overrideText?: string | null;
 }
 
-export const V3Subtitles = ({ section, avatarVideoRef, mode }: V3SubtitlesProps) => {
-    const { words, activeWordIndex, activeSentenceIndex } = useKaraokeEngine({ section, avatarVideoRef });
+export const V3Subtitles = ({ section, avatarVideoRef, mode, overrideText }: V3SubtitlesProps) => {
+    const { words, activeWordIndex, activeSentenceIndex } = useKaraokeEngine({ section, avatarVideoRef, overrideText });
     if (mode === 'off' || words.length === 0) return null;
 
     const sentenceWords = activeSentenceIndex >= 0

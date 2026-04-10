@@ -311,6 +311,7 @@ def _call_api(messages: list, temperature: float = 0.2, llm_routing: Optional[di
         temperature_val = temperature
         max_tokens = 8192
         timeout = 600
+        model = "anthropic/claude-3.5-sonnet"
 
         @property
         def temperature(self):

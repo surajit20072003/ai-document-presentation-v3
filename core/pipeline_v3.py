@@ -65,6 +65,7 @@ def run_v3_pipeline(
     dry_run: bool = False,
     skip_manim: bool = False,
     skip_avatar: bool = False,
+    audio_only: bool = False,   # NEW: TTS audio per section, no avatar video
     skip_quiz_clips: bool = False,
     tts_provider: str = "edge_tts",
     language: str = None,
@@ -75,6 +76,7 @@ def run_v3_pipeline(
     skip_wan: bool = False,
     images_dict: Optional[dict] = None,
     llm_routing: Optional[dict] = None,  # Per-component LLM provider routing
+    skip_director: bool = False,  # PROMOTE: skip LLM generation, reuse existing presentation.json
 ) -> Dict[str, Any]:
     """
     Full V3 pipeline. Returns (presentation_dict, analytics_dict).
@@ -88,360 +90,386 @@ def run_v3_pipeline(
         if update_status_callback:
             update_status_callback(job_id, phase, message)
 
-    # ─────────────────────────────────────────────
-    # Phase 0: Save PDF source images to job/images/
-    # Mirrors pipeline_unified.py Phase 0 so V3 jobs
-    # preserve the original document images on disk.
-    # ─────────────────────────────────────────────
-    saved_images = {}
-    images_list = "None"
-    if images_dict:
+    # ─────────────────────────────────────────────────────────────────────────
+    # PROMOTE MODE: skip_director=True means we reuse the existing
+    # presentation.json that was produced by a dry-run.  Phases 0-2.5 are
+    # all skipped; we jump straight to avatar → manim → WAN rendering.
+    # ─────────────────────────────────────────────────────────────────────────
+    pres_path = output_path / "presentation.json"
+    tracker = None  # may be initialised below if Director runs
+
+    if skip_director:
         log(
-            "image_processing",
-            f"Processing {len(images_dict)} source images from PDF...",
+            "promote",
+            "skip_director=True — loading existing presentation.json and skipping Director phases.",
         )
-        try:
-            from core.image_processor import save_datalab_images
-
-            images_dir = output_path / "images"
-            saved_images = save_datalab_images(
-                images_dict, str(images_dir), apply_green_screen=True
-            )
-            if saved_images:
-                images_list = ", ".join(saved_images.keys())
-                logger.info(
-                    f"[V3] Saved {len(saved_images)} source images to {images_dir}"
-                )
-                log(
-                    "image_processing",
-                    f"✅ Saved {len(saved_images)} source image(s) to job/images/",
-                )
-        except Exception as e:
-            logger.error(f"[V3] Image saving failed (non-fatal): {e}")
-            log("image_processing", f"⚠️ Image saving error (non-fatal): {e}")
-    else:
-        log("image_processing", "No source images from PDF — skipping image phase.")
-
-    # ─────────────────────────────────────────────
-    # Phase 1: Director V3
-    # ─────────────────────────────────────────────
-    log("director_v3", "Starting V3 Director (Partition Mode)...")
-
-    try:
-        from core.partition_director_generator import PartitionDirectorGenerator
-        from core.analytics import AnalyticsTracker
-
-        tracker = AnalyticsTracker(job_id=job_id)
-
-        # V3 uses its own partition prompt (manim_scene_spec, understanding_quiz, zero text_layer)
-        v3_prompt_path = (
-            Path(__file__).parent / "prompts" / "director_v3_partition_prompt.txt"
-        )
-        if not v3_prompt_path.exists():
+        if not pres_path.exists():
             raise V3PipelineError(
-                f"director_v3_partition_prompt.txt not found at {v3_prompt_path}",
-                phase="director_v3",
+                "Cannot promote dry-run: presentation.json not found in job directory.",
+                phase="promote",
             )
-
-        # PartitionDirectorGenerator accepts content_prompt_file and global_prompt_file
-        director = PartitionDirectorGenerator(
-            content_prompt_file=str(v3_prompt_path),
-            # Global prompt: use same as V2 (intro/summary/recap/quiz schema unchanged)
-            global_prompt_file=str(
-                Path(__file__).parent / "prompts" / "director_global_prompt.txt"
-            ),
-            llm_routing=llm_routing,  # ← forward per-component routing to Director
-        )
-
+        with open(pres_path, "r", encoding="utf-8") as _f:
+            presentation = json.load(_f)
         log(
-            "director_v3",
-            f"Calling V3 Director for subject={subject}, grade={grade}...",
+            "promote",
+            f"✅ Loaded presentation.json ({pres_path.stat().st_size} bytes, "
+            f"{len(presentation.get('sections', []))} sections). Skipping Director/Validation/Enhancer/Duration phases.",
         )
-
-        # Validation gate with retry — catches Director quality issues before
-        # proceeding to image generation. Retries up to 2 times with error
-        # feedback fed back to the Global Director via missing_content_hint.
-        max_validation_retries = 2
-        validation_hint = None
-        for attempt in range(1, max_validation_retries + 1):
-            presentation = director.generate_presentation_partitioned(
-                markdown_content=markdown_content,
-                subject=subject,
-                grade=grade,
-                output_dir=output_dir,
-                missing_content_hint=validation_hint,
+        # Import tracker so avatar gen doesn't crash
+        try:
+            from core.analytics import AnalyticsTracker
+            tracker = AnalyticsTracker(job_id=job_id)
+        except Exception:
+            pass
+        # Jump straight to avatar generation (Phase 3.3)
+    else:
+        # ─────────────────────────────────────────────
+        # Phase 0: Save PDF source images to job/images/
+        # ─────────────────────────────────────────────
+        saved_images = {}
+        images_list = "None"
+        if images_dict:
+            log(
+                "image_processing",
+                f"Processing {len(images_dict)} source images from PDF...",
             )
+            try:
+                from core.image_processor import save_datalab_images
 
-            # Run V3 validator
-            from core.v3_validator import validate_presentation_v3
-
-            is_valid, errors = validate_presentation_v3(presentation)
-
-            if is_valid:
-                log("director_v3", f"✅ Validation passed on attempt {attempt}.")
-                break
-
-            # Check if there are retryable errors (Director-quality issues)
-            retryable = [
-                e
-                for e in errors
-                if e.condition
-                in (
-                    "v3_narration_short",
-                    "v3_total_duration_missing",
-                    "v3_quiz_missing",
-                    "v3_quiz_incomplete",
-                    "v3_text_layer_not_hidden",
+                images_dir = output_path / "images"
+                saved_images = save_datalab_images(
+                    images_dict, str(images_dir), apply_green_screen=True
                 )
-            ]
+                if saved_images:
+                    images_list = ", ".join(saved_images.keys())
+                    logger.info(
+                        f"[V3] Saved {len(saved_images)} source images to {images_dir}"
+                    )
+                    log(
+                        "image_processing",
+                        f"✅ Saved {len(saved_images)} source image(s) to job/images/",
+                    )
+            except Exception as e:
+                logger.error(f"[V3] Image saving failed (non-fatal): {e}")
+                log("image_processing", f"⚠️ Image saving error (non-fatal): {e}")
+        else:
+            log("image_processing", "No source images from PDF — skipping image phase.")
 
-            if not retryable or attempt >= max_validation_retries:
-                log(
-                    "director_v3",
-                    f"⚠️ Validation has {len(errors)} issues ({len(retryable)} retryable) — "
-                    f"proceeding after attempt {attempt}/{max_validation_retries}.",
-                )
-                break
+        # ─────────────────────────────────────────────
+        # Phase 1: Director V3
+        # ─────────────────────────────────────────────
+        log("director_v3", "Starting V3 Director (Partition Mode)...")
 
-            # Build retry hint for the Global Director
-            hint_lines = [
-                "CRITICAL VALIDATION ERRORS — Fix these in your next attempt:",
-            ]
-            # Format error details for feedback hint
-            error_details = "\n".join(
-                [f"- {e.details} [{e.condition}]" for e in retryable]
+        try:
+            from core.partition_director_generator import PartitionDirectorGenerator
+            from core.analytics import AnalyticsTracker
+
+            tracker = AnalyticsTracker(job_id=job_id)
+
+            # V3 uses its own partition prompt (manim_scene_spec, understanding_quiz, zero text_layer)
+            v3_prompt_path = (
+                Path(__file__).parent / "prompts" / "director_v3_partition_prompt.txt"
             )
-            validation_hint = f"Your previous output failed validation. Fix these issues:\n{error_details}"
-            
-            print(f"DEBUG V3 VALIDATOR ERRORS: {error_details}")
-            logger.info(f"DEBUG V3 VALIDATOR ERRORS: {error_details}")
+            if not v3_prompt_path.exists():
+                raise V3PipelineError(
+                    f"director_v3_partition_prompt.txt not found at {v3_prompt_path}",
+                    phase="director_v3",
+                )
+
+            # PartitionDirectorGenerator accepts content_prompt_file and global_prompt_file
+            director = PartitionDirectorGenerator(
+                content_prompt_file=str(v3_prompt_path),
+                global_prompt_file=str(
+                    Path(__file__).parent / "prompts" / "director_global_prompt.txt"
+                ),
+                llm_routing=llm_routing,
+            )
 
             log(
                 "director_v3",
-                f"⚠️ Validation attempt {attempt}/{max_validation_retries} — {len(retryable)} retryable errors. Retrying with feedback...",
+                f"Calling V3 Director for subject={subject}, grade={grade}...",
             )
 
-        log(
-            "director_v3",
-            f"Director V3 complete. {len(presentation.get('sections', []))} sections generated.",
-        )
+            max_validation_retries = 2
+            validation_hint = None
+            for attempt in range(1, max_validation_retries + 1):
+                presentation = director.generate_presentation_partitioned(
+                    markdown_content=markdown_content,
+                    subject=subject,
+                    grade=grade,
+                    output_dir=output_dir,
+                    missing_content_hint=validation_hint,
+                )
 
-    except V3PipelineError:
-        raise
-    except Exception as e:
-        raise V3PipelineError(f"Director V3 failed: {e}", phase="director_v3")
+                from core.v3_validator import validate_presentation_v3
 
-    # ─────────────────────────────────────────────
-    # Phase 1.5: Normalize image_source filenames
-    # ALWAYS run normalization Pass — browser cannot resolve absolute paths.
-    log(
-        "image_normalize",
-        "Phase 1.5: Normalizing image_source filenames to match disk...",
-    )
-    try:
-        from pathlib import Path as _Path
+                is_valid, errors = validate_presentation_v3(presentation)
 
-        images_dir_path = output_path / "images"
+                if is_valid:
+                    log("director_v3", f"✅ Validation passed on attempt {attempt}.")
+                    break
 
-        # Build stem → actual filename map from what exists on disk
-        stem_map = {}
-        if images_dir_path.exists():
-            for f in images_dir_path.iterdir():
-                if f.suffix in (".png", ".jpg", ".jpeg", ".webp"):
-                    stem_map[f.stem] = (
-                        f.name
-                    )  # e.g. "b0d31e64_img" → "b0d31e64_img.png"
+                retryable = [
+                    e
+                    for e in errors
+                    if e.condition
+                    in (
+                        "v3_narration_short",
+                        "v3_total_duration_missing",
+                        "v3_quiz_missing",
+                        "v3_quiz_incomplete",
+                        "v3_text_layer_not_hidden",
+                    )
+                ]
 
-        fixed_count = 0
+                if not retryable or attempt >= max_validation_retries:
+                    log(
+                        "director_v3",
+                        f"⚠️ Validation has {len(errors)} issues ({len(retryable)} retryable) — "
+                        f"proceeding after attempt {attempt}/{max_validation_retries}.",
+                    )
+                    break
 
-        def _fix_image_source(obj):
-            """
-            Normalize an image_source path to be relative to output_dir.
-            Strips any absolute path prefix, then searches images/ and
-            generated_images/ for a filename stem match.
-            """
-            nonlocal fixed_count
-            if isinstance(obj, dict):
-                for k, v in obj.items():
-                    if k == "image_source" and isinstance(v, str):
-                        # Step 1 — strip absolute prefix down to bare filename
-                        filename = os.path.basename(v)
-                        stem = os.path.splitext(filename)[0]
+                error_details = "\n".join(
+                    [f"- {e.details} [{e.condition}]" for e in retryable]
+                )
+                validation_hint = f"Your previous output failed validation. Fix these issues:\n{error_details}"
+                print(f"DEBUG V3 VALIDATOR ERRORS: {error_details}")
+                logger.info(f"DEBUG V3 VALIDATOR ERRORS: {error_details}")
 
-                        found_rel = None
-                        # Step 2 — search images/ then generated_images/ for a stem match
-                        for subdir in ["images", "generated_images"]:
-                            search_dir = output_path / subdir
-                            if not search_dir.is_dir():
-                                continue
-                            for f in search_dir.iterdir():
-                                if f.stem == stem:
-                                    found_rel = f"{subdir}/{f.name}"
-                                    break
-                            if found_rel:
-                                break
+                log(
+                    "director_v3",
+                    f"⚠️ Validation attempt {attempt}/{max_validation_retries} — {len(retryable)} retryable errors. Retrying with feedback...",
+                )
 
-                        if found_rel and obj[k] != found_rel:
-                            obj[k] = found_rel
-                            fixed_count += 1
-                        elif not found_rel and "/" in v:
-                            # Fallback — return bare filename if absolute path but not found on disk
-                            obj[k] = filename
-                            fixed_count += 1
-                    else:
-                        _fix_image_source(v)
-            elif isinstance(obj, list):
-                for item in obj:
-                    _fix_image_source(item)
+            log(
+                "director_v3",
+                f"Director V3 complete. {len(presentation.get('sections', []))} sections generated.",
+            )
 
-        _fix_image_source(presentation)
+        except V3PipelineError:
+            raise
+        except Exception as e:
+            raise V3PipelineError(f"Director V3 failed: {e}", phase="director_v3")
+
+        # ─────────────────────────────────────────────
+        # Phase 1.5: Normalize image_source filenames
+        # ─────────────────────────────────────────────
         log(
             "image_normalize",
-            f"✅ Phase 1.5 complete: {fixed_count} path(s) corrected.",
+            "Phase 1.5: Normalizing image_source filenames to match disk...",
         )
-    except Exception as e:
-        logger.warning(f"[V3] Image normalize error (non-fatal): {e}")
-        log("image_normalize", f"⚠️ Phase 1.5 error (non-fatal): {e}")
+        try:
+            from pathlib import Path as _Path
 
-    # ─────────────────────────────────────────────
-    # Phase 1.6: Auto-fix missing total_duration_seconds
-    # Computes total_duration_seconds from narration segments
-    # if the Director forgot to set it.
-    # ─────────────────────────────────────────────
-    try:
-        for section in presentation.get("sections", []):
-            narration = section.get("narration", {})
-            if not narration:
-                continue
-            existing_total = section.get("total_duration_seconds")
-            segs = narration.get("segments", [])
-            computed_total = sum(s.get("duration_seconds", 0) for s in segs)
-            if existing_total is None or existing_total == 0:
-                if computed_total > 0:
-                    section["total_duration_seconds"] = round(computed_total, 2)
-                    sid = section.get("section_id", "?")
-                    log(
-                        "auto_fix",
-                        f"  ✅ S{sid}: auto-computed total_duration_seconds={section['total_duration_seconds']}s",
-                    )
-    except Exception as e:
-        logger.warning(f"[V3] Auto-fix error (non-fatal): {e}")
+            images_dir_path = output_path / "images"
+            stem_map = {}
+            if images_dir_path.exists():
+                for f in images_dir_path.iterdir():
+                    if f.suffix in (".png", ".jpg", ".jpeg", ".webp"):
+                        stem_map[f.stem] = f.name
 
-    # ─────────────────────────────────────────────
-    # Phase 2: V3 Validator
-    # ─────────────────────────────────────────────
-    log("v3_validator", "Validating V3 Director output...")
+            fixed_count = 0
 
-    try:
-        from core.v3_validator import validate_presentation_v3, format_v3_report
+            def _fix_image_source(obj):
+                """
+                Normalize an image_source path to be relative to output_dir.
+                Strips any absolute path prefix, then searches images/ and
+                generated_images/ for a filename stem match.
+                """
+                nonlocal fixed_count
+                if isinstance(obj, dict):
+                    for k, v in obj.items():
+                        if k == "image_source" and isinstance(v, str):
+                            filename = os.path.basename(v)
+                            stem = os.path.splitext(filename)[0]
+                            found_rel = None
+                            for subdir in ["images", "generated_images"]:
+                                search_dir = output_path / subdir
+                                if not search_dir.is_dir():
+                                    continue
+                                for f in search_dir.iterdir():
+                                    if f.stem == stem:
+                                        found_rel = f"{subdir}/{f.name}"
+                                        break
+                                if found_rel:
+                                    break
+                            if found_rel and obj[k] != found_rel:
+                                obj[k] = found_rel
+                                fixed_count += 1
+                            elif not found_rel and "/" in v:
+                                obj[k] = filename
+                                fixed_count += 1
+                        else:
+                            _fix_image_source(v)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        _fix_image_source(item)
 
-        is_valid, errors = validate_presentation_v3(presentation)
-        report = format_v3_report(errors)
-
-        # Save validation report
-        report_path = output_path / "v3_validation_report.txt"
-        report_path.write_text(report, encoding="utf-8")
-
-        if not is_valid:
-            logger.warning(
-                f"[V3] Validation found {len(errors)} issues (non-fatal):\n{report}"
-            )
+            _fix_image_source(presentation)
             log(
-                "v3_validator",
-                f"⚠️ {len(errors)} validation issues (non-fatal) — see v3_validation_report.txt. Continuing.",
+                "image_normalize",
+                f"✅ Phase 1.5 complete: {fixed_count} path(s) corrected.",
             )
-        else:
-            log("v3_validator", "✅ V3 validation passed.")
+        except Exception as e:
+            logger.warning(f"[V3] Image normalize error (non-fatal): {e}")
+            log("image_normalize", f"⚠️ Phase 1.5 error (non-fatal): {e}")
 
-    except V3PipelineError:
-        raise
-    except Exception as e:
-        logger.warning(f"[V3] Validator error (non-fatal): {e}")
+        # ─────────────────────────────────────────────
+        # Phase 1.6: Auto-fix missing total_duration_seconds
+        # ─────────────────────────────────────────────
+        try:
+            for section in presentation.get("sections", []):
+                narration = section.get("narration", {})
+                if not narration:
+                    continue
+                existing_total = section.get("total_duration_seconds")
+                segs = narration.get("segments", [])
+                computed_total = sum(s.get("duration_seconds", 0) for s in segs)
+                if existing_total is None or existing_total == 0:
+                    if computed_total > 0:
+                        section["total_duration_seconds"] = round(computed_total, 2)
+                        sid = section.get("section_id", "?")
+                        log(
+                            "auto_fix",
+                            f"  ✅ S{sid}: auto-computed total_duration_seconds={section['total_duration_seconds']}s",
+                        )
+        except Exception as e:
+            logger.warning(f"[V3] Auto-fix error (non-fatal): {e}")
 
-    # ─────────────────────────────────────────────
-    # Phase 2.5: Visual Prompt Enhancer
-    # Calls GPT-4o (OpenRouter) to upgrade image_prompt_start / image_prompt_end /
-    # video_prompt for image_to_video, image, and infographic sections.
-    # Skipped for: manim, none, per_question, text_to_video.
-    # Non-fatal: errors skip the section and continue the pipeline.
-    # ─────────────────────────────────────────────
-    log("prompt_enhancer", "Phase 2.5: Running Visual Prompt Enhancer...")
-    try:
-        from core.agents.visual_prompt_enhancer import run_prompt_enhancement
+        # ─────────────────────────────────────────────
+        # Phase 2: V3 Validator
+        # ─────────────────────────────────────────────
+        log("v3_validator", "Validating V3 Director output...")
+        try:
+            from core.v3_validator import validate_presentation_v3, format_v3_report
 
-        presentation = run_prompt_enhancement(presentation, log_fn=log, llm_routing=llm_routing)
-        log("prompt_enhancer", "✅ Phase 2.5 complete.")
-    except Exception as e:
-        logger.warning(f"[V3] Prompt enhancer error (non-fatal): {e}")
-        log("prompt_enhancer", f"⚠️ Phase 2.5 error (non-fatal): {e}")
+            is_valid, errors = validate_presentation_v3(presentation)
+            report = format_v3_report(errors)
+            report_path = output_path / "v3_validation_report.txt"
+            report_path.write_text(report, encoding="utf-8")
 
-    # ─────────────────────────────────────────────
-    # Phase 3: Duration Estimation (word-count)
-    # V3 architecture: NO TTS audio is generated here.
-    # The avatar MP4 (Phase 3.3) contains the voice — it is the only audio.
-    # This phase applies a fast word-count estimate to duration_seconds per
-    # segment so Manim (Phase 3.5) has an initial timing baseline.
-    # Phase 3.6 (manim_timing_enforcer) corrects all timings post-avatar
-    # using the real MP4 duration — so this estimate only needs to be close.
-    # ─────────────────────────────────────────────
-    pres_path = output_path / "presentation.json"
+            if not is_valid:
+                logger.warning(
+                    f"[V3] Validation found {len(errors)} issues (non-fatal):\n{report}"
+                )
+                log(
+                    "v3_validator",
+                    f"⚠️ {len(errors)} validation issues (non-fatal) — see v3_validation_report.txt. Continuing.",
+                )
+            else:
+                log("v3_validator", "✅ V3 validation passed.")
+        except V3PipelineError:
+            raise
+        except Exception as e:
+            logger.warning(f"[V3] Validator error (non-fatal): {e}")
 
-    log(
-        "duration_estimate",
-        "Applying word-count duration estimates to narration segments...",
-    )
-    try:
-        from core.tts_duration import update_durations_simplified
+        # ─────────────────────────────────────────────
+        # Phase 2.5: Visual Prompt Enhancer
+        # ─────────────────────────────────────────────
+        log("prompt_enhancer", "Phase 2.5: Running Visual Prompt Enhancer...")
+        try:
+            from core.agents.visual_prompt_enhancer import run_prompt_enhancement
 
-        updated_pres = update_durations_simplified(
-            presentation=presentation,
-            output_dir=None,  # V3: no audio files — estimates only
-            production_provider="estimate",  # word-count math, no audio
-        )
-        if updated_pres:
-            presentation = updated_pres
+            presentation = run_prompt_enhancement(presentation, log_fn=log, llm_routing=llm_routing)
+            log("prompt_enhancer", "✅ Phase 2.5 complete.")
+        except Exception as e:
+            logger.warning(f"[V3] Prompt enhancer error (non-fatal): {e}")
+            log("prompt_enhancer", f"⚠️ Phase 2.5 error (non-fatal): {e}")
+
+        # ─────────────────────────────────────────────
+        # Phase 3: Duration Estimation (word-count)
+        # ─────────────────────────────────────────────
         log(
             "duration_estimate",
-            "✅ Duration estimates applied. Manim will use these as starting proportions.",
+            "Applying word-count duration estimates to narration segments...",
         )
-    except Exception as e:
-        logger.warning(f"[V3] Duration estimation error (non-fatal): {e}")
-        log("duration_estimate", f"⚠️ Estimation error (non-fatal): {e}")
+        try:
+            from core.tts_duration import update_durations_simplified
 
-    # Save presentation.json with estimated durations
-    try:
-        from core.locks import presentation_lock
+            updated_pres = update_durations_simplified(
+                presentation=presentation,
+                output_dir=None,
+                production_provider="estimate",
+            )
+            if updated_pres:
+                presentation = updated_pres
+            log(
+                "duration_estimate",
+                "✅ Duration estimates applied. Manim will use these as starting proportions.",
+            )
+        except Exception as e:
+            logger.warning(f"[V3] Duration estimation error (non-fatal): {e}")
+            log("duration_estimate", f"⚠️ Estimation error (non-fatal): {e}")
 
-        with presentation_lock:
+        # Save presentation.json with estimated durations
+        try:
+            from core.locks import presentation_lock
+
+            with presentation_lock:
+                with open(pres_path, "w", encoding="utf-8") as f:
+                    json.dump(presentation, f, indent=2, ensure_ascii=False)
+        except ImportError:
             with open(pres_path, "w", encoding="utf-8") as f:
                 json.dump(presentation, f, indent=2, ensure_ascii=False)
-    except ImportError:
-        with open(pres_path, "w", encoding="utf-8") as f:
-            json.dump(presentation, f, indent=2, ensure_ascii=False)
-    log("save_json", f"Saved presentation.json ({pres_path.stat().st_size} bytes)")
+        log("save_json", f"Saved presentation.json ({pres_path.stat().st_size} bytes)")
+
+        # ─────────────────────────────────────────────
+        # SUBST-001: Substitute placeholders
+        # ─────────────────────────────────────────────
+        log("substitute", "Substituting {{subject}} and {{grade}} placeholders...")
+        try:
+            from core.tts_generator import substitute_placeholders
+
+            presentation = substitute_placeholders(
+                presentation, subject=subject, grade=grade
+            )
+            with open(pres_path, "w", encoding="utf-8") as f:
+                json.dump(presentation, f, indent=2, ensure_ascii=False)
+            log("substitute", "✅ Placeholders substituted successfully.")
+        except Exception as e:
+            logger.warning(f"[V3] Placeholder substitution error (non-fatal): {e}")
 
     # ─────────────────────────────────────────────
-    # SUBST-001: Substitute placeholders (always run this, even on dry_run)
+    # Phase 3.3: Avatar / Audio-Only Generation
+    # MOVED UP: Provides real duration for Manim timing.
     # ─────────────────────────────────────────────
-    log("substitute", "Substituting {{subject}} and {{grade}} placeholders...")
-    try:
-        from core.tts_generator import substitute_placeholders
+    if audio_only and not dry_run:
+        # ── Audio-Only Mode: Chatterbox/Sarvam TTS, no face video ──
+        avatar_api_url = os.environ.get("AVATAR_API_URL")
+        if not avatar_api_url:
+            log("audio_only", "⚠️ AVATAR_API_URL not set — skipping audio-only generation.")
+        else:
+            try:
+                from core.agents.audio_only_generator import AudioOnlyGenerator
+                log(
+                    "audio_only",
+                    f"Phase 3.3: Audio-Only mode — generating TTS audio "
+                    f"(lang={language or 'english'}, speaker={speaker or 'abhilash'})...",
+                )
+                audio_gen = AudioOnlyGenerator(api_url=avatar_api_url)
+                audio_gen.generate_all(
+                    presentation=presentation,
+                    job_id=job_id,
+                    output_dir=str(output_path),
+                    language=language,
+                    speaker=speaker,
+                )
+                log("audio_only", "✅ Audio-only generation complete.")
 
-        presentation = substitute_placeholders(
-            presentation, subject=subject, grade=grade
-        )
-        # Re-save presentation.json with placeholders filled
-        with open(pres_path, "w", encoding="utf-8") as f:
-            json.dump(presentation, f, indent=2, ensure_ascii=False)
-        log("substitute", "✅ Placeholders substituted successfully.")
-    except Exception as e:
-        logger.warning(f"[V3] Placeholder substitution error (non-fatal): {e}")
+                # Reload to pick up audio_path + audio_duration_seconds
+                try:
+                    with open(pres_path, "r", encoding="utf-8") as f:
+                        presentation = json.load(f)
+                    log("audio_only", "Reloaded presentation.json with audio durations.")
+                except Exception as e:
+                    logger.warning(f"[V3] Could not reload presentation after audio gen: {e}")
 
-    # ─────────────────────────────────────────────
-    # Phase 3.3: Avatar Generation (section clips)
-    # MOVED UP: Generates MP4s so we have exact real duration for Manim.
-    # ─────────────────────────────────────────────
-    if skip_avatar or dry_run:
+            except Exception as e:
+                logger.warning(f"[V3] Audio-only generation error (non-fatal): {e}")
+                log("audio_only", f"⚠️ Audio-only error (non-fatal): {e}")
+
+    elif skip_avatar or dry_run:
         log("avatar", "Skipping avatar generation (skip_avatar=True or dry_run=True).")
     else:
         avatar_api_url = os.environ.get("AVATAR_API_URL")

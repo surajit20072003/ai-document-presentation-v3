@@ -21,6 +21,7 @@ function collectSectionMedia(section: V3Section, jobId: string): string[] {
     };
 
     add(getAvatarUrl(section));
+    add(section.audio_path); // audio-only mode
 
     if (section.visual_beats) {
         for (const vb of section.visual_beats) { add(vb.video_path); add(vb.image_source); }
@@ -43,6 +44,10 @@ function collectSectionMedia(section: V3Section, jobId: string): string[] {
         if (q.avatar_clips) {
             add(q.avatar_clips.question); add(q.avatar_clips.correct);
             add(q.avatar_clips.wrong); add(q.avatar_clips.explanation);
+        }
+        if (q.audio_clips) {
+            add(q.audio_clips.question); add(q.audio_clips.correct);
+            add(q.audio_clips.wrong); add(q.audio_clips.explanation);
         }
         if (q.explanation_visual) {
             add(q.explanation_visual.video_path); add(q.explanation_visual.wan_video_path);

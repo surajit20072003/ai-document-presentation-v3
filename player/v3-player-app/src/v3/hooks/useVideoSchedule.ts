@@ -73,6 +73,10 @@ export function useVideoSchedule({ section, jobId, avatarVideoRef, getBlob }: Us
             return blob ? { ...b, blobUrl: blob } : b;
         });
         setSchedule(updatedBeats);
+        // ── FIX: show beat 0 immediately (mirrors player_v3.html showBeat(0)) ──
+        // Without this, the first beat is never triggered because the timeupdate
+        // listener attaches asynchronously after the schedule useState update.
+        if (updatedBeats.length > 0) setCurrentBeatIndex(0);
 
         updatedBeats.forEach((b) => {
             if (b.type !== 'video' || b.blobUrl) return;
@@ -97,12 +101,14 @@ export function useVideoSchedule({ section, jobId, avatarVideoRef, getBlob }: Us
             const t = vid.currentTime;
             let idx = -1;
             // Forward scan — last beat has no end guard (matches player_v3.html line 2815-2818)
+            // break after first hit — mirrors HTML player which uses break, ensuring the
+            // earliest matching beat wins (prevents isLast open-end guard from hijacking t=0)
             for (let i = 0; i < schedule.length; i++) {
                 const isLast = i === schedule.length - 1;
                 const hit = isLast
                     ? t >= schedule[i].start
                     : t >= schedule[i].start && t < schedule[i].end;
-                if (hit) idx = i;
+                if (hit) { idx = i; break; }
             }
             setCurrentBeatIndex(idx);
         };

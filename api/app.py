@@ -1653,6 +1653,7 @@ def submit_job():
         dry_run = request.form.get("dry_run", "false").lower() == "true"
         skip_wan = request.form.get("skip_wan", "false").lower() == "true"
         skip_avatar = request.form.get("skip_avatar", "false").lower() == "true"
+        audio_only  = request.form.get("audio_only",  "false").lower() == "true"
         tts_provider = request.form.get("tts_provider", "edge_tts")
         # FIXED: Default to V2.5 Director Mode for all new jobs
         pipeline_version = request.form.get("pipeline_version", "v15_v2_director")
@@ -1729,10 +1730,12 @@ def submit_job():
                 {
                     "subject": subject,
                     "grade": grade,
+                    "dry_run": dry_run,  # FIX: always persist dry_run flag
                     "file_path": str(temp_file),
                     "source_file": original_filename,
                     "skip_wan": skip_wan,
                     "skip_avatar": skip_avatar,
+                    "audio_only": audio_only,
                     "tts_provider": tts_provider,
                     "pipeline_version": pipeline_version,
                     "generation_scope": generation_scope,
@@ -1774,6 +1777,7 @@ def submit_job():
                     dry_run=dry_run,
                     skip_wan=skip_wan,
                     skip_avatar=skip_avatar,
+                    audio_only=audio_only,
                     source_file=original_filename,
                     tts_provider=tts_provider,
                     pipeline_version=pipeline_version,
@@ -1828,6 +1832,7 @@ def submit_job():
                     dry_run=dry_run,
                     skip_wan=skip_wan,
                     skip_avatar=skip_avatar,
+                    audio_only=audio_only,
                     source_file=original_filename,
                     tts_provider=tts_provider,
                     pipeline_version=pipeline_version,
@@ -1843,6 +1848,7 @@ def submit_job():
             dry_run = data.get("dry_run", False)
             skip_wan = data.get("skip_wan", False)
             skip_avatar = data.get("skip_avatar", False)
+            audio_only  = data.get("audio_only", False)
             tts_provider = data.get("tts_provider", "edge_tts")
             # FIXED: Default to V2.5 Director Mode for all new jobs
             pipeline_version = data.get("pipeline_version", "v15_v2_director")
@@ -2409,23 +2415,53 @@ def list_all_jobs():
     jobs = job_manager.get_all_jobs()
 
     def get_pipeline_version(j):
-        # 1. From job params (stored at submit time)
         pv = j.get("params", {}).get("pipeline_version", "")
         if pv:
             return pv
-        # 2. Fallback: read from presentation.json
         try:
             job_folder = Path(JOBS_DIR) / j["id"]
             pres_path = job_folder / "presentation.json"
             if pres_path.exists():
-                import json as _json
-
                 with open(pres_path) as f:
-                    pres = _json.load(f)
+                    pres = json.load(f)
                 return pres.get("pipeline_version", "")
         except Exception:
             pass
         return ""
+
+    def get_dry_run(j):
+        """
+        Detect dry-run jobs reliably, including historical ones that didn't
+        store the flag in params.
+
+        Priority:
+          1. params.dry_run (bool/truthy)  — set for all new jobs
+          2. Fallback: presentation.json exists BUT videos/ dir has 0 .mp4 files
+             (dry-runs produce a blueprint only — no video files at all)
+        """
+        params = j.get("params", {})
+        dr = params.get("dry_run")
+        if dr is not None:
+            return bool(dr)  # handles True, False, "true", "false", 0, 1
+
+        # Fallback for historical jobs: no video files → dry run
+        if j.get("status") == "completed":
+            try:
+                job_folder = Path(JOBS_DIR) / j["id"]
+                pres_path = job_folder / "presentation.json"
+                if not pres_path.exists():
+                    return False
+                videos_dir = job_folder / "videos"
+                if not videos_dir.exists():
+                    return True  # no videos dir at all → dry run
+                video_files = [
+                    f for f in videos_dir.iterdir()
+                    if f.is_file() and f.suffix == ".mp4" and f.stat().st_size > 5000
+                ]
+                return len(video_files) == 0
+            except Exception:
+                pass
+        return False
 
     return jsonify(
         {
@@ -2443,7 +2479,11 @@ def list_all_jobs():
                     "params": {
                         "subject": j.get("params", {}).get("subject", ""),
                         "grade": j.get("params", {}).get("grade", ""),
-                        "dry_run": j.get("params", {}).get("dry_run", False),
+                        "dry_run": get_dry_run(j),
+                        "pipeline_version": get_pipeline_version(j),
+                        "video_provider": j.get("params", {}).get("video_provider", ""),
+                        "skip_wan": j.get("params", {}).get("skip_wan", False),
+                        "source_file": j.get("params", {}).get("source_file", j.get("params", {}).get("file_path", "")),
                     },
                 }
                 for j in jobs
@@ -2823,6 +2863,160 @@ def retry_phase(job_id):
         import traceback
 
         return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# PROMOTE DRY RUN → FULL JOB
+# ─────────────────────────────────────────────────────────────────────────
+@app.route("/job/<job_id>/promote_dry_run", methods=["POST"])
+def promote_dry_run(job_id):
+    """
+    Promote a completed dry-run job to a full rendering job.
+
+    Reads the existing presentation.json blueprint and re-runs the pipeline
+    with skip_director=True and dry_run=False so TTS, avatar, Manim, and
+    WAN video generation all execute against the same narration and prompts
+    that the dry-run produced.
+
+    Optional POST JSON body:
+        {
+          "video_provider": "kie",     // override (default: same as original)
+          "skip_wan":       false,      // override
+          "skip_avatar":    false       // override
+        }
+    """
+    try:
+        job = job_manager.get_job(job_id)
+        if not job:
+            return jsonify({"error": f"Job '{job_id}' not found"}), 404
+
+        # Validate: must be a completed dry-run
+        params = job.get("params", {})
+        status = job.get("status", "")
+
+        # Detect dry-run: check params first, then fall back to video-folder check
+        # (historical jobs submitted via file-upload did not store dry_run in params)
+        def _is_dry_run():
+            dr = params.get("dry_run")
+            if dr is not None:
+                return bool(dr)
+            if status == "completed":
+                try:
+                    videos_dir = job_folder / "videos"
+                    if not videos_dir.exists():
+                        return True
+                    vids = [
+                        f for f in videos_dir.iterdir()
+                        if f.is_file() and f.suffix == ".mp4" and f.stat().st_size > 5000
+                    ]
+                    return len(vids) == 0
+                except Exception:
+                    pass
+            return False
+
+        job_folder = Path(JOBS_DIR) / job_id
+        pres_path = job_folder / "presentation.json"
+
+        is_dry = _is_dry_run()
+        if not is_dry:
+            return jsonify({"error": "This job is not a dry-run and cannot be promoted."}), 400
+        if status != "completed":
+            return jsonify({
+                "error": f"Job must be in 'completed' state to promote (current: '{status}')."
+            }), 400
+
+        if not pres_path.exists():
+            return jsonify({"error": "presentation.json not found in job directory."}), 400
+
+        # Read optional overrides from request body
+        overrides = request.get_json(silent=True) or {}
+        video_provider = overrides.get("video_provider", params.get("video_provider", "kie"))
+        skip_wan = overrides.get("skip_wan", params.get("skip_wan", False))
+        skip_avatar = overrides.get("skip_avatar", params.get("skip_avatar", False))
+
+        pipeline_version = params.get("pipeline_version", "v15_v2_director")
+        subject = params.get("subject", "General Science")
+        grade = params.get("grade", "10")
+        tts_provider = params.get("tts_provider", "edge_tts")
+        model = params.get("model")
+
+        # Read source markdown from job folder
+        source_markdown_path = job_folder / "source_markdown.md"
+        markdown_content = ""
+        if source_markdown_path.exists():
+            with open(source_markdown_path, "r", encoding="utf-8") as f:
+                markdown_content = f.read()
+
+        # Reset job status and mark as non-dry-run
+        job_manager.update_job(
+            job_id,
+            {
+                "status": "processing",
+                "progress": 0,
+                "current_step_name": "Promoting dry-run to full job...",
+                "status_message": "Reusing existing blueprint — skipping Director, running media generation.",
+                "error": None,
+                "completed_at": None,
+                "params": {
+                    **params,
+                    "dry_run": False,
+                    "video_provider": video_provider,
+                    "skip_wan": skip_wan,
+                    "skip_avatar": skip_avatar,
+                    "promoted_from_dry_run": True,
+                },
+            },
+            persist=True,
+        )
+
+        print(f"[PROMOTE] Job {job_id}: starting full render from dry-run blueprint")
+
+        # Pick processor from pipeline_version
+        if pipeline_version in ("v3",):
+            processor = process_markdown_job_v3
+        elif pipeline_version in ("v15_v2", "v15_v2_director"):
+            processor = process_markdown_job_v15_v2
+        elif pipeline_version == "v15":
+            processor = process_markdown_job_v15
+        else:
+            processor = process_markdown_job_v15_v2  # safe default
+
+        # Dispatch async with skip_director=True
+        run_job_async(
+            job_id,
+            processor,
+            markdown_content=markdown_content,
+            subject=subject,
+            grade=grade,
+            output_dir=str(job_folder),
+            dry_run=False,
+            skip_wan=skip_wan,
+            skip_avatar=skip_avatar,
+            tts_provider=tts_provider,
+            pipeline_version=pipeline_version,
+            generation_scope="full",
+            model=model,
+            video_provider=video_provider,
+            skip_director=True,  # KEY: reuse existing presentation.json
+        )
+
+        return jsonify({
+            "status": "accepted",
+            "job_id": job_id,
+            "message": (
+                "Dry-run job promoted to full rendering. "
+                "Director is skipped — using existing blueprint. "
+                "Poll /job/<job_id>/status for progress."
+            ),
+            "video_provider": video_provider,
+            "skip_wan": skip_wan,
+            "skip_avatar": skip_avatar,
+        })
+
+    except Exception as e:
+        import traceback as _tb
+        print(f"[PROMOTE] Error: {e}\n{_tb.format_exc()}")
+        return jsonify({"error": str(e)}), 500
 
 
 def _retry_manim_codegen(
@@ -3996,6 +4190,7 @@ def process_document_job_v3(
     dry_run: bool = False,
     skip_wan: bool = False,
     skip_avatar: bool = False,
+    audio_only: bool = False,
     skip_manim: bool = False,
     skip_threejs: bool = False,
     source_file: Optional[str] = None,
@@ -4050,6 +4245,7 @@ def process_document_job_v3(
             dry_run=dry_run,
             skip_wan=skip_wan,
             skip_avatar=skip_avatar,
+            audio_only=audio_only,
             skip_manim=_skip_manim,
             source_file=source_file,
             tts_provider=tts_provider,
@@ -4279,13 +4475,16 @@ def process_markdown_job_v3(
     dry_run: bool = False,
     skip_wan: bool = False,
     skip_avatar: bool = False,
+    audio_only: bool = False,
     skip_manim: bool = False,
     skip_threejs: bool = False,
     source_file: Optional[str] = None,
     tts_provider: str = "edge_tts",
     model: Optional[str] = None,
-    images_dict: Optional[dict] = None,  # ← FIX: accept source images from PDF
-    llm_routing: Optional[dict] = None,  # Per-component LLM provider routing
+    images_dict: Optional[dict] = None,
+    llm_routing: Optional[dict] = None,
+    video_provider: str = "ltx",
+    skip_director: bool = False,  # PROMOTE: reuse existing presentation.json
     **kwargs,
 ) -> dict:
     """
@@ -4325,11 +4524,15 @@ def process_markdown_job_v3(
             dry_run=dry_run,
             skip_manim=_skip_manim,
             skip_avatar=skip_avatar,
+            audio_only=audio_only,
+            skip_wan=skip_wan,
             tts_provider=tts_provider,
             model=model,
             job_update_callback=job_update_callback,
             images_dict=images_dict,
             llm_routing=llm_routing or {},
+            video_provider=video_provider,
+            skip_director=skip_director,  # PROMOTE
         )
 
         # Save analytics

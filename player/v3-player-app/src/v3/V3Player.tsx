@@ -36,7 +36,7 @@ export const V3Player = ({ jobId, onClose }: V3PlayerProps) => {
     const [totalTime, setTotalTime] = useState(0);
     const [showQuiz, setShowQuiz] = useState(false);
     const [explanationVisual, setExplanationVisual] = useState<V3ExplanationVisual | null>(null);
-    const [subtitlesKilled, setSubtitlesKilled] = useState(false);
+    const [quizSubtitleText, setQuizSubtitleText] = useState<string | null>(null);
     const avatarRef = useRef<V3AvatarHandle>(null);
     const needsAutoStart = useRef(false);
 
@@ -89,7 +89,7 @@ export const V3Player = ({ jobId, onClose }: V3PlayerProps) => {
         setIsPlaying(true);
         setShowQuiz(false);
         setExplanationVisual(null);
-        setSubtitlesKilled(false);
+        setQuizSubtitleText(null);
 
         if (avatarRef.current) {
             avatarRef.current.loadAvatar(s[index], jobId, playbackRate, getBlob);
@@ -122,7 +122,6 @@ export const V3Player = ({ jobId, onClose }: V3PlayerProps) => {
 
             if (hasEmbeddedQuiz) {
                 setShowQuiz(true);
-                setSubtitlesKilled(true);
                 return;
             }
 
@@ -198,7 +197,11 @@ export const V3Player = ({ jobId, onClose }: V3PlayerProps) => {
     const title = presentation?.presentation_title || presentation?.title || sections[0]?.title || 'Lesson';
     const currentSection = sections[currentIndex];
     const sectionType = currentSection ? getSectionType(currentSection) : 'content';
-    const avatarVideoRef = { current: avatarRef.current?.video || null };
+    // Stable ref — same object across renders, .current always up-to-date.
+    // An inline `{ current: ... }` would create a new object on every render,
+    // causing useKaraokeEngine effects to reset on every timeupdate re-render.
+    const avatarVideoRef = useRef<HTMLVideoElement | null>(null);
+    avatarVideoRef.current = avatarRef.current?.video || null;
 
     const renderScene = () => {
         if (!currentSection) return null;
@@ -270,11 +273,12 @@ export const V3Player = ({ jobId, onClose }: V3PlayerProps) => {
                         getBlob={getBlob}
                         onPrevSection={handlePrev}
                         onNextSection={() => {
-                            if (showQuiz) { setShowQuiz(false); setExplanationVisual(null); setSubtitlesKilled(false); if (currentIndex < sections.length - 1) loadSection(currentIndex + 1); }
+                            if (showQuiz) { setShowQuiz(false); setExplanationVisual(null); if (currentIndex < sections.length - 1) loadSection(currentIndex + 1); }
                             else handleNext();
                         }}
                         onShowExplanationVisual={(visual) => setExplanationVisual(visual || null)}
                         onHideExplanationVisual={() => setExplanationVisual(null)}
+                        onSubtitleText={(text) => setQuizSubtitleText(text)}
                     />
                 )}
                 {/* Explanation visual overlay — plays AFTER answer, BEFORE next question */}
@@ -287,7 +291,7 @@ export const V3Player = ({ jobId, onClose }: V3PlayerProps) => {
                 <V3Avatar ref={avatarRef} jobId={jobId} sectionType={sectionType} visible={sections.length > 0} />
             </div>
 
-            {!subtitlesKilled && <V3Subtitles section={currentSection || null} avatarVideoRef={avatarVideoRef} mode={subtitleMode} />}
+            <V3Subtitles section={currentSection || null} avatarVideoRef={avatarVideoRef} mode={subtitleMode} overrideText={quizSubtitleText} />
 
             <V3BottomBar sections={sections} currentIndex={currentIndex} isPlaying={isPlaying} playbackRate={playbackRate} progress={progress} currentTime={currentTime} totalTime={totalTime} isMuted={isMuted} subtitleMode={subtitleMode} isMobile={isMobile} onPrev={handlePrev} onNext={handleNext} onReplay={handleReplay} onTogglePlay={handleTogglePlay} onSpeedChange={handleSpeedChange} onSeek={handleSeek} onToggleVolume={handleToggleVolume} onToggleFullscreen={handleToggleFullscreen} onSectionClick={(i) => loadSection(i)} onSubtitleToggle={() => setSubtitleMode((m) => m === 'karaoke' ? 'full' : m === 'full' ? 'off' : 'karaoke')} />
         </div>

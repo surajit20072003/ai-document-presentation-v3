@@ -83,6 +83,12 @@ export interface V3Question {
         wrong?: string;
         explanation?: string;
     };
+    audio_clips?: {
+        question?: string;
+        correct?: string;
+        wrong?: string;
+        explanation?: string;
+    };
     script?: {
         question?: string;
         correct?: string;
@@ -112,6 +118,7 @@ export interface V3Section {
     avatar_url?: string;
     avatar?: string;
     b2_url?: string;
+    audio_path?: string;          // audio-only mode: path to .wav/.mp3 narration
     video_path?: string;
     manim_video_paths?: string[];
     beat_video_paths?: string[];

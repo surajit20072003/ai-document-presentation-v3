@@ -418,6 +418,10 @@
                         <input type="checkbox" id="skip_avatar" name="skip_avatar">
                         <label for="skip_avatar">Skip Avatar</label>
                     </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="audio_only" name="audio_only" onchange="handleAudioOnlyToggle(this)">
+                        <label for="audio_only">🎙️ Audio-Only Mode</label>
+                    </div>
                     <div class="checkbox-item" id="skipThreejsGroup" style="display:none;">
                         <input type="checkbox" id="skip_threejs" name="skip_threejs">
                         <label for="skip_threejs">Skip Visual Gen (V3 only)</label>
@@ -500,6 +504,67 @@
             <div id="jobHistoryList" style="margin-top: 15px;">
                 <div style="color: #888; text-align: center; padding: 20px;">Loading job history...</div>
             </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- DRY RUN JOBS PANEL                                        -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <div class="card" id="dryRunCard" style="margin-top: 20px;">
+            <h2>🧪 Dry Run Jobs
+                <button class="btn btn-secondary" style="float:right; padding:6px 12px; font-size:0.8rem;"
+                    onclick="loadDryRunJobs()">Refresh</button>
+            </h2>
+            <p style="color:#aaa; font-size:0.85rem; margin:8px 0 12px;">
+                Completed dry-run jobs hold the blueprint only — no media generated.
+                Click <strong>🚀 Promote</strong> to generate TTS, avatar, and animation videos using the existing
+                blueprint.
+            </p>
+            <div id="dryRunJobList" style="margin-top: 10px;">
+                <div style="color:#888; text-align:center; padding:20px;">Loading dry run jobs...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- PROMOTE DRY-RUN MODAL                                      -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="promoteModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+               background:rgba(0,0,0,0.88); z-index:2000;
+               justify-content:center; align-items:center;">
+        <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);
+                    border-radius:14px; max-width:520px; width:92%; padding:30px;
+                    position:relative; border:1px solid rgba(255,255,255,0.18);">
+            <button onclick="closePromoteModal()" style="position:absolute; top:14px; right:16px; background:none;
+                       border:none; color:#fff; font-size:1.5rem; cursor:pointer;">&#215;</button>
+            <h3 style="margin:0 0 6px; color:#7c83fd;">🚀 Promote Dry Run Job</h3>
+            <p id="promoteJobLabel" style="color:#aaa; font-size:0.85rem; margin:0 0 18px; word-break:break-all;"></p>
+
+            <label style="color:#ccc; font-size:0.9rem;">Video Provider</label>
+            <select id="promoteVideoProvider" style="width:100%; margin:6px 0 14px; padding:8px 10px;
+                       background:#0f0f23; color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:8px;">
+                <option value="kie">KIE / WAN (default)</option>
+                <option value="ltx">LTX (Fast/Experimental)</option>
+            </select>
+
+            <div style="display:flex; gap:20px; margin-bottom:18px;">
+                <label style="color:#ccc; font-size:0.9rem; cursor:pointer;">
+                    <input type="checkbox" id="promoteSkipWan" style="margin-right:6px;">
+                    Skip WAN/LTX video
+                </label>
+                <label style="color:#ccc; font-size:0.9rem; cursor:pointer;">
+                    <input type="checkbox" id="promoteSkipAvatar" style="margin-right:6px;">
+                    Skip Avatar generation
+                </label>
+                <label style="color:#ccc; font-size:0.9rem; cursor:pointer;">
+                    <input type="checkbox" id="promoteAudioOnly" style="margin-right:6px;">
+                    🎙️ Audio-Only (Chatterbox/Sarvam, no avatar video)
+                </label>
+            </div>
+
+            <button onclick="executePromotion()" style="width:100%; padding:12px; background:linear-gradient(90deg,#7c83fd,#6c63ff);
+                       border:none; border-radius:10px; color:#fff; font-size:1rem;
+                       font-weight:600; cursor:pointer;">🚀 Promote to Full Job</button>
+            <div id="promoteError" style="color:#f77; font-size:0.85rem; margin-top:10px;"></div>
         </div>
     </div>
 
@@ -798,12 +863,24 @@
             none: "Select options to customize the job processing.",
             dry_run: "Dry Run: Skip actual video/audio generation, only log prompts to render_prompts.json",
             skip_wan: "Skip Video Gen: Use placeholder videos instead of AI video generation",
-            skip_avatar: "Skip Avatar: Disable avatar overlay in the player"
+            skip_avatar: "Skip Avatar: Disable avatar overlay in the player",
+            audio_only: "🎙️ Audio-Only: Generate Chatterbox/Sarvam TTS audio per section. No avatar face video. English → Chatterbox. Indian languages → Sarvam."
         };
 
         document.querySelectorAll('.checkbox-item input').forEach(cb => {
             cb.addEventListener('change', updateOptionDesc);
         });
+
+        // Audio-Only: auto-check skip_avatar (audio-only implies no face video)
+        function handleAudioOnlyToggle(checkbox) {
+            const skipAvatarEl = document.getElementById('skip_avatar');
+            if (checkbox.checked) {
+                skipAvatarEl.checked = true;
+                skipAvatarEl.disabled = true;
+            } else {
+                skipAvatarEl.disabled = false;
+            }
+        }
 
         function updateOptionDesc() {
             const checked = Array.from(document.querySelectorAll('.checkbox-item input:checked'))
@@ -837,6 +914,7 @@
             formData.append('dry_run', document.getElementById('dry_run').checked ? 'true' : 'false');
             formData.append('skip_wan', document.getElementById('skip_wan').checked ? 'true' : 'false');
             formData.append('skip_avatar', document.getElementById('skip_avatar').checked ? 'true' : 'false');
+            formData.append('audio_only', document.getElementById('audio_only').checked ? 'true' : 'false');
             formData.append('tts_provider', document.getElementById('tts_provider').value);
             formData.append('pipeline_version', document.getElementById('pipeline_version').value);
             formData.append('generation_scope', document.getElementById('generation_scope').value);
@@ -2195,6 +2273,100 @@
         }
 
         loadJobHistory();
+
+        // ─────────────────────────────────────────────────────────────
+        // DRY RUN PROMOTION
+        // ─────────────────────────────────────────────────────────────
+        let _promoteJobId = null;
+
+        async function loadDryRunJobs() {
+            const container = document.getElementById('dryRunJobList');
+            container.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">Loading...</div>';
+            try {
+                const resp = await fetch('/jobs');
+                const data = await resp.json();
+                const dryJobs = (data.jobs || []).filter(
+                    j => j.params && j.params.dry_run === true && j.status === 'completed'
+                );
+
+                if (dryJobs.length === 0) {
+                    container.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">No completed dry-run jobs found. Submit a job with the &ldquo;Dry Run&rdquo; option to get started.</div>';
+                    return;
+                }
+
+                container.innerHTML = dryJobs.map(job => {
+                    const created = job.created_at ? new Date(job.created_at).toLocaleString() : 'N/A';
+                    const subject = (job.params.subject || 'Unknown').replace(/'/g, "\'");
+                    const grade = job.params.grade || '?';
+                    const pv = job.params.pipeline_version || job.pipeline_version || '';
+                    const src = job.params.source_file ? `<span style="font-size:0.78rem;color:#aaa;">📄 ${job.params.source_file}</span>` : '';
+                    return `
+                        <div style="background:rgba(124,131,253,0.07);border:1px solid rgba(124,131,253,0.2);
+                                    border-radius:10px;padding:14px 16px;margin-bottom:10px;
+                                    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:200px;">
+                                <div style="font-weight:600;color:#e0e0e0;margin-bottom:4px;">📘 ${subject} — Grade ${grade}</div>
+                                <div style="font-size:0.8rem;color:#888;">${job.job_id}</div>
+                                <div style="font-size:0.78rem;color:#aaa;margin-top:2px;">${src} ${pv ? '· ' + pv : ''} · ${created}</div>
+                            </div>
+                            <button onclick="showPromoteModal('${job.job_id}', '${subject} G${grade}')"
+                                style="padding:9px 16px;background:linear-gradient(90deg,#7c83fd,#6c63ff);
+                                       border:none;border-radius:8px;color:#fff;font-weight:600;
+                                       cursor:pointer;font-size:0.9rem;white-space:nowrap;">
+                                🚀 Promote
+                            </button>
+                        </div>`;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = `<div style="color:#f77;padding:10px;">Error loading dry-run jobs: ${err.message}</div>`;
+            }
+        }
+
+        function showPromoteModal(jobId, label) {
+            _promoteJobId = jobId;
+            document.getElementById('promoteJobLabel').textContent = `Job: ${jobId}  (${label})`;
+            document.getElementById('promoteVideoProvider').value = 'kie';
+            document.getElementById('promoteSkipWan').checked = false;
+            document.getElementById('promoteSkipAvatar').checked = false;
+            document.getElementById('promoteAudioOnly').checked = false;
+            document.getElementById('promoteError').textContent = '';
+            document.getElementById('promoteModal').style.display = 'flex';
+        }
+
+        function closePromoteModal() {
+            document.getElementById('promoteModal').style.display = 'none';
+            _promoteJobId = null;
+        }
+
+        async function executePromotion() {
+            if (!_promoteJobId) return;
+            const video_provider = document.getElementById('promoteVideoProvider').value;
+            const skip_wan = document.getElementById('promoteSkipWan').checked;
+            const skip_avatar = document.getElementById('promoteSkipAvatar').checked;
+            const audio_only = document.getElementById('promoteAudioOnly').checked;
+            const errEl = document.getElementById('promoteError');
+            errEl.textContent = '';
+
+            try {
+                const resp = await fetch(`/job/${_promoteJobId}/promote_dry_run`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_provider, skip_wan, skip_avatar, audio_only }),
+                });
+                const data = await resp.json();
+                if (!resp.ok) {
+                    errEl.textContent = data.error || 'Promotion failed.';
+                    return;
+                }
+                closePromoteModal();
+                setTimeout(() => { loadJobHistory(); loadDryRunJobs(); }, 800);
+                alert(`✅ Promotion started for job ${_promoteJobId}.\nWatch the Job History panel for progress.`);
+            } catch (err) {
+                errEl.textContent = `Request failed: ${err.message}`;
+            }
+        }
+
+        loadDryRunJobs();
 
         // Auto-poll for avatar status disabled by user request
         // setInterval(checkAllRunningAvatarJobs, 10000);

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
 import { useChromaKey } from './hooks/useChromaKey';
 import { getMediaSrc, getAvatarUrl } from './utils';
 import type { V3Section } from './types';
@@ -17,9 +17,14 @@ interface V3AvatarProps {
 export const V3Avatar = forwardRef<V3AvatarHandle, V3AvatarProps>(
     ({ jobId: _jobId, sectionType, visible }, ref) => {
         const videoRef = useRef<HTMLVideoElement>(null);
+        const audioRef = useRef<HTMLAudioElement>(null);
         const canvasRef = useRef<HTMLCanvasElement>(null);
         const prevCanvasRef = useRef<HTMLCanvasElement>(null);
         const overlayRef = useRef<HTMLDivElement>(null);
+        // Tracks whether the current section is audio-only (no avatar video).
+        // Using a ref (not state) so the getter in useImperativeHandle always reads the latest value.
+        const isAudioModeRef = useRef(false);
+        const [showCanvas, setShowCanvas] = useState(true);
 
         const { resizeCanvas, resample } = useChromaKey({
             videoRef,
@@ -38,13 +43,36 @@ export const V3Avatar = forwardRef<V3AvatarHandle, V3AvatarProps>(
 
         const loadAvatar = useCallback(
             (section: V3Section, jid: string, rate: number, getBlob?: (src: string) => string | null) => {
+                const avatarPath = getAvatarUrl(section);
+                const audioPath = section.audio_path;
+
+                if (!avatarPath && audioPath) {
+                    // ── Audio-Only Mode ──
+                    // No avatar video — use the <audio> element as the media clock.
+                    // All downstream code (timeupdate, ended, karaoke, WAN sync) works unchanged
+                    // since <audio> and <video> share the same HTMLMediaElement API.
+                    isAudioModeRef.current = true;
+                    setShowCanvas(false);
+
+                    const src = getMediaSrc(audioPath, jid);
+                    const finalSrc = getBlob?.(src) || src;
+                    const aud = audioRef.current;
+                    if (!aud) return;
+                    aud.src = finalSrc;
+                    aud.playbackRate = rate;
+                    aud.load();
+                    aud.play().catch((err) => console.warn('[V3Avatar] audio play() failed:', err?.message || err));
+                    return;
+                }
+
+                // ── Normal Avatar-Video Mode ──
+                isAudioModeRef.current = false;
+                setShowCanvas(true);
+
                 const vid = videoRef.current;
                 const canvasCur = canvasRef.current;
                 const canvasPrev = prevCanvasRef.current;
-                if (!vid) return;
-
-                const avatarPath = getAvatarUrl(section);
-                if (!avatarPath) return;
+                if (!vid || !avatarPath) return;
 
                 // Crossfade: stamp current frame onto prev canvas
                 if (canvasCur && canvasPrev && canvasCur.width > 0 && canvasCur.height > 0) {
@@ -79,7 +107,15 @@ export const V3Avatar = forwardRef<V3AvatarHandle, V3AvatarProps>(
         );
 
         useImperativeHandle(ref, () => ({
-            get video() { return videoRef.current; },
+            get video() {
+                // Return audio element (typed as HTMLVideoElement) in audio-only mode.
+                // They share the same HTMLMediaElement API: currentTime, duration, play(),
+                // pause(), src, load(), playbackRate, timeupdate, ended, readyState, paused.
+                if (isAudioModeRef.current && audioRef.current) {
+                    return audioRef.current as unknown as HTMLVideoElement;
+                }
+                return videoRef.current;
+            },
             loadAvatar,
         }), [loadAvatar]);
 
@@ -90,28 +126,39 @@ export const V3Avatar = forwardRef<V3AvatarHandle, V3AvatarProps>(
                 data-sectype={sectionType}
                 style={{ display: visible ? 'block' : 'none' }}
             >
+                {/* Hidden video element — used for avatar mp4 and quiz clips */}
                 <video
                     ref={videoRef}
                     playsInline
                     crossOrigin="anonymous"
                     style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0.01, pointerEvents: 'none' }}
                 />
-                <canvas
-                    ref={prevCanvasRef}
-                    style={{
-                        width: '100%', height: '100%', display: 'block',
-                        position: 'absolute', top: 0, left: 0,
-                        opacity: 0, transition: 'opacity 0.45s ease',
-                        pointerEvents: 'none', zIndex: 2, background: 'transparent',
-                    }}
+                {/* Hidden audio element — used as the media clock in audio-only mode */}
+                <audio
+                    ref={audioRef}
+                    style={{ display: 'none' }}
                 />
-                <canvas
-                    ref={canvasRef}
-                    style={{
-                        width: '100%', height: '100%', display: 'block',
-                        position: 'absolute', top: 0, left: 0, zIndex: 1, background: 'transparent',
-                    }}
-                />
+                {/* Canvas layers — only rendered when an avatar video is present */}
+                {showCanvas && (
+                    <>
+                        <canvas
+                            ref={prevCanvasRef}
+                            style={{
+                                width: '100%', height: '100%', display: 'block',
+                                position: 'absolute', top: 0, left: 0,
+                                opacity: 0, transition: 'opacity 0.45s ease',
+                                pointerEvents: 'none', zIndex: 2, background: 'transparent',
+                            }}
+                        />
+                        <canvas
+                            ref={canvasRef}
+                            style={{
+                                width: '100%', height: '100%', display: 'block',
+                                position: 'absolute', top: 0, left: 0, zIndex: 1, background: 'transparent',
+                            }}
+                        />
+                    </>
+                )}
             </div>
         );
     }

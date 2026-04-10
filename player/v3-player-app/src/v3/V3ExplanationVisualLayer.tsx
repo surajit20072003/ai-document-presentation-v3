@@ -113,6 +113,7 @@ export const V3ExplanationVisualLayer = ({
             <video
                 ref={videoRef}
                 playsInline
+                muted
                 crossOrigin="anonymous"
                 style={{
                     position: 'absolute',

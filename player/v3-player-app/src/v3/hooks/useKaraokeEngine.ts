@@ -11,6 +11,7 @@ export interface KaraokeWord {
 interface UseKaraokeEngineOpts {
     section: V3Section | null;
     avatarVideoRef: React.RefObject<HTMLVideoElement | null>;
+    overrideText?: string | null;
 }
 
 const LEAD_MS = 80;
@@ -18,6 +19,32 @@ const PUNCT_WEIGHTS: Record<string, number> = {
     '.': 8, '!': 8, '?': 8,
     ',': 4, ';': 4, ':': 4,
 };
+
+function buildWordsFromText(text: string, segStart: number, segDur: number, startSentenceIdx: number): { words: KaraokeWord[], nextSentenceIdx: number } {
+    const words: KaraokeWord[] = [];
+    const rawWords = text.trim().split(/\s+/).filter(Boolean);
+    let sentenceIdx = startSentenceIdx;
+    if (rawWords.length === 0) return { words, nextSentenceIdx: sentenceIdx };
+
+    let totalWeight = 0;
+    const weights = rawWords.map((w) => {
+        let wt = w.length;
+        const last = w[w.length - 1];
+        if (PUNCT_WEIGHTS[last]) wt += PUNCT_WEIGHTS[last];
+        totalWeight += wt;
+        return wt;
+    });
+
+    let cumTime = segStart;
+    rawWords.forEach((w, i) => {
+        const dur = (weights[i] / totalWeight) * segDur;
+        words.push({ text: w, start: cumTime - LEAD_MS / 1000, end: cumTime + dur, sentenceIdx });
+        cumTime += dur;
+        const last = w[w.length - 1];
+        if (last === '.' || last === '!' || last === '?') sentenceIdx++;
+    });
+    return { words, nextSentenceIdx: sentenceIdx };
+}
 
 function buildWords(section: V3Section): KaraokeWord[] {
     const segs = section.narration?.segments;
@@ -30,29 +57,14 @@ function buildWords(section: V3Section): KaraokeWord[] {
         const segStart = seg.start_seconds ?? 0;
         const segEnd = seg.end_seconds ?? (segStart + (seg.duration_seconds || seg.duration || 5));
         const segDur = segEnd - segStart;
-        const rawWords = text.split(/\s+/).filter(Boolean);
-        if (rawWords.length === 0) continue;
-        let totalWeight = 0;
-        const weights = rawWords.map((w) => {
-            let wt = w.length;
-            const last = w[w.length - 1];
-            if (PUNCT_WEIGHTS[last]) wt += PUNCT_WEIGHTS[last];
-            totalWeight += wt;
-            return wt;
-        });
-        let cumTime = segStart;
-        rawWords.forEach((w, i) => {
-            const dur = (weights[i] / totalWeight) * segDur;
-            words.push({ text: w, start: cumTime - LEAD_MS / 1000, end: cumTime + dur, sentenceIdx });
-            cumTime += dur;
-            const last = w[w.length - 1];
-            if (last === '.' || last === '!' || last === '?') sentenceIdx++;
-        });
+        const res = buildWordsFromText(text, segStart, segDur, sentenceIdx);
+        words.push(...res.words);
+        sentenceIdx = res.nextSentenceIdx;
     }
     return words;
 }
 
-export function useKaraokeEngine({ section, avatarVideoRef }: UseKaraokeEngineOpts) {
+export function useKaraokeEngine({ section, avatarVideoRef, overrideText }: UseKaraokeEngineOpts) {
     const [words, setWords] = useState<KaraokeWord[]>([]);
     const [activeWordIndex, setActiveWordIndex] = useState(-1);
     const epochRef = useRef(0);
@@ -60,9 +72,26 @@ export function useKaraokeEngine({ section, avatarVideoRef }: UseKaraokeEngineOp
     useEffect(() => {
         epochRef.current++;
         setActiveWordIndex(-1);
+
+        if (overrideText) {
+            const vid = avatarVideoRef.current;
+            if (!vid) return;
+            const updateWords = () => {
+                const dur = vid.duration && isFinite(vid.duration) ? vid.duration : 5;
+                setWords(buildWordsFromText(overrideText, 0, dur, 0).words);
+            };
+            updateWords();
+            vid.addEventListener('durationchange', updateWords);
+            vid.addEventListener('loadedmetadata', updateWords);
+            return () => {
+                vid.removeEventListener('durationchange', updateWords);
+                vid.removeEventListener('loadedmetadata', updateWords);
+            };
+        }
+
         if (!section) { setWords([]); return; }
         setWords(buildWords(section));
-    }, [section]);
+    }, [section, overrideText]); // avatarVideoRef intentionally omitted — it's a stable ref; .current is read dynamically
 
     useEffect(() => {
         const vid = avatarVideoRef.current;
@@ -77,11 +106,14 @@ export function useKaraokeEngine({ section, avatarVideoRef }: UseKaraokeEngineOp
                 if (t < words[i].start) break;
                 idx = i;
             }
+            // Mirror legacy player: once video has started, always show at least word 0.
+            // Prevents blank gaps during word boundary transitions (matches player_v3.html behaviour).
+            if (idx < 0 && t > 0 && words.length > 0) idx = 0;
             setActiveWordIndex(idx);
         };
         vid.addEventListener('timeupdate', onTime);
         return () => vid.removeEventListener('timeupdate', onTime);
-    }, [avatarVideoRef, words]);
+    }, [words]); // avatarVideoRef intentionally omitted — .current is read dynamically at effect run time
 
     const activeSentenceIndex = activeWordIndex >= 0 ? words[activeWordIndex]?.sentenceIdx ?? -1 : -1;
     return { words, activeWordIndex, activeSentenceIndex };

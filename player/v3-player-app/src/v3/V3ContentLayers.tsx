@@ -33,6 +33,9 @@ export const V3ContentLayers = ({ section, jobId, avatarVideoRef, getBlob }: V3C
     const wanVideoRef = useRef<HTMLVideoElement>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [imageVisible, setImageVisible] = useState(false);
+    // Tracks the 400ms "fade-out then clear" timer so it can be cancelled
+    // if the image needs to be shown again before the timer fires.
+    const imgNullTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const kind = section ? getRendererKind(section) : 'none';
 
@@ -78,18 +81,33 @@ export const V3ContentLayers = ({ section, jobId, avatarVideoRef, getBlob }: V3C
     // ── Image layer logic ──
     useEffect(() => {
         if ((kind === 'video' || kind === 'image') && videoBeatIdx >= 0 && videoSchedule[videoBeatIdx]?.type === 'image') {
+            // ── FIX: cancel any pending hide-image timer before showing ──
+            // Without this, a stale 400ms timer started during section load (when
+            // videoBeatIdx was still -1) fires after beat-0 shows the image and
+            // wipes it out → blank screen for the first infographic.
+            if (imgNullTimerRef.current !== null) {
+                clearTimeout(imgNullTimerRef.current);
+                imgNullTimerRef.current = null;
+            }
             const imgSrc = videoSchedule[videoBeatIdx].src;
             const blobSrc = getBlob?.(imgSrc);
             setImageUrl(blobSrc || imgSrc);
             requestAnimationFrame(() => setImageVisible(true));
         } else if (kind === 'manim' && manimBeatIdx >= 0 && manimSchedule[manimBeatIdx]?.type === 'image') {
+            if (imgNullTimerRef.current !== null) {
+                clearTimeout(imgNullTimerRef.current);
+                imgNullTimerRef.current = null;
+            }
             const imgSrc = manimSchedule[manimBeatIdx].src;
             const blobSrc = getBlob?.(imgSrc);
             setImageUrl(blobSrc || imgSrc);
             requestAnimationFrame(() => setImageVisible(true));
         } else {
             setImageVisible(false);
-            setTimeout(() => setImageUrl(null), 400);
+            imgNullTimerRef.current = setTimeout(() => {
+                imgNullTimerRef.current = null;
+                setImageUrl(null);
+            }, 400);
         }
     }, [kind, videoBeatIdx, manimBeatIdx, videoSchedule, manimSchedule, getBlob]);
 

@@ -13,13 +13,14 @@ interface V3QuizSceneProps {
     onNextSection: () => void;
     onShowExplanationVisual?: (visual: V3Question['explanation_visual']) => void;
     onHideExplanationVisual?: () => void;
+    onSubtitleText?: (text: string | null) => void;
 }
 
 type QuizPhase = 'question' | 'answered' | 'explanation' | 'explanation_visual';
 
 export const V3QuizScene = ({
     section, jobId, avatarRef, playbackRate, getBlob,
-    onPrevSection, onNextSection, onShowExplanationVisual, onHideExplanationVisual,
+    onPrevSection, onNextSection, onShowExplanationVisual, onHideExplanationVisual, onSubtitleText,
 }: V3QuizSceneProps) => {
     const questions: V3Question[] = section.questions?.length
         ? section.questions
@@ -34,6 +35,12 @@ export const V3QuizScene = ({
     const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
     const q = questions[qIndex];
+
+    const isAudioOnly = !!section.audio_path;
+    const getClipUrl = useCallback((phase: 'question' | 'correct' | 'wrong' | 'explanation', question: V3Question) => {
+        if (isAudioOnly && question.audio_clips?.[phase]) return question.audio_clips[phase];
+        return question.avatar_clips?.[phase];
+    }, [isAudioOnly]);
 
     const clearTimers = useCallback(() => { timersRef.current.forEach(clearTimeout); timersRef.current = []; }, []);
 
@@ -51,10 +58,11 @@ export const V3QuizScene = ({
 
     const advanceQuestion = useCallback(() => {
         onHideExplanationVisual?.();
+        onSubtitleText?.(null);
         const currentIdx = qIndexRef.current;
         if (currentIdx < questions.length - 1) showQuestion(currentIdx + 1);
         else onNextSection();
-    }, [questions.length, onNextSection, onHideExplanationVisual]);
+    }, [questions.length, onNextSection, onHideExplanationVisual, onSubtitleText]);
 
     const showQuestion = useCallback((idx: number) => {
         const question = questions[idx];
@@ -62,7 +70,6 @@ export const V3QuizScene = ({
         setQIndex(idx); qIndexRef.current = idx;
         setPhase('question'); setSelectedKey(null); setRevealedOptions(0); setClickable(false);
         clearTimers();
-        const clips = question.avatar_clips;
         const narr = question.narration;
         const optionKeys = Object.keys(question.options || {});
         const revealDelays = narr?.option_reveal_seconds || question.option_reveal_seconds;
@@ -79,12 +86,13 @@ export const V3QuizScene = ({
                 timersRef.current.push(t);
             });
         }
-        playClip(clips?.question, () => { setRevealedOptions(optionKeys.length); setClickable(true); });
-        if (!clips?.question) {
+        playClip(getClipUrl('question', question), () => { setRevealedOptions(optionKeys.length); setClickable(true); });
+        onSubtitleText?.(question.narration?.question_script || null);
+        if (!getClipUrl('question', question)) {
             const t = setTimeout(() => { setRevealedOptions(optionKeys.length); setClickable(true); }, (500 + optionKeys.length * 400) / playbackRate);
             timersRef.current.push(t);
         }
-    }, [questions, playClip, clearTimers, playbackRate]);
+    }, [questions, playClip, clearTimers, playbackRate, getClipUrl]);
 
     useEffect(() => { if (questions.length > 0) showQuestion(0); return clearTimers; }, [section.section_id]);
 
@@ -93,17 +101,21 @@ export const V3QuizScene = ({
         setSelectedKey(key); setPhase('answered'); setClickable(false);
         const correctKey = q.correct_option || q.correct;
         const isCorrect = key === correctKey;
-        const clipUrl = q.avatar_clips?.[isCorrect ? 'correct' : 'wrong'];
+        const clipUrl = getClipUrl(isCorrect ? 'correct' : 'wrong', q);
+        const feedbackScript = isCorrect ? q.narration?.correct_script : q.narration?.wrong_script;
+        onSubtitleText?.(feedbackScript || null);
         playClip(clipUrl, () => {
             const expVisual = q.explanation_visual;
             const hasExpVisual = expVisual && (expVisual.video_path || expVisual.wan_video_path || expVisual.image_path || expVisual.image_source);
-            const expClip = q.avatar_clips?.explanation;
+            const expClip = getClipUrl('explanation', q);
             if (hasExpVisual) {
                 setPhase('explanation_visual'); onShowExplanationVisual?.(expVisual);
+                onSubtitleText?.(q.narration?.explanation_script || null);
                 playClip(expClip, () => { const t = setTimeout(() => advanceQuestion(), 900 / playbackRate); timersRef.current.push(t); });
                 if (!expClip) { const t = setTimeout(() => advanceQuestion(), 3000 / playbackRate); timersRef.current.push(t); }
             } else if (q.explanation) {
                 setPhase('explanation');
+                onSubtitleText?.(q.narration?.explanation_script || null);
                 playClip(expClip, () => { const t = setTimeout(() => advanceQuestion(), 900 / playbackRate); timersRef.current.push(t); });
                 if (!expClip) { const t = setTimeout(() => advanceQuestion(), 3000 / playbackRate); timersRef.current.push(t); }
             } else {
@@ -112,18 +124,19 @@ export const V3QuizScene = ({
             }
         });
         if (!clipUrl) {
-            const expVisual = q.explanation_visual;
-            const hasExpVisual = expVisual && (expVisual.video_path || expVisual.wan_video_path || expVisual.image_path || expVisual.image_source);
-            if (hasExpVisual) {
-                setPhase('explanation_visual'); onShowExplanationVisual?.(expVisual);
-                const expClip = q.avatar_clips?.explanation;
-                playClip(expClip, () => { const t = setTimeout(() => advanceQuestion(), 900 / playbackRate); timersRef.current.push(t); });
-                if (!expClip) { const t = setTimeout(() => advanceQuestion(), 3000 / playbackRate); timersRef.current.push(t); }
+            const expVisual2 = q.explanation_visual;
+            const hasExpVisual2 = expVisual2 && (expVisual2.video_path || expVisual2.wan_video_path || expVisual2.image_path || expVisual2.image_source);
+            if (hasExpVisual2) {
+                setPhase('explanation_visual'); onShowExplanationVisual?.(expVisual2);
+                onSubtitleText?.(q.narration?.explanation_script || null);
+                const expClip2 = getClipUrl('explanation', q);
+                playClip(expClip2, () => { const t = setTimeout(() => advanceQuestion(), 900 / playbackRate); timersRef.current.push(t); });
+                if (!expClip2) { const t = setTimeout(() => advanceQuestion(), 3000 / playbackRate); timersRef.current.push(t); }
             } else if (q.explanation) {
-                setPhase('explanation'); const t = setTimeout(() => advanceQuestion(), 3000 / playbackRate); timersRef.current.push(t);
+                setPhase('explanation'); onSubtitleText?.(q.narration?.explanation_script || null); const t = setTimeout(() => advanceQuestion(), 3000 / playbackRate); timersRef.current.push(t);
             } else { const t = setTimeout(() => advanceQuestion(), 900 / playbackRate); timersRef.current.push(t); }
         }
-    }, [phase, clickable, q, playClip, advanceQuestion, onShowExplanationVisual, playbackRate]);
+    }, [phase, clickable, q, playClip, getClipUrl, advanceQuestion, onShowExplanationVisual, playbackRate, onSubtitleText]);
 
     if (!q || questions.length === 0 || phase === 'explanation_visual') return null;
 
