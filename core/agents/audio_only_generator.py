@@ -484,4 +484,29 @@ class AudioOnlyGenerator:
             f"skipped={len(results['skipped'])} "
             f"failed={len(results['failed'])}"
         )
+
+        # --- Post-Step: Subtitle Alignment (background, non-blocking) ---
+        # Run faster-whisper on all generated wav files to produce exact word-level
+        # timestamps, stored in subtitles.json for the frontend karaoke engine.
+        if results["completed"]:
+            from threading import Thread
+
+            def _run_subtitle_alignment():
+                try:
+                    from core.agents.subtitle_aligner import SubtitleAligner
+                    aligner = SubtitleAligner()
+                    summary = aligner.align_job(output_dir)
+                    logger.info(
+                        f"[AUDIO-ONLY] Subtitle alignment done for job {job_id}: "
+                        f"aligned={len(summary['sections_aligned'])} "
+                        f"failed={len(summary['sections_failed'])}"
+                    )
+                except Exception as e:
+                    logger.error(f"[AUDIO-ONLY] Subtitle alignment failed for job {job_id}: {e}")
+
+            t = Thread(target=_run_subtitle_alignment, daemon=True)
+            t.start()
+            logger.info(f"[AUDIO-ONLY] Subtitle alignment started in background for job {job_id}")
+
         return results
+

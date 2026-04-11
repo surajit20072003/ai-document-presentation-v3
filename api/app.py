@@ -6576,6 +6576,27 @@ def run_avatar_sequential_task(
 
         print(f"[AVATAR-TASK] Background task completed for job {job_id}")
 
+        # --- Post-Step: Subtitle Alignment ---
+        # After avatar videos are ready, extract their audio tracks and run faster-whisper
+        # to produce subtitles.json with exact word-level timestamps for the player.
+        def _run_subtitle_alignment_bg():
+            try:
+                from core.agents.subtitle_aligner import SubtitleAligner
+                aligner = SubtitleAligner()
+                summary = aligner.align_job(str(job_dir))
+                print(
+                    f"[AVATAR-TASK] Subtitle alignment done for job {job_id}: "
+                    f"aligned={len(summary['sections_aligned'])} "
+                    f"failed={len(summary['sections_failed'])}",
+                    flush=True,
+                )
+            except Exception as sub_err:
+                print(f"[AVATAR-TASK] Subtitle alignment error for job {job_id}: {sub_err}", flush=True)
+
+        import threading
+        threading.Thread(target=_run_subtitle_alignment_bg, daemon=True).start()
+        print(f"[AVATAR-TASK] Subtitle alignment started in background for job {job_id}", flush=True)
+
         # STATUS UPDATE: Completion
         try:
             failed_count = len(results.get("failed", []))

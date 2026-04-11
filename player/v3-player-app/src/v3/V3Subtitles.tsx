@@ -1,15 +1,17 @@
 import { useKaraokeEngine } from './hooks/useKaraokeEngine';
-import type { V3Section, SubtitleMode } from './types';
+import type { V3Section, SubtitleMode, WordTimestamp } from './types';
 
 interface V3SubtitlesProps {
     section: V3Section | null;
     avatarVideoRef: React.RefObject<HTMLVideoElement | null>;
     mode: SubtitleMode;
     overrideText?: string | null;
+    /** Exact word timestamps from subtitles.json — bypasses character-estimate when provided */
+    exactWords?: WordTimestamp[] | null;
 }
 
-export const V3Subtitles = ({ section, avatarVideoRef, mode, overrideText }: V3SubtitlesProps) => {
-    const { words, activeWordIndex, activeSentenceIndex } = useKaraokeEngine({ section, avatarVideoRef, overrideText });
+export const V3Subtitles = ({ section, avatarVideoRef, mode, overrideText, exactWords }: V3SubtitlesProps) => {
+    const { words, activeWordIndex, activeSentenceIndex } = useKaraokeEngine({ section, avatarVideoRef, overrideText, exactWords });
     if (mode === 'off' || words.length === 0) return null;
 
     const sentenceWords = activeSentenceIndex >= 0

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { V3Section } from '../types';
+import type { V3Section, WordTimestamp } from '../types';
 
 export interface KaraokeWord {
     text: string;
@@ -12,6 +12,8 @@ interface UseKaraokeEngineOpts {
     section: V3Section | null;
     avatarVideoRef: React.RefObject<HTMLVideoElement | null>;
     overrideText?: string | null;
+    /** Exact word timestamps from subtitles.json — overrides character-estimate when provided */
+    exactWords?: WordTimestamp[] | null;
 }
 
 const LEAD_MS = 80;
@@ -64,7 +66,23 @@ function buildWords(section: V3Section): KaraokeWord[] {
     return words;
 }
 
-export function useKaraokeEngine({ section, avatarVideoRef, overrideText }: UseKaraokeEngineOpts) {
+/** Convert exact WordTimestamp[] → KaraokeWord[] (adds sentenceIdx from punctuation) */
+function exactToKaraoke(exactWords: WordTimestamp[]): KaraokeWord[] {
+    let sentenceIdx = 0;
+    return exactWords.map((w) => {
+        const kw: KaraokeWord = {
+            text: w.word,
+            start: w.start,
+            end: w.end,
+            sentenceIdx,
+        };
+        const last = w.word.trimEnd().slice(-1);
+        if (last === '.' || last === '!' || last === '?') sentenceIdx++;
+        return kw;
+    });
+}
+
+export function useKaraokeEngine({ section, avatarVideoRef, overrideText, exactWords }: UseKaraokeEngineOpts) {
     const [words, setWords] = useState<KaraokeWord[]>([]);
     const [activeWordIndex, setActiveWordIndex] = useState(-1);
     const epochRef = useRef(0);
@@ -89,9 +107,15 @@ export function useKaraokeEngine({ section, avatarVideoRef, overrideText }: UseK
             };
         }
 
+        // If exact word timestamps available from subtitles.json → use them
+        if (exactWords && exactWords.length > 0) {
+            setWords(exactToKaraoke(exactWords));
+            return;
+        }
+
         if (!section) { setWords([]); return; }
         setWords(buildWords(section));
-    }, [section, overrideText]); // avatarVideoRef intentionally omitted — it's a stable ref; .current is read dynamically
+    }, [section, overrideText, exactWords]); // avatarVideoRef intentionally omitted — it's a stable ref; .current is read dynamically
 
     useEffect(() => {
         const vid = avatarVideoRef.current;
@@ -107,7 +131,6 @@ export function useKaraokeEngine({ section, avatarVideoRef, overrideText }: UseK
                 idx = i;
             }
             // Mirror legacy player: once video has started, always show at least word 0.
-            // Prevents blank gaps during word boundary transitions (matches player_v3.html behaviour).
             if (idx < 0 && t > 0 && words.length > 0) idx = 0;
             setActiveWordIndex(idx);
         };

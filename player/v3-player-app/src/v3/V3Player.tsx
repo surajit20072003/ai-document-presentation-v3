@@ -10,6 +10,7 @@ import { V3MemoryScene } from './sections/V3MemoryScene';
 import { V3RecapScene } from './sections/V3RecapScene';
 import { V3QuizScene } from './sections/V3QuizScene';
 import { useMediaPreloader } from './hooks/useMediaPreloader';
+import { useSubtitleLoader } from './hooks/useSubtitleLoader';
 import { V3ExplanationVisualLayer } from './V3ExplanationVisualLayer';
 import { getSectionType } from './utils';
 import type { V3Presentation, V3Section, SubtitleMode, V3ExplanationVisual } from './types';
@@ -53,6 +54,9 @@ export const V3Player = ({ jobId, onClose }: V3PlayerProps) => {
     }, []);
 
     const { getBlob, initialReady, cacheProgress } = useMediaPreloader(sections, currentIndex, jobId);
+    // Load subtitles.json (word-level timestamps from subtitle_aligner.py).
+    // Returns null if file not yet generated → falls back to character-estimate.
+    const subtitleData = useSubtitleLoader(jobId);
 
     useEffect(() => {
         const url = `/player/jobs/${jobId}/presentation.json?t=${Date.now()}`;
@@ -291,7 +295,13 @@ export const V3Player = ({ jobId, onClose }: V3PlayerProps) => {
                 <V3Avatar ref={avatarRef} jobId={jobId} sectionType={sectionType} visible={sections.length > 0} />
             </div>
 
-            <V3Subtitles section={currentSection || null} avatarVideoRef={avatarVideoRef} mode={subtitleMode} overrideText={quizSubtitleText} />
+            <V3Subtitles
+                section={currentSection || null}
+                avatarVideoRef={avatarVideoRef}
+                mode={subtitleMode}
+                overrideText={quizSubtitleText}
+                exactWords={subtitleData?.sections[String(currentSection?.section_id)]?.words ?? null}
+            />
 
             <V3BottomBar sections={sections} currentIndex={currentIndex} isPlaying={isPlaying} playbackRate={playbackRate} progress={progress} currentTime={currentTime} totalTime={totalTime} isMuted={isMuted} subtitleMode={subtitleMode} isMobile={isMobile} onPrev={handlePrev} onNext={handleNext} onReplay={handleReplay} onTogglePlay={handleTogglePlay} onSpeedChange={handleSpeedChange} onSeek={handleSeek} onToggleVolume={handleToggleVolume} onToggleFullscreen={handleToggleFullscreen} onSectionClick={(i) => loadSection(i)} onSubtitleToggle={() => setSubtitleMode((m) => m === 'karaoke' ? 'full' : m === 'full' ? 'off' : 'karaoke')} />
         </div>

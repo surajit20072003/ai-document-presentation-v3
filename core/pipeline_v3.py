@@ -1453,6 +1453,30 @@ def run_v3_pipeline(
 
     log("done", f"✅ V3 Pipeline complete. Output: {output_path}")
 
+    # --- POST-PIPELINE: Subtitle Alignment (background, non-blocking) ---
+    if output_dir:
+        try:
+            import threading
+            _subtitle_job_dir = str(output_path)
+
+            def _run_subtitle_alignment_pipeline():
+                try:
+                    from core.agents.subtitle_aligner import SubtitleAligner
+                    aligner = SubtitleAligner()
+                    summary = aligner.align_job(_subtitle_job_dir)
+                    logger.info(
+                        f"[V3-PIPELINE] [SUBTITLE] ✅ Alignment done: "
+                        f"aligned={len(summary['sections_aligned'])} "
+                        f"failed={len(summary['sections_failed'])}"
+                    )
+                except Exception as sub_err:
+                    logger.error(f"[V3-PIPELINE] [SUBTITLE] ❌ Alignment failed: {sub_err}")
+
+            threading.Thread(target=_run_subtitle_alignment_pipeline, daemon=True).start()
+            logger.info(f"[V3-PIPELINE] [SUBTITLE] Alignment started in background for {output_path}")
+        except Exception as e:
+            logger.warning(f"[V3-PIPELINE] [SUBTITLE] Could not start alignment thread: {e}")
+
     analytics_summary = {}
     if hasattr(tracker, "get_summary"):
         analytics_summary = tracker.get_summary()

@@ -833,8 +833,35 @@ def process_markdown_unified(
                 presentation.setdefault("metadata", {})["job_status"] = "completed_with_errors"
                 presentation["metadata"]["error_summary"] = f"Certification Warning: {str(e)}."
 
+        # --- POST-PIPELINE: Subtitle Alignment (background, non-blocking) ---
+        # After the full pipeline completes, run faster-whisper on all narration audio
+        # (extracted from avatar mp4 or existing wavs) to produce subtitles.json with
+        # exact word-level timestamps. The frontend player uses this for accurate karaoke sync.
+        if output_dir:
+            try:
+                import threading
+                _subtitle_job_dir = str(output_dir)
+
+                def _run_subtitle_alignment_pipeline():
+                    try:
+                        from core.agents.subtitle_aligner import SubtitleAligner
+                        aligner = SubtitleAligner()
+                        summary = aligner.align_job(_subtitle_job_dir)
+                        logger.info(
+                            f"[V3-PIPELINE] [SUBTITLE] ✅ Alignment done: "
+                            f"aligned={len(summary['sections_aligned'])} "
+                            f"failed={len(summary['sections_failed'])}"
+                        )
+                    except Exception as sub_err:
+                        logger.error(f"[V3-PIPELINE] [SUBTITLE] ❌ Alignment failed: {sub_err}")
+
+                threading.Thread(target=_run_subtitle_alignment_pipeline, daemon=True).start()
+                logger.info(f"[V3-PIPELINE] [SUBTITLE] Alignment started in background for {output_dir}")
+            except Exception as e:
+                logger.warning(f"[V3-PIPELINE] [SUBTITLE] Could not start alignment thread: {e}")
 
         return presentation, tracker
+
 
     except Exception as e:
         import traceback
