@@ -842,6 +842,7 @@ def _render_manim_segment_specs(
     dry_run: bool = False,
     trace_output_dir: Optional[str] = None,
     topic: Optional[dict] = None,
+    aspect_ratio: str = "16:9",
 ) -> List[str]:
     """
     Render per-segment Manim videos.
@@ -898,6 +899,19 @@ def _render_manim_segment_specs(
                 else:
                     # ── V3 MODE: py_path pre-generated in Phase 3.5 ──────
                     py_path = spec.get("py_path")
+
+                    # DOCKER PATH FIX: stored path may use /app/... container prefix.
+                    # If the path doesn't exist as-is, reconstruct it from the filename
+                    # relative to the manim/ dir next to output_dir (videos/).
+                    if py_path and not os.path.exists(py_path):
+                        filename = os.path.basename(py_path)
+                        # output_dir is typically .../videos/; manim/ is at the same level
+                        manim_dir_candidate = Path(output_dir).parent / "manim"
+                        remapped = manim_dir_candidate / filename
+                        if remapped.exists():
+                            print(f"  [MANIM V3] Docker path remapped: {py_path} → {remapped}")
+                            py_path = str(remapped)
+
                     if py_path and os.path.exists(py_path):
                         print(f"  [MANIM V3] Using pre-generated code: {py_path}")
                         with open(py_path, "r", encoding="utf-8") as fh:
@@ -930,6 +944,7 @@ def _render_manim_segment_specs(
                         duration=duration,
                         output_path=output_path,
                         topic_id=f"{topic_id}_{idx}",
+                        aspect_ratio=aspect_ratio,
                     )
             except Exception as e:
                 print(f"  [MANIM FAIL] Segment {seg_id}: {e} — skipping beat, continuing remaining beats")
@@ -1289,12 +1304,19 @@ def _get_texinputs_env() -> dict:
 
 
 def _execute_spec_generated_render(
-    manim_code: str, duration: float, output_path: str, topic_id: int
+    manim_code: str, duration: float, output_path: str, topic_id: int,
+    aspect_ratio: str = "16:9",
 ) -> str:
     """Execute Manim render from spec-generated code."""
 
     # Sanitize the code to fix common LaTeX issues
     sanitized_code = _sanitize_manim_code(manim_code)
+
+    # Inject aspect_ratio so the LLM code doesn't crash if it references it
+    if "from manim import *" in sanitized_code:
+        sanitized_code = sanitized_code.replace("from manim import *", f"from manim import *\naspect_ratio = '{aspect_ratio}'")
+    else:
+        sanitized_code = f"aspect_ratio = '{aspect_ratio}'\n" + sanitized_code
 
     # V2 FULL CODE CHECK: If code is already a full scene, use it directly
     is_full_code = (
@@ -1345,13 +1367,16 @@ class SpecGeneratedScene(Scene):
         with open(scene_file, "w", encoding="utf-8") as f:
             f.write(scene_wrapper)
 
+        resolution_flags = ["--resolution", "480,864"] if aspect_ratio == "9:16" else []
+
         cmd = [
             "manim",
             "render",
             "-q",
             "m",
             "--fps",
-            "30",  # Medium quality (Sweet Spot: 720p 30fps)
+            "30",
+            *resolution_flags,
             "-o",
             "output.mp4",
             "--media_dir",

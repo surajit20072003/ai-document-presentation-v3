@@ -77,6 +77,7 @@ def run_v3_pipeline(
     images_dict: Optional[dict] = None,
     llm_routing: Optional[dict] = None,  # Per-component LLM provider routing
     skip_director: bool = False,  # PROMOTE: skip LLM generation, reuse existing presentation.json
+    aspect_ratio: str = "16:9",  # REEL: "9:16" for portrait reel mode
 ) -> Dict[str, Any]:
     """
     Full V3 pipeline. Returns (presentation_dict, analytics_dict).
@@ -89,6 +90,9 @@ def run_v3_pipeline(
         print(f"[V3-PIPELINE] [{phase.upper()}] {message}", flush=True)
         if update_status_callback:
             update_status_callback(job_id, phase, message)
+
+    # REEL MODE: derive aspect_ratio from audio_only flag
+    aspect_ratio = "9:16" if audio_only else "16:9"
 
     # ─────────────────────────────────────────────────────────────────────────
     # PROMOTE MODE: skip_director=True means we reuse the existing
@@ -167,12 +171,21 @@ def run_v3_pipeline(
             tracker = AnalyticsTracker(job_id=job_id)
 
             # V3 uses its own partition prompt (manim_scene_spec, understanding_quiz, zero text_layer)
+            # REEL MODE: when audio_only=True, use reel prompts instead
+            if audio_only:
+                partition_prompt_name = "director_unified_reel_prompt.txt"
+                global_prompt_name = None
+                log("director_v3", "REEL MODE — using unified reel prompt.")
+            else:
+                partition_prompt_name = "director_v3_partition_prompt.txt"
+                global_prompt_name = "director_global_prompt.txt"
+
             v3_prompt_path = (
-                Path(__file__).parent / "prompts" / "director_v3_partition_prompt.txt"
+                Path(__file__).parent / "prompts" / partition_prompt_name
             )
             if not v3_prompt_path.exists():
                 raise V3PipelineError(
-                    f"director_v3_partition_prompt.txt not found at {v3_prompt_path}",
+                    f"{partition_prompt_name} not found at {v3_prompt_path}",
                     phase="director_v3",
                 )
 
@@ -180,9 +193,10 @@ def run_v3_pipeline(
             director = PartitionDirectorGenerator(
                 content_prompt_file=str(v3_prompt_path),
                 global_prompt_file=str(
-                    Path(__file__).parent / "prompts" / "director_global_prompt.txt"
-                ),
+                    Path(__file__).parent / "prompts" / global_prompt_name
+                ) if global_prompt_name else None,
                 llm_routing=llm_routing,
+                reel_mode=audio_only,
             )
 
             log(
@@ -750,6 +764,7 @@ def run_v3_pipeline(
                         output_dir=str(output_path / "videos"),
                         dry_run=dry_run,
                         topic=section,  # CRITICAL: writes seg.beat_videos[] directly
+                        aspect_ratio=aspect_ratio,
                     )
                     if rendered:
                         section["video_path"] = f"videos/{Path(rendered[0]).name}"
@@ -902,6 +917,7 @@ def run_v3_pipeline(
                                     output_dir=str(output_path / "videos"),
                                     dry_run=dry_run,
                                     topic=None,  # Don't write quiz video into main narration segments
+                                    aspect_ratio=aspect_ratio,
                                 )
                                 if rendered:
                                     rel_path = f"videos/{Path(rendered[0]).name}"
@@ -977,6 +993,7 @@ def run_v3_pipeline(
                             output_dir=str(output_path / "videos"),
                             dry_run=dry_run,
                             topic=None,  # Don't write quiz video into main narration segments
+                            aspect_ratio=aspect_ratio,
                         )
                         if rendered:
                             rel_path = f"videos/{Path(rendered[0]).name}"
@@ -1013,6 +1030,7 @@ def run_v3_pipeline(
     # ─────────────────────────────────────────────
     log("quiz_card_gen", "Phase 4.5: Generating quiz cards...")
     try:
+
         from core.quiz_card_generator import run_phase_4_5
 
         quiz_cards = run_phase_4_5(
@@ -1109,6 +1127,7 @@ def run_v3_pipeline(
                     dry_run=dry_run,
                     skip_wan=skip_wan,
                     video_provider=video_provider,
+                    aspect_ratio=aspect_ratio,
                 )
 
                 if result.get("status") == "success":
@@ -1168,6 +1187,7 @@ def run_v3_pipeline(
                     dry_run=dry_run,
                     skip_wan=skip_wan,
                     video_provider=video_provider,
+                    aspect_ratio=aspect_ratio,
                 )
 
                 if result.get("status") == "success":
@@ -1257,6 +1277,7 @@ def run_v3_pipeline(
                         dry_run=dry_run,
                         skip_wan=skip_wan,
                         video_provider=video_provider,
+                        aspect_ratio=aspect_ratio,
                     )
 
                     if result.get("status") == "success":
@@ -1351,6 +1372,7 @@ def run_v3_pipeline(
                             dry_run=dry_run,
                             skip_wan=skip_wan,
                             video_provider=video_provider,
+                            aspect_ratio=aspect_ratio,
                         )
                         if result.get("status") == "success":
                             video_path = result.get("video_path", "")
@@ -1411,27 +1433,62 @@ def run_v3_pipeline(
         log("wan_video", "No video sections found — skipping WAN/LTX.")
 
     # ─────────────────────────────────────────────
+    # Phase 6.9: FFmpeg Final Merge (audio_only mode only)
+    # Runs AFTER Phase 6.5 (image_to_video / WAN / LTX) so ALL beat videos
+    # including recap sections are guaranteed to be rendered and saved to
+    # presentation.json before the merge runs.
+    # Produces: videos/presentation_final.mp4
+    # ─────────────────────────────────────────────
+    if audio_only and not dry_run:
+        log("ffmpeg_merge", "Phase 6.9: Merging all beat videos + HeyGem audio into final presentation MP4...")
+        try:
+            from core.agents.audio_video_merger import merge_section_videos
+
+            # Reload freshest presentation.json so all beat_video_paths are current
+            try:
+                with open(pres_path, "r", encoding="utf-8") as f:
+                    presentation = json.load(f)
+            except Exception:
+                pass
+
+            final_path = merge_section_videos(
+                presentation=presentation,
+                output_dir=str(output_path),
+                log_fn=log,
+            )
+            if final_path:
+                log("ffmpeg_merge", f"✅ Phase 6.9 complete → {final_path}")
+            else:
+                log("ffmpeg_merge", "⚠️ Phase 6.9: merge returned no output (check logs above).")
+        except Exception as e:
+            logger.warning(f"[V3] Phase 6.9 (FFmpeg merge) error (non-fatal): {e}")
+            log("ffmpeg_merge", f"⚠️ Phase 6.9 error (non-fatal): {e}")
+
+    # ─────────────────────────────────────────────
     # Phase 7: Downgrade all job videos to 360p
     # Runs after ALL video generation is complete.
     # Encodes every .mp4 in videos/ to 360p in-place.
     # Original high-res file is deleted on success.
     # Non-fatal: errors are logged, pipeline continues.
     # ─────────────────────────────────────────────
-    log("video_downgrade", "Phase 7: Downgrading all job videos to 360p...")
-    try:
-        from core.video_downgrader import downgrade_videos_to_360p
+    if not audio_only:
+        log("video_downgrade", "Phase 7: Downgrading all job videos to 360p...")
+        try:
+            from core.video_downgrader import downgrade_videos_to_360p
 
-        downgrade_count = downgrade_videos_to_360p(
-            videos_dir=str(output_path / "videos"),
-            log_fn=log,
-        )
-        log(
-            "video_downgrade",
-            f"✅ Phase 7 complete: {downgrade_count} video(s) downgraded to 360p.",
-        )
-    except Exception as e:
-        logger.warning(f"[V3] 360p downgrade error (non-fatal): {e}")
-        log("video_downgrade", f"⚠️ Phase 7 error (non-fatal): {e}")
+            downgrade_count = downgrade_videos_to_360p(
+                videos_dir=str(output_path / "videos"),
+                log_fn=log,
+            )
+            log(
+                "video_downgrade",
+                f"✅ Phase 7 complete: {downgrade_count} video(s) downgraded to 360p.",
+            )
+        except Exception as e:
+            logger.warning(f"[V3] 360p downgrade error (non-fatal): {e}")
+            log("video_downgrade", f"⚠️ Phase 7 error (non-fatal): {e}")
+    else:
+        log("video_downgrade", "Phase 7: Skipped 360p downgrade (audio_only mode preserves full resolution).")
 
     # ─────────────────────────────────────────────
     # Phase 8: Final save

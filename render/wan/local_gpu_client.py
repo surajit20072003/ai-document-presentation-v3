@@ -103,6 +103,7 @@ class LocalGPUClient:
         output_path: Optional[str] = None,
         image_path: Optional[str] = None,
         image_path_end: Optional[str] = None,
+        aspect_ratio: str = "16:9",
     ) -> Optional[str]:
         """
         Generate a video on the local GPU server.
@@ -149,7 +150,7 @@ class LocalGPUClient:
             print(f"[LocalGPU] Submitting job: {prompt[:80]}...")
 
             # Step 2: Submit job
-            job_id = self._submit_job(prompt, duration, image_token, image_end_token)
+            job_id = self._submit_job(prompt, duration, image_token, image_end_token, aspect_ratio)
             if not job_id:
                 return None
 
@@ -173,6 +174,7 @@ class LocalGPUClient:
     def _submit_job(
         self, prompt: str, duration: int,
         image_token: str = None, image_end_token: str = None,
+        aspect_ratio: str = "16:9",
     ) -> Optional[str]:
         """POST /generate — returns job_id or None."""
         try:
@@ -183,7 +185,7 @@ class LocalGPUClient:
             payload = {
                 "prompt": prompt,
                 "video_length": video_length,
-                "resolution": "704x480",
+                "resolution": {"16:9": "704x480", "9:16": "480x864"}.get(aspect_ratio, "704x480"),
                 "model": "ltx23_distilled_q6",
                 "seed": 42,
             }

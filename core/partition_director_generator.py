@@ -192,9 +192,11 @@ class PartitionDirectorGenerator:
         content_prompt_file: Optional[str] = None,
         global_prompt_file: Optional[str] = None,
         llm_routing: Optional[dict] = None,
+        reel_mode: bool = False,
     ):
         self.config = config or GeneratorConfig()
         self.llm_routing = llm_routing or {}
+        self.reel_mode = reel_mode
         self.partitioner = SmartPartitioner(self.config, llm_routing=self.llm_routing)
         self.content_prompt_file = (
             content_prompt_file or "core/prompts/director_v3_partition_prompt.txt"
@@ -212,6 +214,84 @@ class PartitionDirectorGenerator:
     async def generate_presentation_parallel__REMOVED_ASYNC(self):
         pass
 
+    def _run_unified_reel_worker(
+        self,
+        full_md: str,
+        subject: str,
+        grade: str,
+        output_dir: Optional[str] = None,
+        missing_content_hint: Optional[str] = None,
+        update_status_callback = None,
+    ) -> dict:
+        """Single-pass Reel Mode generation."""
+        msg = "Phase 1 & 2: Generating Unified Reel (Content + Recap)..."
+        logger.info(msg)
+        if update_status_callback:
+            update_status_callback("llm_generation", msg)
+            
+        with open(self.content_prompt_file, "r", encoding="utf-8") as f:
+            sys_p = f.read()
+
+        if missing_content_hint:
+            sys_p += f"\n\n{missing_content_hint}\n"
+
+        usr_p = f"Subject: {subject}\nGrade: {grade}\nCONTENT:\n{full_md}"
+        
+        from core.llm_routing import call_llm_routed
+        from core.unified_content_generator import extract_json_from_response
+        
+        retries = 0
+        max_retries = 3
+        current_sys_p = sys_p
+        
+        while retries < max_retries:
+            try:
+                r, _ = call_llm_routed(current_sys_p, usr_p, self.config, component="director", routing=self.llm_routing)
+                data = extract_json_from_response(r)
+
+                if output_dir:
+                    os.makedirs(output_dir, exist_ok=True)
+                    debug_path = os.path.join(output_dir, f"debug_unified_reel_{retries}.json")
+                    with open(debug_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=2)
+
+                # Basic validation
+                errors = []
+                if not data.get("sections"):
+                    errors.append("Missing content 'sections'")
+                if not data.get("recap"):
+                    errors.append("Missing 'recap' section")
+
+                if not errors:
+                    # Inject empty visual_beats for player compatibility
+                    for sec in data.get("sections", []):
+                        if not sec.get("visual_beats"):
+                            sec["visual_beats"] = []
+                    
+                    # Append recap to sections
+                    recap_sec = data.pop("recap")
+                    recap_sec["section_id"] = len(data.get("sections", [])) + 1
+                    if not recap_sec.get("visual_beats"):
+                        recap_sec["visual_beats"] = []
+                    
+                    data.setdefault("sections", []).append(recap_sec)
+                    
+                    if output_dir:
+                        final_path = os.path.join(output_dir, "debug_unified_reel_final.json")
+                        with open(final_path, "w", encoding="utf-8") as f:
+                            json.dump(data, f, indent=2)
+                    
+                    return data
+                else:
+                    logger.warning(f"Reel Validation Failed (Attempt {retries+1}): {errors}")
+                    current_sys_p = sys_p + f"\n\nVALIDATION FAILED On Previous Attempt:\n" + "\n".join(errors) + "\nFix these issues and return valid JSON."
+                    retries += 1
+            except Exception as e:
+                logger.error(f"Reel Worker Exception: {e}", exc_info=True)
+                retries += 1
+                
+        raise RuntimeError("Unified Reel worker failed after 3 retries.")
+
     def generate_presentation_partitioned(
         self,
         markdown_content: str,
@@ -223,6 +303,11 @@ class PartitionDirectorGenerator:
         output_dir: Optional[str] = None,
         missing_content_hint: Optional[str] = None,  # NEW: For validation retry
     ) -> dict:
+        if self.reel_mode:
+            return self._run_unified_reel_worker(
+                markdown_content, subject, grade, output_dir, missing_content_hint, update_status_callback
+            )
+
         # A. PARTITIONING (Skip if global-only)
         chunks = []
         if generation_scope in ["full", "content"]:
@@ -425,7 +510,13 @@ class PartitionDirectorGenerator:
                     except Exception as e:
                         logger.warning(f"Failed to save global debug: {e}")
 
-                errors = V25Validator.validate_global_response(data)
+                if self.reel_mode:
+                    # Reel mode: only recap is required, skip intro/summary/memory checks
+                    errors = []
+                    if not data.get("recap"):
+                        errors.append("Missing 'recap' section.")
+                else:
+                    errors = V25Validator.validate_global_response(data)
 
                 if not errors:
                     # Map section IDs and apply splitter
@@ -458,8 +549,8 @@ class PartitionDirectorGenerator:
                                             beats.append(
                                                 {
                                                     "beat_id": f"recap_beat_{i + 1}",
-                                                    "image_prompt_start": f"Cinematic recap opening frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
-                                                    "image_prompt_end": f"Cinematic recap closing frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
+                                                    "image_prompt_start": f"Cinematic recap opening frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting. 16:9. No watermarks.",
+                                                    "image_prompt_end": f"Cinematic recap closing frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting. 16:9. No watermarks.",
                                                     "video_prompt": prompt_text,
                                                     "duration": 15,
                                                 }
@@ -472,8 +563,8 @@ class PartitionDirectorGenerator:
                                             beats.append(
                                                 {
                                                     "beat_id": f"recap_beat_{i + 1}",
-                                                    "image_prompt_start": f"Cinematic recap opening frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
-                                                    "image_prompt_end": f"Cinematic recap closing frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting, 16:9.",
+                                                    "image_prompt_start": f"Cinematic recap opening frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting. 16:9. No watermarks.",
+                                                    "image_prompt_end": f"Cinematic recap closing frame {i + 1}. Photorealistic, vivid Indian setting, warm lighting. 16:9. No watermarks.",
                                                     "video_prompt": seg.get(
                                                         "text", "Cinematic recap scene."
                                                     ),

@@ -36,6 +36,7 @@ def _render_videos_parallel(
     dry_run: bool = False,
     use_local_gpu: bool = True,
     topic_id: str = "",
+    aspect_ratio: str = "16:9",
 ) -> dict:
     """
     Render videos in parallel using Local GPU (max_workers=3).
@@ -95,6 +96,7 @@ def _render_videos_parallel(
                 output_path=out_path,
                 image_path=image_path,
                 image_path_end=image_path_end,  # ← pass end frame
+                aspect_ratio=aspect_ratio,
             )
             future_to_beat[future] = beat_id
 
@@ -447,6 +449,7 @@ def execute_renderer(
     trace_output_dir: str = "",
     strict_mode: bool = True,
     video_provider: str = "ltx",
+    aspect_ratio: str = "16:9",
 ) -> dict:
     """
     V3 Section-Level Renderer Executor.
@@ -926,6 +929,7 @@ def execute_renderer(
                     dry_run=dry_run,
                     use_local_gpu=use_local,
                     topic_id=str(topic_id),
+                    aspect_ratio=aspect_ratio,
                 )
 
                 if render_results["success"]:
@@ -1112,6 +1116,7 @@ def execute_renderer(
                     dry_run=dry_run,
                     use_local_gpu=use_local,
                     topic_id=str(topic_id),
+                    aspect_ratio=aspect_ratio,
                 )
 
                 if render_results["success"]:
