@@ -150,8 +150,8 @@ def _write_filelist(paths: List[str], tmp: str) -> str:
 def _ffmpeg_concat_video(
     paths: List[str],
     output: str,
-    target_width: int = 480,
-    target_height: int = 854,
+    target_width: int = 720,
+    target_height: int = 1280,
     fps: int = 30,
 ) -> bool:
     """

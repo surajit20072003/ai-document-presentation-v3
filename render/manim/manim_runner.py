@@ -1367,7 +1367,7 @@ class SpecGeneratedScene(Scene):
         with open(scene_file, "w", encoding="utf-8") as f:
             f.write(scene_wrapper)
 
-        resolution_flags = ["--resolution", "480,864"] if aspect_ratio == "9:16" else []
+        resolution_flags = ["--resolution", "720,1280"] if aspect_ratio == "9:16" else []
 
         cmd = [
             "manim",

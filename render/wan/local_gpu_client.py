@@ -185,7 +185,7 @@ class LocalGPUClient:
             payload = {
                 "prompt": prompt,
                 "video_length": video_length,
-                "resolution": {"16:9": "704x480", "9:16": "480x864"}.get(aspect_ratio, "704x480"),
+                "resolution": {"16:9": "704x480", "9:16": "720x1280"}.get(aspect_ratio, "704x480"),
                 "model": "ltx23_distilled_q6",
                 "seed": 42,
             }
