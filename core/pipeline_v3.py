@@ -1458,6 +1458,41 @@ def run_v3_pipeline(
             )
             if final_path:
                 log("ffmpeg_merge", f"✅ Phase 6.9 complete → {final_path}")
+
+                # ─────────────────────────────────────────────
+                # Phase 6.9b: Burn karaoke subtitles into final video
+                # Reads subtitles.json (word-level timings per section),
+                # generates an ASS karaoke file, and bakes yellow
+                # word-highlight subtitles into presentation_final.mp4.
+                # Non-fatal: raw video is kept if this step fails.
+                # ─────────────────────────────────────────────
+                subs_json_path = str(output_path / "subtitles.json")
+                if Path(subs_json_path).exists():
+                    try:
+                        # Reload freshest presentation.json so offsets are current
+                        try:
+                            with open(pres_path, "r", encoding="utf-8") as _f:
+                                presentation = json.load(_f)
+                        except Exception:
+                            pass
+
+                        from core.agents.subtitle_burner import burn_subtitles
+                        sub_result = burn_subtitles(
+                            video_path=str(output_path / final_path),
+                            subtitles_json_path=subs_json_path,
+                            presentation=presentation,
+                            output_path=str(output_path / final_path),
+                            log_fn=log,
+                        )
+                        if sub_result:
+                            log("subtitle_burn", "✅ Phase 6.9b: Karaoke subtitles burned into final video")
+                        else:
+                            log("subtitle_burn", "⚠️ Phase 6.9b: subtitle burn skipped (check logs)")
+                    except Exception as _se:
+                        logger.warning(f"[V3] Phase 6.9b subtitle burn error (non-fatal): {_se}")
+                        log("subtitle_burn", f"⚠️ Phase 6.9b error (non-fatal): {_se}")
+                else:
+                    log("subtitle_burn", "Phase 6.9b: No subtitles.json found — skipping subtitle burn")
             else:
                 log("ffmpeg_merge", "⚠️ Phase 6.9: merge returned no output (check logs above).")
         except Exception as e:

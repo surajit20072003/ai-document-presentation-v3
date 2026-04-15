@@ -4,7 +4,7 @@ Your Goal: Read ONE source document and produce ONE presentation.json for a comp
 educational reel — content sections + recap — ready for the generation pipeline.
 
 REEL MODE:
-- 9:16 portrait format. 480x854px. Vertical composition always.
+- 9:16 portrait format. 720x1280px. Vertical composition always.
 - TTS audio is the master clock. Audio ends -> player advances. No avatar.
 - Zero text on screen. All information via TTS audio + fullscreen visual.
 - Total reel: 60-90 seconds. 3-5 content sections + 1 recap.
@@ -68,7 +68,7 @@ SOURCE DOCUMENT
       V
 +---------------------------------------------+
 |  STEP 5: WRITE VISUAL SPECS                 |
-|  All visuals: 9:16 portrait, 480x854px.     |
+|  All visuals: 9:16 portrait, 720x1280px.     |
 |  manim      -> manim_beats[] per section     |
 |  image_to_video -> image_to_video_beats[]    |
 |  text_to_video  -> video_prompts[]           |
@@ -203,7 +203,7 @@ Each manim beat:
 
 GOOD example (8.31s beat):
 ```
-Portrait canvas 480x854px. frame_width=5. Dark background. Duration exactly 8.31s.
+Portrait canvas 720x1280px. frame_width=5. Dark background. Duration exactly 8.31s.
 At 0s: FadeIn dark background.
 At 0.5s: Write MathTex(r"a_n = a + (n-1)d") in GOLD, scaled 0.8, at y=+2.0, over 1.5s.
 At 2.0s: Write Text("a = first term", font_size=28) in WHITE at y=+0.5, over 0.8s.
@@ -221,7 +221,7 @@ Beat 2+ image_prompt_start must match image_prompt_end of previous beat.
 Beat 2+ video_prompt must start: "Continuing from previous scene, same vertical portrait framing..."
 
 `image_prompt_start` (100+ words — HARD MINIMUM):
-1. Start: "9:16 portrait orientation. Vertical composition. 480x854px."
+1. Start: "9:16 portrait orientation. Vertical composition. 720x1280px."
 2. Subject centred, fills upper 60% of frame.
 3. Lower 40%: simple dark background (subtitle safe zone).
 4. Every visible element described: shape, colour, label text in quotes.
@@ -314,7 +314,7 @@ Include ONLY the fields listed below. Do not add any other fields.
             "beat_id": "b1",
             "segment_id": "seg_1",
             "duration": 8.31,
-            "manim_scene_spec": "Portrait canvas 480x854px. frame_width=5. Dark background. Duration exactly 8.31s. At 0s: ..."
+            "manim_scene_spec": "Portrait canvas 720x1280px. frame_width=5. Dark background. Duration exactly 8.31s. At 0s: ..."
           }
         ],
 
@@ -324,7 +324,7 @@ Include ONLY the fields listed below. Do not add any other fields.
             "segment_id": "seg_1",
             "duration": 15,
             "image_source": null,
-            "image_prompt_start": "9:16 portrait orientation. Vertical composition. 480x854px. 100+ words...",
+            "image_prompt_start": "9:16 portrait orientation. Vertical composition. 720x1280px. 100+ words...",
             "image_prompt_end": "Same 9:16 portrait orientation. Closing frame. 100+ words...",
             "video_prompt": "SUBJECT: ... INITIAL STATE: ... MECHANISM: ... RESULT: ... CAMERA: ... DURATION: 15 seconds. 24fps. No text overlays."
           }
@@ -376,7 +376,7 @@ Include ONLY the fields listed below. Do not add any other fields.
           "beat_id": "recap_beat_1",
           "segment_id": "seg_1",
           "duration": 15,
-          "image_prompt_start": "9:16 portrait orientation. Vertical composition. 480x854px. 100+ words...",
+          "image_prompt_start": "9:16 portrait orientation. Vertical composition. 720x1280px. 100+ words...",
           "image_prompt_end": "Same 9:16 portrait orientation. Closing frame. 100+ words...",
           "video_prompt": "SUBJECT: ... INITIAL STATE: ... MECHANISM: ... RESULT: ... CAMERA: ... DURATION: 15 seconds. 24fps. No text overlays."
         },
@@ -421,8 +421,8 @@ Include ONLY the fields listed below. Do not add any other fields.
 | `pace` | Required on every segment. slow / normal / fast. |
 | `pause_after_seconds` | Required on every segment. Max 1.0s content. Max 0.5s recap. |
 | `image_source` | Filename string if source image exists. null if generated. Never null when source image found. |
-| `manim_scene_spec` | 100+ words. Portrait canvas 480x854px. frame_width=5. |
-| `image_prompt_start` / `end` | 100+ words. Must include "9:16 portrait orientation. Vertical composition. 480x854px." |
+| `manim_scene_spec` | 100+ words. Portrait canvas 720x1280px. frame_width=5. |
+| `image_prompt_start` / `end` | 100+ words. Must include "9:16 portrait orientation. Vertical composition. 720x1280px." |
 | `video_prompt` | 80+ words. Must follow SUBJECT/INITIAL STATE/MECHANISM/RESULT/CAMERA/DURATION template. No hex codes. No banned words. |
 | `video_prompts[].prompt` | 80+ words. Must start "9:16 portrait frame. Vertical composition." No hex codes. |
 | `recap narration segment` | 30-35 words. ~14s. |
@@ -463,14 +463,14 @@ Include ONLY the fields listed below. Do not add any other fields.
 
 ### D — Portrait format
 9. Every `image_prompt_start` and `image_prompt_end` contains:
-   "9:16 portrait orientation" AND "Vertical composition" AND "480x854px".
+   "9:16 portrait orientation" AND "Vertical composition" AND "720x1280px".
    FAIL: any missing -> add them.
 
 10. Every `video_prompt` starts with "9:16 portrait frame. Vertical composition."
     (Beat 2+ recap: starts with "Continuing from previous scene, same vertical portrait framing.")
     FAIL: missing -> add it.
 
-11. Every `manim_scene_spec` starts with "Portrait canvas 480x854px. frame_width=5."
+11. Every `manim_scene_spec` starts with "Portrait canvas 720x1280px. frame_width=5."
     FAIL: missing -> add it.
 
 ### E — Word counts

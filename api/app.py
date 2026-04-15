@@ -2939,6 +2939,8 @@ def promote_dry_run(job_id):
         grade = params.get("grade", "10")
         tts_provider = params.get("tts_provider", "edge_tts")
         model = params.get("model")
+        audio_only = params.get("audio_only", False)
+        use_local_gpu = params.get("use_local_gpu", False)
 
         # Read source markdown from job folder
         source_markdown_path = job_folder / "source_markdown.md"
@@ -2963,6 +2965,8 @@ def promote_dry_run(job_id):
                     "video_provider": video_provider,
                     "skip_wan": skip_wan,
                     "skip_avatar": skip_avatar,
+                    "audio_only": audio_only,
+                    "use_local_gpu": use_local_gpu,
                     "promoted_from_dry_run": True,
                 },
             },
@@ -2992,6 +2996,8 @@ def promote_dry_run(job_id):
             dry_run=False,
             skip_wan=skip_wan,
             skip_avatar=skip_avatar,
+            audio_only=audio_only,
+            use_local_gpu=use_local_gpu,
             tts_provider=tts_provider,
             pipeline_version=pipeline_version,
             generation_scope="full",
